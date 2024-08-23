@@ -6,6 +6,7 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import './Campaigns.css';
 import { ArrowUpSquare, CheckCircle, Clock, RocketFill, ThreeDotsVertical, XCircle } from 'react-bootstrap-icons';
+import Swal from 'sweetalert2';
 
 const socket = io(process.env.REACT_APP_API_URL);
 
@@ -81,7 +82,7 @@ const Campaigns = () => {
   };
 
   const handleUseTemplateClick = (template) => {
-    console.log('Using template:', template);
+    navigate(`/create-campaign/${template.id}`);
   };
 
   const handleEditTemplateClick = (template) => {
@@ -90,15 +91,33 @@ const Campaigns = () => {
 
   const handleDeleteTemplateClick = async (templateId) => {
     const token = localStorage.getItem('token');
-    try {
-      console.log('Deleting template with ID:', templateId);
-      await axios.delete(`${process.env.REACT_APP_API_URL}/api/templates/${templateId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setTemplates(templates.filter(template => template.id !== templateId));
-    } catch (error) {
-      console.error('Error deleting template:', error);
-    }
+    Swal.fire({
+      title: "Esta seguro que desea eliminar esta Plantilla?",
+      showDenyButton: true,
+      confirmButtonText: "Eliminar",
+    }).then(async (result) => { 
+      if (result.isConfirmed) {
+        try {
+          console.log('Deleting template with ID:', templateId);
+          await axios.delete(`${process.env.REACT_APP_API_URL}/api/templates/${templateId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setTemplates(templates.filter(template => template.id !== templateId));
+          await Swal.fire({
+            title: "Perfecto",
+            text: `Plantilla Eliminada.`,
+            icon: "success"
+          });
+        } catch (error) {
+          Swal.fire({
+            title: "Error",
+            text: `Error al eliminar Liquidación.
+            Error: ${error}`,
+            icon: "error"
+          });
+        }
+      } 
+    });
   };
 
   const handleEditCampaignClick = (campaign) => {

@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import './CollapsibleSidebar.css';
 import { List, ChatLeftDots, People, Person, Funnel, FileBarGraph, Search, Megaphone, CurrencyDollar, Gear, Building, BoxArrowLeft } from 'react-bootstrap-icons';
 import axios from 'axios';
+import { useMediaQuery } from 'react-responsive';
 
 const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
   const [userData, setUserData] = useState({});
   const [companyData, setCompanyData] = useState({});
   const [roleName, setRoleName] = useState('');
   const userId = localStorage.getItem('user_id');
+
+  const isMobile = useMediaQuery({ maxWidth: 767 });
 
   const onSelectOption = (selectedOption) => {
     onSelect(selectedOption);
@@ -77,30 +80,33 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
         <People color="white" size={20} />
         {!isCollapsed && <span>Contactos</span>}
       </div>
-      <div className="nav-item" onClick={() => onSelectOption('users')}>
-        <Person color="white" size={20} />
-        {!isCollapsed && <span>Usuarios</span>}
-      </div>
-      <div className="nav-item" onClick={() => onSelectOption('funnel')}>
-        <Funnel color="white" size={20} />
-        {!isCollapsed && <span>Funnel</span>}
-      </div>
-      <div className="nav-item" onClick={() => onSelectOption('statistics')}>
-        <FileBarGraph color="white" size={20} />
-        {!isCollapsed && <span>Estadísticas</span>}
-      </div>
-      <div className="nav-item" onClick={() => onSelectOption('inspection')}>
-        <Search color="white" size={20} />
-        {!isCollapsed && <span>Inspección</span>}
-      </div>
-      <div className="nav-item" onClick={() => onSelectOption('campaigns')}>
-        <Megaphone color="white" size={20} />
-        {!isCollapsed && <span>Campañas</span>}
-      </div>
-      <div className="nav-item" onClick={() => onSelectOption('consumption')}>
-        <CurrencyDollar color="white" size={20} />
-        {!isCollapsed && <span>Consumos</span>}
-      </div>
+ { !isMobile && (
+            <>
+            <div className="nav-item" onClick={() => onSelectOption('users')}>
+                    <Person color="white" size={20} />
+                    {!isCollapsed && <span>Usuarios</span>}
+                  </div>
+                  <div className="nav-item" onClick={() => onSelectOption('funnel')}>
+                    <Funnel color="white" size={20} />
+                    {!isCollapsed && <span>Funnel</span>}
+                  </div>
+                  <div className="nav-item" onClick={() => onSelectOption('statistics')}>
+                    <FileBarGraph color="white" size={20} />
+                    {!isCollapsed && <span>Estadísticas</span>}
+                  </div>
+                  <div className="nav-item" onClick={() => onSelectOption('inspection')}>
+                    <Search color="white" size={20} />
+                    {!isCollapsed && <span>Inspección</span>}
+                  </div>
+                  <div className="nav-item" onClick={() => onSelectOption('campaigns')}>
+                    <Megaphone color="white" size={20} />
+                    {!isCollapsed && <span>Campañas</span>}
+                  </div>
+                  <div className="nav-item" onClick={() => onSelectOption('consumption')}>
+                    <CurrencyDollar color="white" size={20} />
+                    {!isCollapsed && <span>Consumos</span>}
+                  </div>
+            </>   )}
       <div className="nav-item" onClick={() => onSelectOption('settings')}>
         <Gear color="white" size={20} />
         {!isCollapsed && <span>Configuración</span>}

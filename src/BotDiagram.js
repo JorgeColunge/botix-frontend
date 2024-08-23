@@ -24,14 +24,14 @@ const initialEdges = [];
 
 const nodeTypes = {
   custom: ({ data }) => (
-    <div>
+    <div style={{ backgroundColor: '#FF5733', color: '#fff', padding: '10px', borderRadius: '5px' }}>
       <Handle type="target" position="top" />
       <div>{data.label}</div>
       <Handle type="source" position="bottom" />
     </div>
   ),
   conditional: ({ data }) => (
-    <div>
+    <div style={{ backgroundColor: '#3498DB', color: '#fff', padding: '10px', borderRadius: '5px' }}>
       <Handle type="target" position="top" />
       <div>{data.label}</div>
       <Handle type="source" position="bottom" id="a" style={{ left: '25%' }} />
@@ -39,12 +39,13 @@ const nodeTypes = {
     </div>
   ),
   groupNode: ({ data }) => (
-    <div className="node group">
+    <div className="node group" style={{ backgroundColor: '#2ECC71', color: '#fff', padding: '10px', borderRadius: '5px' }}>
       <Handle type="target" position="top" />
       <div>{data.label}</div>
     </div>
   ),
 };
+
 
 const parseCodeToNodesAndEdges = (code) => {
   const nodes = [];

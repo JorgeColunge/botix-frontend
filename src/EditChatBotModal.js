@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Table, Form, InputGroup, FormControl, Row, Col, Nav, Spinner } from 'react-bootstrap';
+import { ArrowDownCircle, ArrowLeft, ArrowLeftCircle, ArrowRightCircle, ArrowUpCircle } from 'react-bootstrap-icons';
 import axios from 'axios';
 import CodeMirror, { color } from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
@@ -17,7 +18,6 @@ import ReactFlow, {
   applyEdgeChanges,
   MarkerType,
 } from 'reactflow';
-import { ResizableBox } from 'react-resizable';
 import 'reactflow/dist/style.css';
 import './BotDiagram.css';
 
@@ -145,70 +145,30 @@ const GroupNode = ({ id, data }) => {
           <span style={{ lineHeight: '1', fontSize: '16px', marginBottom: '4px' }}>+</span>
         </button>
       </div>
-      <div style={{ position: 'absolute', top: '10px', right: '-40px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'absolute', top: '10px', left: '-40px', display: 'flex', flexDirection: 'column' }}>
         <button
           onClick={decreaseHeight}
-          className="btn btn-primary"
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            marginBottom: '5px',
-          }}
+          className="btn button-custom p-0 m-1"
         >
-          ↑
+        <ArrowUpCircle />
         </button>
         <button
           onClick={increaseHeight}
-          className="btn btn-primary"
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            marginBottom: '5px',
-          }}
+          className="btn button-custom p-0 m-1"
         >
-          ↓
+        <ArrowDownCircle />
         </button>
         <button
           onClick={increaseWidth}
-          className="btn btn-primary"
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            marginBottom: '5px',
-          }}
+          className="btn button-custom p-0 m-1"
         >
-          →
+        <ArrowRightCircle />
         </button>
         <button
           onClick={decreaseWidth}
-          className="btn btn-primary"
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            marginBottom: '5px',
-          }}
+          className="btn button-custom p-0 m-1"
         >
-          ←
+        <ArrowLeftCircle />
         </button>
       </div>
     </div>
@@ -282,7 +242,7 @@ const nodeTypes = {
 };
 
 const EditChatBotModal = ({ show, handleClose, bot }) => {
-  const [selectedTab, setSelectedTab] = useState('Código');
+  const [selectedTab, setSelectedTab] = useState('Diagrama');
   const [code, setCode] = useState('');
   const [nodes, setNodes, onNodesChangeState] = useNodesState([]);
   const [edges, setEdges, onEdgesChangeState] = useEdgesState([]);
@@ -379,8 +339,9 @@ const EditChatBotModal = ({ show, handleClose, bot }) => {
   const [currentState, setCurrentState] = useState({ state: '', description: '' });
   const [showIntentionModal, setShowIntentionModal] = useState(false);
   const [showToolModal, setShowToolModal] = useState(false);
-const [currentNodeId, setCurrentNodeId] = useState(null);
-const [isInternal, setIsInternal] = useState(true);
+  const [currentNodeId, setCurrentNodeId] = useState(null);
+  const [isInternal, setIsInternal] = useState(true);
+
 
 const openToolModal = (nodeId, isInternal) => {
   setCurrentNodeId(nodeId);
@@ -434,7 +395,7 @@ const closeToolModal = () => {
       setCode(codeWithoutWrapper.trim());
   
       if (bot.react_flow) {
-        const { nodes: initialNodesFromCode, edges: initialEdgesFromCode, variables: initialVariables = [] } = JSON.parse(bot.react_flow);
+        const { nodes: initialNodesFromCode, edges: initialEdgesFromCode, variables: initialVariables, assistants: initialAssistants = [] } = JSON.parse(bot.react_flow);
         
         // Filtra duplicados basados en nombre y displayName
         const uniqueVariables = [
@@ -445,6 +406,16 @@ const closeToolModal = () => {
         ].filter((v, index, self) =>
           index === self.findIndex((t) => (
             t.name === v.name && t.displayName === v.displayName
+          ))
+        );
+
+        // Filtrar duplicados para asistentes
+        const uniqueAssistants = [
+          { name: 'Seleccione asistente', displayName: 'Seleccione asistente' },
+          ...initialAssistants
+        ].filter((a, index, self) =>
+          index === self.findIndex((t) => (
+            t.name === a.name && t.displayName === a.displayName && t.model === a.model && t.personality === a.personality
           ))
         );
   
@@ -462,6 +433,7 @@ const closeToolModal = () => {
         setNodes(nodesWithFunctions);
         setEdges(initialEdgesFromCode);
         setVariables(uniqueVariables);
+        setAssistants(uniqueAssistants);
       }
     }
   }, [bot]);
@@ -827,7 +799,7 @@ const generateCodeForIntentions = () => {
   const handleSave = async () => {
     try {
       const fullCode = `${baseHeader}\n${code}\n${baseFooter}`;
-      const reactFlowData = JSON.stringify({ nodes, edges, variables });
+      const reactFlowData = JSON.stringify({ nodes, edges, variables, assistants });
       await axios.put(`${process.env.REACT_APP_API_URL}/api/bots/${bot.id_usuario}`, { codigo: fullCode, react_flow: reactFlowData });
       handleClose();
     } catch (error) {
@@ -1841,6 +1813,13 @@ const generateCodeForIntentions = () => {
       alert('Ya existe un asistente con ese nombre. Por favor, elige otro nombre.');
       return;
     }
+
+    if (assistants.some(assistant => assistant.name === assistantName)) {
+      alert('Ya existe un asistente con ese nombre. Por favor, elige otro nombre.');
+      return;
+    }
+  
+    const newAssistant = { name: assistantName, displayName: assistantName, model: gptModel, personality };
   
     const newNode = {
       id: `${nodes.length + 1}`,
@@ -1913,7 +1892,7 @@ const generateCodeForIntentions = () => {
     generateCodeFromNodes(updatedNodes, updatedEdges);
   
     // Insertar el nuevo asistente en la lista de asistentes
-    setAssistants([...assistants, { name: assistantName, displayName: assistantName }]);
+    setAssistants([...assistants, newAssistant]);
   
     setShowGptAssistantModal(false);
     setAssistantName('');
@@ -3064,10 +3043,20 @@ const generateNodeCode = (node, indent = '') => {
           <Col md={2}>
             <Nav variant="pills" className="flex-column">
               <Nav.Item>
-                <Nav.Link active={selectedTab === 'Código'} onClick={() => setSelectedTab('Código')}>Código</Nav.Link>
+                <button
+                  className={`button-tool ${selectedTab === 'Diagrama' ? 'active' : ''}`}
+                  onClick={() => setSelectedTab('Diagrama')}
+                >
+                  Diagrama
+                </button>
               </Nav.Item>
               <Nav.Item>
-                <Nav.Link active={selectedTab === 'Diagrama'} onClick={() => setSelectedTab('Diagrama')}>Diagrama</Nav.Link>
+                <button
+                  className={`button-tool ${selectedTab === 'Código' ? 'active' : ''}`}
+                  onClick={() => setSelectedTab('Código')}
+                >
+                  Código
+                </button>
               </Nav.Item>
             </Nav>
           </Col>

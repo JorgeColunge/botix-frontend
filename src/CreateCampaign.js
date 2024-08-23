@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Container, Row, Col, Button, Form, Card, InputGroup, FormControl, Table, Collapse } from 'react-bootstrap';
 import axios from 'axios';
 import './CreateCampaign.css';
@@ -7,6 +7,8 @@ import { PersonCircle, Robot } from 'react-bootstrap-icons';
 import TemplatePreview from './TemplatePreview';
 
 const CreateCampaign = () => {
+  const { id_plantilla } = useParams();
+
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [filteredTemplates, setFilteredTemplates] = useState([]);
@@ -16,7 +18,7 @@ const CreateCampaign = () => {
   const [selectedContacts, setSelectedContacts] = useState([]);
   const [name, setName] = useState('');
   const [objective, setObjective] = useState('');
-  const [templateId, setTemplateId] = useState('');
+  const [templateId, setTemplateId] = useState(id_plantilla || '');
   const [scheduledLaunch, setScheduledLaunch] = useState('');
   const [type, setType] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,6 +62,7 @@ const CreateCampaign = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [filteredBots, setFilteredBots] = useState([]);
 
+
   useEffect(() => {
     const fetchTemplates = async () => {
       const companyId = localStorage.getItem('company_id');
@@ -76,6 +79,12 @@ const CreateCampaign = () => {
         });
         setTemplates(response.data);
         setFilteredTemplates(response.data);
+        console.log("plantillas: ", response.data)
+        if (id_plantilla) {
+             const templete = response.data.find(temp => temp.id == id_plantilla)
+             setSelectedTemplate(templete)
+             setTemplateSearchTerm(templete.nombre)
+        }
       } catch (error) {
         console.error('Error fetching templates:', error);
       }
@@ -187,6 +196,7 @@ const CreateCampaign = () => {
     fetchTemplate();
   }, [templateId]);
 
+
   const handleCreateCampaign = async () => {
     const companyId = localStorage.getItem('company_id');
     const token = localStorage.getItem('token');
@@ -251,6 +261,7 @@ const CreateCampaign = () => {
 
   const handleTemplateSearchChange = (e) => {
     const searchTerm = e.target.value.toLowerCase().replace(/\s+/g, '_');
+    console.log(e.target.value)
     setTemplateSearchTerm(searchTerm);
     if (searchTerm === '') {
       setFilteredTemplates(templates);
@@ -351,6 +362,7 @@ const CreateCampaign = () => {
   };
 
   const handleTemplateSelect = (template) => {
+    console.log(template)
     setSelectedTemplate(template);
     setTemplateId(template.id);
     setTemplateSearchTerm(template.nombre);

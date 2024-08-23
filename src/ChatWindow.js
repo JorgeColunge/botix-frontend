@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
-import { Button, DropdownButton, Dropdown, useAccordionButton } from 'react-bootstrap';
+import React, { useEffect, useRef, useCallback, useState, useContext } from 'react';
+import { Button, DropdownButton, Dropdown, useAccordionButton, NavDropdown, Tooltip } from 'react-bootstrap';
 import { PersonCircle, TelephoneFill, EnvelopeFill, Globe, Instagram, Facebook, Linkedin, Twitter, Tiktok, Youtube, Check, CheckAll, Clock } from 'react-bootstrap-icons';
 import './App.css';
 import EditContactModal from './EditContactModal';
@@ -12,6 +12,8 @@ import axios from 'axios';
 import EmojiPicker from 'emoji-picker-react';
 import { usePopper } from 'react-popper';
 import TemplateModal from './TemplateModal';
+import { AppContext } from './context';
+import { useMediaQuery } from 'react-responsive';
 
 function ChatWindow() {
   const { currentConversation, messages, loadMessages, socket, isConnected, setMessages, setCurrentConversation, updateContact, allUsers, handleResponsibleChange, handleEndConversation, phases } = useConversations();
@@ -30,6 +32,15 @@ function ChatWindow() {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [cursorPosition, setCursorPosition] = useState(null);
+  const {state, setConversacionActual} = useContext(AppContext)
+
+  const isMobile = useMediaQuery({ maxWidth: 767 });
+
+  const [currentMessage, setCurrentMessage] = useState(messages);
+
+  useEffect(() => {
+    setCurrentMessage(messages);
+  }, [messages]);
 
   useEffect(() => {
     if (isConnected) {
@@ -40,6 +51,7 @@ function ChatWindow() {
   }, [isConnected]);
 
   useEffect(() => {
+ 
     if (!socket) return;
     const newMessageHandler = (newMessage) => {
       console.log('Nuevo mensaje recibido:', newMessage);
@@ -64,7 +76,7 @@ function ChatWindow() {
     return () => {
       socket.off('newMessage', newMessageHandler);
     };
-  }, [socket, currentConversation, setMessages, setCurrentConversation]);
+  }, [socket, currentConversation, setMessages, setCurrentConversation, setCurrentMessage]);
 
   const handleEditContactChange = (event) => {
     const { name, value } = event.target;
@@ -142,7 +154,7 @@ function ChatWindow() {
               </DropdownButton>
             </div>
             <div className="d-flex align-items-center">
-            <div className="responsable mr-3">
+            { !isMobile ? ( <div className="responsable mr-3">
                 <strong>Responsable: </strong>
                 <span>{`${currentConversation.responsable_nombre} ${currentConversation.responsable_apellido}` || 'No asignado'}</span>
                 <DropdownButton className="custom-dropdown" title="" variant="light">
@@ -160,7 +172,29 @@ function ChatWindow() {
                     Finalizar Conversación
                   </Dropdown.Item>
                 </DropdownButton>
+              </div>) : (
+                <div className="responsable mr-3 mt-2">
+                <NavDropdown
+                    id="nav-dropdown-dark-example"
+                    title="R"
+                    menuVariant="white"
+                  >
+                  {allUsers.map((user) => (
+                    <Dropdown.Item 
+                      key={user.id_usuario} 
+                      onClick={() => handleResponsibleChange(user.id_usuario, currentConversation.id_usuario)}>
+                      {user.nombre} {user.apellido}
+                    </Dropdown.Item>
+                  ))}
+                  <hr></hr>
+                  <Dropdown.Item  className='text-danger'
+                    key="finalizar-conversacion" 
+                    onClick={() => handleEndConversation(currentConversation.conversation_id)}>
+                    Finalizar Conversación
+                  </Dropdown.Item>
+                  </NavDropdown>
               </div>
+              )}
               <div className="icons-profile ml-2">
                 {currentConversation.phone_number && <a href={`tel:${currentConversation.phone_number}`} target="_blank"><TelephoneFill /></a>}
                 {currentConversation.email && <a href={`mailto:${currentConversation.email}`} target="_blank"><EnvelopeFill /></a>}
@@ -303,17 +337,30 @@ function ChatWindow() {
     }
   };
 
-  const isLastMessageOlderThan24Hours = () => {
-    if (!currentConversation || !messages[currentConversation.conversation_id] || messages[currentConversation.conversation_id].length === 0) {
-      return false;
-    }
+   const isLastMessageOlderThan24Hours  =  useCallback(() => {
+      if (!currentConversation || !currentMessage[currentConversation.conversation_id] || currentMessage[currentConversation.conversation_id].length === 0) {
+        return true; // Si no hay conversación o mensajes, consideramos que han pasado más de 24 horas.
+      }
   
-    const lastMessageDate = new Date(currentConversation.last_message_time);
-    const now = new Date();
+      // Recorremos los mensajes de la conversación actual
+      const messages = currentMessage[currentConversation.conversation_id];
   
-    return (now - lastMessageDate) > (24 * 60 * 60 * 1000); // 24 hours in milliseconds
-  };
+      // Buscar el primer mensaje que sea de tipo "message"
+      const firstMessage = messages.find(msg => msg.type === "message");
+  
+      // Si no hay ningún mensaje de tipo "message", asumimos que han pasado más de 24 horas
+      if (!firstMessage) {
+        return true;
+      }
+  
+      const messageDate = new Date(firstMessage.timestamp); // Asumiendo que el campo con la fecha es 'timestamp'
+      const now = new Date();
+  
+      // Retornar true si han pasado más de 24 horas desde el primer mensaje de tipo "message"
+      return (now.getTime() - messageDate.getTime()) >= (24 * 60 * 60 * 1000); // 24 horas en milisegundos
+    }, [currentConversation, currentMessage]); // Dependencias: se actualiza cuando cambian estos valores
 
+  
   const handleOpenTemplateModal = () => {
     setShowTemplateModal(true);
   };
@@ -322,7 +369,21 @@ function ChatWindow() {
     const [referenceElement, setReferenceElement] = useState(null);
     const [popperElement, setPopperElement] = useState(null);
     const { styles, attributes } = usePopper(referenceElement, popperElement, {
-      placement: 'top',
+      placement: 'top-start', // O 'bottom-start' si prefieres que aparezca abajo
+      modifiers: [
+        {
+          name: 'offset',
+          options: {
+            offset: [30, 15], // Ajusta el desplazamiento según sea necesario
+          },
+        },
+        {
+          name: 'preventOverflow',
+          options: {
+            boundary: 'viewport', // Asegura que el popper no se salga de la vista
+          },
+        },
+      ],
     });
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const textInputRef = useRef(null);
@@ -364,23 +425,45 @@ function ChatWindow() {
 
     const handleSendMessage = async () => {
       if (!currentConversation || !messageText.trim()) return;
+    
       const textToSend = messageText;
-      setMessageText(''); // Clear the text field immediately
+      console.log("Texto a enviar:", textToSend);
+    
+      setMessageText('');
+    
+      var currentSend = {
+        ...currentConversation,
+        last_message_time: new Date().toISOString()
+      };
+    
+      console.log("Datos de currentSend:", currentSend);
+    
       try {
+        setConversacionActual({...currentSend, position_scroll: false})
+        console.log("Intentando enviar mensaje...");
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-text`, {
-          phone: currentConversation.phone_number,
+          phone: currentSend.phone_number,
           messageText: textToSend,
-          conversationId: currentConversation.conversation_id
+          conversationId: currentSend.conversation_id
         });
-        console.log('Message sent successfully:', response.data);
-        setMessages(prevMessages => ({
-          ...prevMessages,
-          [currentConversation.conversation_id]: [...prevMessages[currentConversation.conversation_id], response.data.data]
-        }));
+    
+        console.log('Respuesta recibida:', response);
+    
+        if (response.data) {
+          console.log('Message sent successfullyddddddddddddddd:', response.data);
+          setMessages(prevMessages => ({
+            ...prevMessages,
+            [currentSend.conversation_id]: [...prevMessages[currentSend.conversation_id], response.data.data]
+          }));
+        } else {
+          console.log("La respuesta no tiene datos:", response);
+        }
+    
       } catch (error) {
-        console.error('Error sending message:', error);
+        console.error('Error al enviar el mensaje:', error.response ? error.response.data : error.message);
       }
     };
+    
 
     const handleKeyDown = (event) => {
       if (event.key === 'Enter' && event.shiftKey) {
@@ -427,47 +510,22 @@ function ChatWindow() {
 
     return (
       <div className="reply-bar-container">
-        <Button variant="light" className="reply-button" onClick={handleOpenTemplateModal}>
-          <i className="far fa-file-alt"></i> {/* Icono de la plantilla */}
-        </Button>
+        {!isMobile && (
+          <Button variant="light" className="reply-button p-0 m-0" onClick={handleOpenTemplateModal}>
+            <i className="far fa-file-alt"></i> {/* Icono de la plantilla */}
+          </Button>
+        )}
+  
 
-        <Button variant="light" className="reply-button" onClick={handleEmojiClick} ref={setReferenceElement}>
-          <i className="far fa-smile"></i> {/* Icono de la cara feliz */}
-        </Button>
 
         {showEmojiPicker && (
-          <div ref={setPopperElement} style={styles.popper} {...attributes.popper}>
+          <div style={styles.popper} {...attributes.popper}>
             <EmojiPicker onEmojiClick={onEmojiClick} />
           </div>
         )}
-
-        <Button variant="light" className="reply-button" onClick={handleAttachClick}>
-          <i className="fas fa-paperclip"></i> {/* Icono del clip */}
-        </Button>
-
-        {fileMenuVisible && (
-          <div ref={setPopperElement} style={styles.popper}>
-            <div>
-              <Button variant="light" onClick={() => handleFileMenuClick('image/*')}>Cargar Imagen</Button>
-              <Button variant="light" onClick={() => handleFileMenuClick('video/*')}>Cargar Video</Button>
-              <Button variant="light" onClick={() => handleFileMenuClick('.pdf,.doc,.docx,.txt')}>Cargar Documento</Button>
-            </div>
-          </div>
-        )}
-
-        <input
-          type="file"
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-          accept={fileInputType}
-          onChange={(e) => {
-            if (fileInputType === 'image/*') handleFileUpload(e);
-            else if (fileInputType === 'video/*') handleVideoUpload(e);
-            else if (fileInputType === '.pdf,.doc,.docx,.txt') handleDocumentUpload(e);
-            resetFileInput();
-          }}
-        />
-
+  
+  
+  
         <TextareaAutosize
           className="message-input"
           placeholder="Escribe un mensaje aquí..."
@@ -476,9 +534,28 @@ function ChatWindow() {
           onKeyDown={handleKeyDown}
           maxRows={4}
           ref={textInputRef}
-          disabled={isLastMessageOlderThan24Hours()} // Aquí deshabilitamos la barra si el último mensaje es mayor a 24 horas
+          disabled={isLastMessageOlderThan24Hours()}
         />
-
+        
+        {fileMenuVisible && (
+          <div ref={setPopperElement} style={styles.popper} {...attributes.popper}>
+            <div className='d-flex flex-column'>
+              <Button variant="light" onClick={() => handleFileMenuClick('image/*')}>Cargar Imagen</Button>
+              <Button variant="light" onClick={() => handleFileMenuClick('video/*')}>Cargar Video</Button>
+              <Button variant="light" onClick={() => handleFileMenuClick('.pdf,.doc,.docx,.txt')}>Cargar Documento</Button>
+              {isMobile && (
+                <Button variant="light" onClick={() => handleOpenTemplateModal()}>Cargar Plantillas</Button>
+              )}
+            </div>
+          </div>
+        )}
+        <Button variant="light" className="reply-button" onClick={handleAttachClick}>
+          <i className="fas fa-paperclip"></i> {/* Icono del clip */}
+        </Button>
+        <Button variant="light" className="reply-button" onClick={handleEmojiClick} ref={setReferenceElement}>
+          <i className="far fa-smile"></i> {/* Icono de la cara feliz */}
+        </Button>
+        
         <AudioRecorder onSend={handleSendAudio} />
       </div>
     );
@@ -526,19 +603,24 @@ function ChatWindow() {
   }, [handleScroll]);
 
   useEffect(() => {
-    if (lastMessageId && messagesEndRef.current) {
+
+    if (lastMessageId && messagesEndRef.current && state.conversacion_Actual.position_scroll == false) {
+      console.log("los mensajes son: ", messages)
       requestAnimationFrame(() => {
         const element = document.getElementById(`msg-${lastMessageId}`);
+        setConversacionActual({...state.conversacion_Actual, position_scroll: true})
         if (element) {
           const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
           if (scrollPosition !== undefined) {
             messagesEndRef.current.scrollTop = scrollPosition;
+            console.log("position", scrollPosition)
           }
           console.log('Scrolling to message ID:', lastMessageId);
         }
       });
     }
   }, [lastMessageId, messages]);
+
 
   useEffect(() => {
     if (currentConversation && currentConversation.conversation_id) {
@@ -628,7 +710,7 @@ function ChatWindow() {
     return <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>Selecciona una conversación</div>;
   }
 
-  const groupedMessages = groupMessagesByDate(messages[currentConversation.conversation_id] || []);
+  const groupedMessages = groupMessagesByDate(currentMessage[currentConversation.conversation_id] || []);
   const sortedDates = Object.keys(groupedMessages).sort((b, a) => new Date(b) - new Date(a));
 
   const getFileIcon = (fileName) => {
@@ -715,7 +797,7 @@ function ChatWindow() {
       <div className="chat-window-container">
         <ContactInfoBar />
         <EditContactModal show={showEditModal} onHide={() => setShowEditModal(false)} contact={currentConversation} socket={socket} />
-        <div className="messages-container" ref={messagesEndRef}>
+        <div className="messages-container" ref={messagesEndRef} >
           {sortedDates.map((date) => (
             <React.Fragment key={date}>
               <div className="date-header">{formatDate(date)}</div>

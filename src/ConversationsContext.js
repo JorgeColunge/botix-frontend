@@ -1,5 +1,8 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import axios from 'axios';
+import { AppContext } from './context';
+import { Spinner } from 'react-bootstrap';
+
 
 const ConversationsContext = createContext();
 
@@ -44,7 +47,8 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
   const [userPrivileges, setUserPrivileges] = useState([]);
   const [phases, setPhases] = useState({});
   const [defaultUser, setDefaultUser] = useState(null);
-
+  const {state} = useContext(AppContext)
+  
   const loadMessages = async (conversationId, offset = 0) => {
     setLoading(true);
     try {
@@ -295,11 +299,12 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
     };
   }, [socket, setCurrentConversation, setConversations]);
 
+
+
   useEffect(() => {
     if (!socket) return;
   
     const newMessageHandler = async (newMessage) => {
-      console.log('Nuevo mensaje recibido:', newMessage);
   
       const userId = localStorage.getItem("user_id");
       const userCompanyId = localStorage.getItem("company_id");
@@ -316,17 +321,17 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
         const isCurrentActive = currentConversation && currentConversation.conversation_id === newMessage.conversationId;
   
         if (isCurrentActive) {
-          console.log('Actualizando la conversación actual con el nuevo mensaje.');
           resetUnreadMessages(newMessage.conversationId);
           setCurrentConversation(prev => ({
             ...prev,
             last_message: newMessage.text,
-            last_message_time: newMessage.timestamp ? new Date(newMessage.timestamp).toLocaleString() : 'Unknown',
+            last_message_time:  newMessage.timestamp ? newMessage.timestamp : state.conversacion_Actual.last_message_time,
             unread_messages: newMessage.unread_messages,
             phase_id: prev.phase_id // Asegurar que phase_id se mantenga
-          }));
+          })
+        );
         }
-  
+
         const conversationExists = conversations.some(convo => convo.conversation_id === newMessage.conversationId);
   
         if (!conversationExists) {
@@ -334,6 +339,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
             const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/conversations/${newMessage.conversationId}`);
             const newConversation = response.data;
             if (newConversation) {
+              console.log("Datos de supuesto mensaje:", newConversation)
               setConversations(prevConversations => {
                 const updatedConversations = [...prevConversations, newConversation];
                 return Array.from(new Set(updatedConversations.map(convo => convo.conversation_id)))
@@ -349,7 +355,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
               return {
                 ...convo,
                 last_message: newMessage.text,
-                last_message_time: newMessage.timestamp ? new Date(newMessage.timestamp).toLocaleString() : 'Unknown',
+                last_message_time: newMessage.timestamp ? newMessage.timestamp : state.conversacion_Actual.last_message_time,
                 unread_messages: newMessage.unread_messages
               };
             }
@@ -380,10 +386,9 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
     return () => {
       socket.off('newMessage', newMessageHandler);
     };
-  }, [socket, currentConversation, setCurrentConversation, setConversations, setMessages, activeConversation, userHasInteracted, userPrivileges]);
+  }, [socket, currentConversation, setCurrentConversation, setConversations, setMessages, activeConversation, userHasInteracted, userPrivileges, state]);
   
 
-  
   const messageStatusUpdateHandler = ({ messageId, status }) => {
       console.log(`nuevo estado recibido ${status} para el mensaje ${messageId}`);
       setMessages(prevMessages => {
@@ -506,28 +511,40 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
 
     fetchUsers();
   }, []);
-
+   
   return (
-    <ConversationsContext.Provider value={{
-      conversations,
-      setConversations,
-      currentConversation,
-      setCurrentConversation,
-      messages,
-      setMessages,
-      loading,
-      loadMessages,
-      activeConversation,
-      userHasInteracted,
-      setActiveConversation,
-      updateContact,
-      allUsers,
-      handleResponsibleChange,
-      handleEndConversation,
-      phases
-    }}>
-      {children}
-    </ConversationsContext.Provider>
+    conversations.length == 0 ? (
+        <div className="d-flex justify-content-center align-items-center vh-100">
+          <div className="text-center">
+            <Spinner animation="border" variant="success" role="status">
+              <span className="visually-hidden">Cargando conversaciones...</span>
+            </Spinner>
+            <div>Cargando conversaciones</div>
+          </div>
+        </div>
+    ) : (
+
+      <ConversationsContext.Provider value={{
+        conversations,
+        setConversations,
+        currentConversation,
+        setCurrentConversation,
+        messages,
+        setMessages,
+        loading,
+        loadMessages,
+        activeConversation,
+        userHasInteracted,
+        setActiveConversation,
+        updateContact,
+        allUsers,
+        handleResponsibleChange,
+        handleEndConversation,
+        phases
+      }}>
+        {children}
+      </ConversationsContext.Provider>
+    )
   );
 };
 

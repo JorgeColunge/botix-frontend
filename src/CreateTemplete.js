@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Row, Col, Form, Button, Modal, Spinner, ButtonGroup } from 'react-bootstrap';
 import { Code, TypeBold, TypeItalic, TypeStrikethrough } from 'react-bootstrap-icons'
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 import './CreateTemplate.css';
 
@@ -165,7 +165,46 @@ const CreateTemplate = () => {
   const [buttons, setButtons] = useState([]);
 
   const navigate = useNavigate();
+  const {id_plantilla} = useParams();
 
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      if (id_plantilla) {
+        const companyId = localStorage.getItem('company_id');
+        const token = localStorage.getItem('token');
+        if (!companyId || !token) {
+          console.error('No company ID or token found');
+          return;
+        }
+  
+        try {
+          const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/templates`, {
+            params: { company_id: companyId },
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (id_plantilla) {
+               const templete = response.data.find(temp => temp.id == id_plantilla)
+               setCategory(templete.type)
+               setName(templete.nombre)
+               setLanguage(templete.language)
+               setHeaderType(templete.header_type)
+               setBodyText(templete.body_text)
+               setFooterText(templete.footer)
+               const newBodyExample = templete.bodyVariables.reduce((acc, variable, index) => {
+                acc[`{{${index + 1}}}`] = variable.example;
+                return acc;
+              }, {});
+              console.log(templete)
+              setBodyExamples(newBodyExample); 
+          }
+        } catch (error) {
+          console.error('Error fetching templates:', error);
+        }
+      }   
+    };
+    fetchTemplates();
+  }, [])
+  
   useEffect(() => {
     socket.on('templateStatusUpdate', ({ templateId, status }) => {
       console.log(`Received templateStatusUpdate for templateId: ${templateId} with status: ${status}`);
@@ -321,14 +360,16 @@ const CreateTemplate = () => {
       setLoading(false);
       return;
     }
-  
+   console.log(templateData)
+   console.log("datos a conocer:", componentsWithSourceAndVariable)
+
+   if (id_plantilla) {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/create-template`, templateData, {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/edit-template`, {...templateData, id_plantilla}, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-  
       console.log('Template created successfully:', response.data);
   
       if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(mediaType.toUpperCase())) {
@@ -347,6 +388,33 @@ const CreateTemplate = () => {
       setLoading(false);
       setShowModal(true);
     }
+   }else{
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/create-template`, templateData, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      console.log('Template created successfully:', response.data);
+  
+      if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(mediaType.toUpperCase())) {
+        setResponseMessage('Plantilla almacenada con éxito. Ahora debe crear la misma plantilla con las mismas características en WhatsApp.');
+      } else {
+        setResponseMessage(`Estado de la Plantilla: ${response.data.status}`);
+      }
+  
+      setTemplateStatus(response.data.status);
+      setLoading(false);
+      setShowModal(true);
+      resetForm();
+    } catch (error) {
+      console.error('Error creating template:', error);
+      setResponseMessage('Error al crear la plantilla. Por favor, inténtelo de nuevo.');
+      setLoading(false);
+      setShowModal(true);
+    }
+   }
   }; 
 
   const resetForm = () => {
@@ -460,8 +528,9 @@ const CreateTemplate = () => {
     setHeaderVariable('');
     setHeaderVariableAdded(false);
   };
-
+ 
   const addBodyVariable = () => {
+    
     const variableCount = Object.keys(bodyExamples).length + 1;
     setBodyText(`${bodyText} {{${variableCount}}}`);
     setBodyExamples({ ...bodyExamples, [`{{${variableCount}}}`]: '' });
@@ -476,8 +545,8 @@ const CreateTemplate = () => {
   const updateBodySource = (variable, value) => {
     setBodySources({ ...bodySources, [variable]: value });
   };
-
   const updateBodyVariable = (variable, value) => {
+    console.log("cariables app", variable, value)
     setBodyVariables({ ...bodyVariables, [variable]: value });
   };
 
@@ -687,7 +756,6 @@ const CreateTemplate = () => {
     setButtons(newButtons);
   };
 
-
   return (
     <Container fluid>
       {loading && (
@@ -718,7 +786,7 @@ const CreateTemplate = () => {
               <Form.Label>Categoría:</Form.Label>
               <Form.Select value={category} onChange={(e) => setCategory(e.target.value)}>
                 <option value="">Seleccionar Categoría</option>
-                <option value="Marketing">Marketing</option>
+                <option value="MARKETING">Marketing</option>
                 <option value="UTILITY">Utilidad</option>
               </Form.Select>
             </Form.Group>
@@ -747,9 +815,9 @@ const CreateTemplate = () => {
               <Form.Label>Tipo de Encabezado:</Form.Label>
               <Form.Select value={headerType} onChange={(e) => setHeaderType(e.target.value)}>
                 <option value="none">Ninguno</option>
-                <option value="text">Mensaje de texto</option>
-                <option value="media">Medios (Beta)</option>
-                <option value="location">Ubicación</option>
+                <option value="TEXT">Mensaje de texto</option>
+                <option value="MEDIA">Medios (Beta)</option>
+                <option value="LOCATION">Ubicación</option>
               </Form.Select>
             </Form.Group>
             {headerType === 'media' && (
@@ -798,8 +866,8 @@ const CreateTemplate = () => {
                       </Col>
                       <Col>
                         <Form.Group className="mb-3">
-                          <Form.Label>Variable:</Form.Label>
-                          <Form.Select value={headerVariable} onChange={(e) => setHeaderVariable(e.target.value)} required>
+                          <Form.Label>Variables:</Form.Label>
+                          <Form.Select value={headerVariable} onChange={(e) => {setHeaderVariable(e.target.value); console.log(e)}} required>
                             <option value="">Seleccionar Variable</option>
                             {headerSource && sources[headerSource]?.map(variable => (
                               <option key={variable.value} value={variable.value}>{variable.name}</option>
