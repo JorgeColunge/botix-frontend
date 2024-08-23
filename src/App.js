@@ -9,7 +9,6 @@ import CompanyInfo from './CompanyInfo';
 import ContactsTable from './ContactsTable';
 import UsersTable from './UsersTable';
 import FunnelComponent from './Funnel';
-import Campaigns from './Campaigns';
 import CreateTemplate from './CreateTemplete';
 import CreateCampaign from './CreateCampaign';
 import { ConversationsProvider } from './ConversationsContext';
@@ -18,6 +17,7 @@ import './App.css';
 import { PrivateRoute, PublicRoute } from './PrivateRoute';
 import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';
+import { Campaigns } from './Campaigns';
 
 
 function App() {
@@ -164,6 +164,7 @@ function App() {
                       <Route path="/edit-template/:id_plantilla" element={<PrivateRoute><CreateTemplate /></PrivateRoute>} />
                       <Route path="/create-campaign" element={<PrivateRoute><CreateCampaign /></PrivateRoute>} />
                       <Route path="/create-campaign/:id_plantilla" element={<PrivateRoute><CreateCampaign /></PrivateRoute>} />
+                      <Route path="/edit-campaign/:id_camp" element={<PrivateRoute><CreateCampaign /></PrivateRoute>} />
                       <Route path="*" element={<PrivateRoute><CompanyInfo /></PrivateRoute>} />
                 </Routes>
             </Row>

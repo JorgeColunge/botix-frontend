@@ -2,6 +2,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import './app/globals.css'
 import Root from './Root';
 import reportWebVitals from './reportWebVitals';
 import { AppProvider } from './context';

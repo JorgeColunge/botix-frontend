@@ -8,16 +8,19 @@ export const AppProvider = ({ children }) => {
       position_scroll: false
     },
     status: false,
+    campañas: [],
+    plantillas: [],
   });
 
   const setConversacionActual = (conversacion_Actual) => {
     setState((prevState) => ({ ...prevState, conversacion_Actual }));
   };
   const setStatus = (status) => setState((prevState) => ({ ...prevState, status }));
-
+  const setCampaigns = (campañas) => setState((prevState) => ({ ...prevState, campañas }));
+  const setTemplates = (plantillas) => setState((prevState) => ({ ...prevState, plantillas }));
 
   return (
-    <AppContext.Provider value={{ state, setConversacionActual, setStatus,  }}>
+    <AppContext.Provider value={{ state, setConversacionActual, setStatus, setCampaigns, setTemplates }}>
       {children}
     </AppContext.Provider>
   );

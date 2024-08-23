@@ -7,7 +7,7 @@ import ModalComponent from './modalComponet';
 import AudioPlayer from './audioPlayer';
 import { useConversations } from './ConversationsContext';
 import TextareaAutosize from 'react-textarea-autosize';
-import AudioRecorder from './AudioRecorder';
+import {AudioRecorder} from './AudioRecorder';
 import axios from 'axios';
 import EmojiPicker from 'emoji-picker-react';
 import { usePopper } from 'react-popper';

@@ -4,7 +4,7 @@ import { MicFill, StopFill, PauseFill, PlayFill, TrashFill, SendFill, ArrowClock
 import axios from 'axios';
 import './App.css';
 
-const AudioRecorder = ({ onSend }) => {
+export const AudioRecorder = ({ onSend }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
@@ -122,5 +122,3 @@ const AudioRecorder = ({ onSend }) => {
     </div>
   );
 };
-
-export default AudioRecorder;
