@@ -25,9 +25,9 @@ const TemplatePreview = ({ template }) => {
           <div className="message">
             <div className="header">
               {template.header_type === 'TEXT' && <div><strong>{replaceVariables(template.header_text, template.headerVariables)}</strong></div>}
-              {template.header_type === 'IMAGE' && template.medio && <img src={`${process.env.REACT_APP_API_URL}${template.medio}`} alt="Header" style={{ width: '100%' }} />}
-              {template.header_type === 'VIDEO' && template.medio && <video src={`${process.env.REACT_APP_API_URL}${template.medio}`} controls style={{ width: '100%' }} />}
-              {template.header_type === 'DOCUMENT' && template.medio && (
+              {template.header_type === 'MEDIA' && template.type_medio == 'IMAGE' && template.medio && <img src={`${process.env.REACT_APP_API_URL}${template.medio}`} alt="Header" style={{ width: '100%' }} />}
+              {template.header_type === 'MEDIA' && template.type_medio == 'VIDEO' && template.medio && <video src={`${process.env.REACT_APP_API_URL}${template.medio}`} controls style={{ width: '100%' }} />}
+              {template.header_type === 'MEDIA' && template.type_medio == 'DOCUMENT' && template.medio && (
                 <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                   <iframe 
                     src={`${process.env.REACT_APP_API_URL}${template.medio}`} 

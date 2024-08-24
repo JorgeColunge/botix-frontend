@@ -93,3 +93,15 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+.floating-svg {
+  position: absolute;
+  right: 5vw; /* Ajusta según la posición deseada */
+  bottom: 10vh;
+  border: solid;
+  border-radius: 50%;
+  cursor: pointer;
+  color: rgb(48, 53, 58);
+}
+.new-message{
+  background-color: rgb(48, 53, 58) 
+}

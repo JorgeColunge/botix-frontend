@@ -194,15 +194,60 @@ const CreateTemplate = () => {
                setFooterText(templete.footer)
                setMediaType(templete.type_medio)
                const newBodyExample = templete.bodyVariables.reduce((acc, variable, index) => {
-                acc[`{{${index + 1}}}`] = variable.example;
+                acc[`{{${index + 1}}}`] = variable?.example;
                 return acc;
               }, {});
-              setHeaderExample(templete.headerVariables[0].example)
-              console.log(templete.headerVariables[0].example)
+              setHeaderExample(templete.headerVariables[0]?.example)
+
               setBodyExamples(newBodyExample);
               if (templete.header_text) {
                 setHeaderVariableAdded(true);
-              } 
+              }
+              const buttonsData = templete.buttonVariables.map((btn) => {
+                let button = {};
+              
+                switch (btn.variable) {
+                  case 'QUICK_REPLY':
+                    button = {
+                      text: btn.name,
+                      type: btn.variable,
+                      url: '',
+                      phoneCode: '',
+                      urlExample: '',
+                      urlType: ''
+                    };
+                    break;
+              
+                  case 'PHONE_NUMBER':
+                    button = {
+                      text: btn.name,
+                      type: btn.variable,
+                      url: '',
+                      phoneCode: '',
+                      urlExample: '',
+                      urlType: ''
+                    };
+                    break;
+              
+                  case 'URL':
+                    button = {
+                      text: btn.name,
+                      type: btn.variable,
+                      url: '',
+                      phoneCode: '',
+                      urlExample: '',
+                      urlType: ''
+                    };
+                    break;
+              
+                  default:
+                    break;
+                }
+              
+                return button;
+              });
+              
+              setButtons(buttonsData) 
           }
         } catch (error) {
           console.error('Error fetching templates:', error);
@@ -211,7 +256,7 @@ const CreateTemplate = () => {
     };
     fetchTemplates();
   }, [])
-console.log(headerExample)
+
   useEffect(() => {
     socket.on('templateStatusUpdate', ({ templateId, status }) => {
       console.log(`Received templateStatusUpdate for templateId: ${templateId} with status: ${status}`);
@@ -457,7 +502,7 @@ console.log(headerExample)
     setCustomValidity(false);
     setValidityPeriod('');
   };
-
+ 
   const handleMediaChange = async (e, mediaType) => {
     const file = e.target.files[0];
     if (mediaType === 'image') {
@@ -682,6 +727,7 @@ console.log(headerExample)
   const phoneButtonsCount = buttons.filter(button => button.type === 'PHONE_NUMBER').length;
 
   const addButton = (type) => {
+    console.log("tipo:", type)
     const urlButtons = buttons.filter(button => button.type === 'URL').length;
     const phoneButtons = buttons.filter(button => button.type === 'PHONE_NUMBER').length;
 
@@ -721,7 +767,6 @@ console.log(headerExample)
     newButtons[index].type = type;
     setButtons(newButtons);
   };
-
   const handleButtonTextChange = (index, text) => {
     const newButtons = [...buttons];
     newButtons[index].text = text;
@@ -831,9 +876,9 @@ console.log(headerExample)
               <Form.Group className="mb-3">
                 <Form.Label>Tipo de Medio:</Form.Label>
                 <Form.Select value={mediaType} onChange={(e) => setMediaType(e.target.value)}>
-                  <option value="image">Imagen</option>
-                  <option value="video">Video</option>
-                  <option value="document">Documento</option>
+                  <option value="IMAGE">Imagen</option>
+                  <option value="VIDEO">Video</option>
+                  <option value="DOCUMENT">Documento</option>
                 </Form.Select>
                 <p className="text-warning">
                   Este proceso está en etapa beta. Debes crear también la plantilla en WhatsApp con el mismo nombre y la misma estructura.
@@ -894,7 +939,7 @@ console.log(headerExample)
                 )}
               </>
             )}
-            {headerType === 'MEDIA' && mediaType === 'image' && (
+            {headerType === 'MEDIA' && mediaType === 'IMAGE' && (
               <Form.Group className="mb-3">
                 <Form.Label>Imagen de Encabezado:</Form.Label>
                 <Form.Control type="file" accept="image/*" onChange={(e) => handleMediaChange(e, 'image')} />
@@ -906,7 +951,7 @@ console.log(headerExample)
                 )}
               </Form.Group>
             )}
-            {headerType === 'MEDIA' && mediaType === 'video' && (
+            {headerType === 'MEDIA' && mediaType === 'VIDEO' && (
               <Form.Group className="mb-3">
                 <Form.Label>Video de Encabezado:</Form.Label>
                 <Form.Control type="file" accept="video/*" onChange={(e) => handleMediaChange(e, 'video')} />
@@ -918,7 +963,7 @@ console.log(headerExample)
                 )}
               </Form.Group>
             )}
-            {headerType === 'MEDIA' && mediaType === 'document' && (
+            {headerType === 'MEDIA' && mediaType === 'DOCUMENT' && (
               <Form.Group className="mb-3">
                 <Form.Label>Documento de Encabezado:</Form.Label>
                 <Form.Control type="file" accept=".pdf,.doc,.docx" onChange={(e) => handleMediaChange(e, 'document')} />
