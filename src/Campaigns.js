@@ -226,8 +226,12 @@ export const Campaigns = () => {
       });
       alert('Campaign launched successfully');
     } catch (error) {
-      console.error('Error launching campaign:', error);
-      alert('Error launching campaign');
+      Swal.fire({
+        title: "Error",
+        text: `Error al eliminar Plantilla.
+        Error: ${error}`,
+        icon: "error"
+      });
     }
   };
 
@@ -245,6 +249,15 @@ export const Campaigns = () => {
       (filterType ? template.type === filterType : true)
     );
   });
+
+  const formatTimeLeft = (timeLeft) => {
+    const days = timeLeft.days > 0 ? String(timeLeft.days).padStart(2, '0') : '00';
+    const hours = String(timeLeft.hours).padStart(2, '0');
+    const minutes = String(timeLeft.minutes).padStart(2, '0');
+    const seconds = String(timeLeft.seconds).padStart(2, '0');
+  
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  };
 
   const calculateTimeLeft = (scheduledLaunch) => {
     const launchTime = moment(scheduledLaunch);
@@ -287,15 +300,22 @@ export const Campaigns = () => {
       );
     }
 
-    // Mostrar la cuenta regresiva
-    return (
-      <span>
-        {timeLeft.days > 0 && `${timeLeft.days}d `}
-        {timeLeft.hours > 0 && `${timeLeft.hours}h `}
-        {timeLeft.minutes > 0 && `${timeLeft.minutes}m `}
-        {timeLeft.seconds}s
-      </span>
-    );
+  // Mostrar la cuenta regresiva con un formato fijo
+  const formattedTimeLeft = formatTimeLeft(timeLeft);
+
+  return (
+    <Button
+      variant="primary"
+      disabled
+      style={{
+        display: 'inline-block',
+        width: `90%`,
+        textAlign: 'center',
+      }}
+    >
+      {formattedTimeLeft}
+    </Button>
+  );
   };
 
   return (
@@ -406,9 +426,9 @@ export const Campaigns = () => {
                       <td>{campaign.type}</td>
                       <td>{campaign.template_name}</td>
                       <td className="d-flex justify-content-between align-items-center">
-                        <Button variant="primary" size="sm" onClick={() => handleLaunchCampaignClick(campaign.id)}>
+                     
                         {renderLaunchButtonOrTimer(campaign)}
-                        </Button>
+                        
                         <DropdownButton id="dropdown-basic-button" className="custom-dropdown-toggle" title={<ThreeDotsVertical />} variant="ghost" size="sm">
                           <Dropdown.Item onClick={() => handleDetailsCampaignClick(campaign)}>
                             Detalles
