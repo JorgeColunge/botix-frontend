@@ -64,7 +64,7 @@ const CreateCampaign = () => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [filteredBots, setFilteredBots] = useState([]);
-
+console.log(scheduledLaunch)
   useEffect(() => {
       if (id_camp) {
           const campania = state.campañas.find(camp => camp.id == id_camp)

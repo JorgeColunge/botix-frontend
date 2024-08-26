@@ -47,6 +47,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+import moment from 'moment';
 
 const socket = io(process.env.REACT_APP_API_URL);
 
@@ -62,6 +63,7 @@ export const Campaigns = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [timeLefts, setTimeLefts] = useState({});
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -244,6 +246,58 @@ export const Campaigns = () => {
     );
   });
 
+  const calculateTimeLeft = (scheduledLaunch) => {
+    const launchTime = moment(scheduledLaunch);
+    const now = moment();
+    const duration = moment.duration(launchTime.diff(now));
+
+    if (duration.asMilliseconds() <= 0) {
+      return null;  // El tiempo ha pasado o es inválido
+    }
+
+    return {
+      days: Math.floor(duration.asDays()),
+      hours: duration.hours(),
+      minutes: duration.minutes(),
+      seconds: duration.seconds()
+    };
+  };
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const updatedTimeLefts = campaigns.reduce((acc, campaign) => {
+        acc[campaign.id] = calculateTimeLeft(campaign.scheduled_launch);
+        return acc;
+      }, {});
+      setTimeLefts(updatedTimeLefts);
+    }, 1000);
+
+    return () => clearInterval(intervalId); // Limpiar el temporizador al desmontar
+  }, [campaigns]);
+
+  const renderLaunchButtonOrTimer = (campaign) => {
+    const timeLeft = timeLefts[campaign.id];
+
+    if (!campaign.scheduled_launch || !timeLeft) {
+      // Si no hay fecha programada o el tiempo ha pasado, mostrar directamente el botón de "Lanzar"
+      return (
+        <Button variant="primary" size="sm" onClick={() => handleLaunchCampaignClick(campaign.id)}>
+          <RocketFill /> Lanzar
+        </Button>
+      );
+    }
+
+    // Mostrar la cuenta regresiva
+    return (
+      <span>
+        {timeLeft.days > 0 && `${timeLeft.days}d `}
+        {timeLeft.hours > 0 && `${timeLeft.hours}h `}
+        {timeLeft.minutes > 0 && `${timeLeft.minutes}m `}
+        {timeLeft.seconds}s
+      </span>
+    );
+  };
+
   return (
     <Container className="campaigns-container">
       <Col md={9} className='ms-auto me-auto'>
@@ -353,7 +407,7 @@ export const Campaigns = () => {
                       <td>{campaign.template_name}</td>
                       <td className="d-flex justify-content-between align-items-center">
                         <Button variant="primary" size="sm" onClick={() => handleLaunchCampaignClick(campaign.id)}>
-                          <RocketFill /> Lanzar
+                        {renderLaunchButtonOrTimer(campaign)}
                         </Button>
                         <DropdownButton id="dropdown-basic-button" className="custom-dropdown-toggle" title={<ThreeDotsVertical />} variant="ghost" size="sm">
                           <Dropdown.Item onClick={() => handleDetailsCampaignClick(campaign)}>
