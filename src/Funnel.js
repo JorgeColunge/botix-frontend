@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+"use client"
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { ListGroup, Tooltip, OverlayTrigger, InputGroup, FormControl } from 'react-bootstrap';
 import { PersonCircle, BookmarkFill } from 'react-bootstrap-icons';
 import moment from 'moment';
@@ -7,11 +8,61 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import axios from 'axios';
 import './Funnel.css';
+import {
+  ArrowUpCircle,
+  CheckCircle2,
+  Circle,
+  HelpCircle,
+  LucideIcon,
+  XCircle,
+} from "lucide-react"
+
+import { cn } from "./lib/utils"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "./components"
 
 const ItemType = 'CONVERSATION';
 
+const statuses = [
+  {
+    value: "backlog",
+    label: "Backlog",
+    icon: HelpCircle,
+  },
+  {
+    value: "todo",
+    label: "Todo",
+    icon: Circle,
+  },
+  {
+    value: "in progress",
+    label: "In Progress",
+    icon: ArrowUpCircle,
+  },
+  {
+    value: "done",
+    label: "Done",
+    icon: CheckCircle2,
+  },
+  {
+    value: "canceled",
+    label: "Canceled",
+    icon: XCircle,
+  },
+];
+
 const DraggableConversation = ({ conversation, phaseId, moveConversation, handleConversationDrop, phases }) => {
-  const ref = React.useRef(null);
+  const ref = useRef(null);
 
   const [{ isDragging }, drag] = useDrag({
     type: ItemType,
@@ -94,6 +145,7 @@ const DraggableConversation = ({ conversation, phaseId, moveConversation, handle
 };
 
 const DroppableColumn = ({ phaseId, phase, groupedConversations, moveConversation, handleConversationDrop, phases }) => {
+  
   const [, drop] = useDrop({
     accept: ItemType,
     drop: () => ({ phaseId }),
@@ -155,6 +207,8 @@ function FunnelComponent() {
     setConversations,
     phases
   } = useConversations();
+  const [open, setOpen] = useState(false)
+  const [selectedStatus, setSelectedStatus] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -205,9 +259,11 @@ function FunnelComponent() {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="funnel-container">
-        <div className="funnel-header">
-          <InputGroup className="mb-3 p-3">
+    <div className="container mt-5">
+      <div className="row justify-content-center align-items-center" >
+        <div className="col-md-8 d-flex justify-content-between align-items-center">
+          
+          <InputGroup className="mb-3">
             <FormControl
               placeholder="Buscar..."
               aria-label="Buscar"
@@ -215,7 +271,66 @@ function FunnelComponent() {
               onChange={handleSearchChange}
             />
           </InputGroup>
+
+          <div className="d-flex align-items-center ms-3 mb-3">
+            <p className="text-sm text-muted-foreground mb-0 me-2">Departamentos</p>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-[150px] justify-start"
+                >
+                  {selectedStatus ? (
+                    <>
+                      <selectedStatus.icon className="mr-2 h-4 w-4 shrink-0" />
+                      {selectedStatus.label}
+                    </>
+                  ) : (
+                    <>+ Set status</>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0" side="right" align="start">
+                <Command>
+                  <CommandInput placeholder="Change status..." />
+                  <CommandList>
+                    <CommandEmpty>No results found.</CommandEmpty>
+                    <CommandGroup>
+                      {statuses.map((status) => (
+                        <CommandItem
+                          key={status.value}
+                          value={status.value}
+                          onSelect={(value) => {
+                            setSelectedStatus(
+                              statuses.find((priority) => priority.value === value) ||
+                              null
+                            )
+                            setOpen(false)
+                          }}
+                        >
+                          <status.icon
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              status.value === selectedStatus?.value
+                                ? "opacity-100"
+                                : "opacity-40"
+                            )}
+                          />
+                          <span>{status.label}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
         </div>
+      </div>
+    </div>
+      <div className="funnel-container">
         <div className="funnel-columns">
           {Object.entries(phases).map(([phaseId, phase]) => (
             <DroppableColumn
@@ -230,6 +345,8 @@ function FunnelComponent() {
           ))}
         </div>
         <br></br><br></br>
+      </div>
+      <div className='funnel-container mt-5'>
         <FunnelGraph phases={phases} groupedConversations={groupedConversations} />
       </div>
     </DndProvider>
