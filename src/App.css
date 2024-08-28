@@ -656,6 +656,9 @@
   .container-fluid{
     padding-right: 0;
   }
+  .renderContent{
+    width: 100vw;
+  }
 }
 
 .reply-button, .audio-recorder button {
@@ -736,6 +739,9 @@
     margin-left: 70px; /* Ancho cuando la barra está colapsada */
     transition: margin-left 0.3s;
   }
+  .renderContent{
+    width: 90vw;
+  }
 }
 
 
@@ -744,9 +750,7 @@
   transition: margin-left 0.3s;
 }
 
-.renderContent{
-  width: 95vw;
-}
+
 
 .reply-preview {
   background: rgba(255, 255, 255, 0.8); /* Fondo blanco con transparencia */

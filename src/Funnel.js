@@ -273,7 +273,7 @@ function FunnelComponent() {
           </InputGroup>
 
           <div className="d-flex align-items-center ms-3 mb-3">
-            <p className="text-sm text-muted-foreground mb-0 me-2">Departamentos</p>
+            <p className="text-sm text-muted-foreground mb-0 me-2">Departamentos:</p>
             <Popover open={open} onOpenChange={setOpen}>
               <PopoverTrigger asChild>
                 <Button
