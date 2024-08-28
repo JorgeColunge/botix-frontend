@@ -138,8 +138,10 @@ export const Campaigns = () => {
     navigate(`/edit-template/${template.id}`);
   };
 
-  const handleDeleteTemplateClick = async (templateId) => {
+  const handleDeleteTemplateClick = async (template) => {
     const token = localStorage.getItem('token');
+    const company_id = localStorage.getItem('company_id')
+    console.log(template)
     Swal.fire({
       title: "Esta seguro que desea eliminar esta Plantilla?",
       showDenyButton: true,
@@ -147,21 +149,22 @@ export const Campaigns = () => {
     }).then(async (result) => { 
       if (result.isConfirmed) {
         try {
-          console.log('Deleting template with ID:', templateId);
-          await axios.delete(`${process.env.REACT_APP_API_URL}/api/templates/${templateId}`, {
+          console.log('Deleting template with ID:', template.id);
+          await axios.delete(`${process.env.REACT_APP_API_URL}/api/templates/${template.id}/${template.nombre}/${company_id}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          setTemplates(templates.filter(template => template.id !== templateId));
+          setTemplates(templates.filter(templ => templ.id !== template.id));
           await Swal.fire({
             title: "Perfecto",
             text: `Plantilla Eliminada.`,
             icon: "success"
           });
         } catch (error) {
+          console.log(error)
           Swal.fire({
             title: "Error",
             text: `Error al eliminar Plantilla.
-            Error: ${error}`,
+            Error: ${error.response.data.error}`,
             icon: "error"
           });
         }
@@ -228,7 +231,7 @@ export const Campaigns = () => {
     } catch (error) {
       Swal.fire({
         title: "Error",
-        text: `Error al eliminar Plantilla.
+        text: `Error al Crear Campaña.
         Error: ${error}`,
         icon: "error"
       });
@@ -377,7 +380,7 @@ export const Campaigns = () => {
                               Editar
                             </Dropdown.Item>
                             <Dropdown.Divider />
-                            <Dropdown.Item className="text-danger" onClick={() => handleDeleteTemplateClick(template.id)}>
+                            <Dropdown.Item className="text-danger" onClick={() => handleDeleteTemplateClick(template)}>
                               Eliminar
                             </Dropdown.Item>
                           </DropdownButton>
