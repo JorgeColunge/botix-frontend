@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { Container, Row, Col, Form, Button, Modal, Spinner, ButtonGroup } from 'react-bootstrap';
 import { Code, TypeBold, TypeItalic, TypeStrikethrough } from 'react-bootstrap-icons'
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 import './CreateTemplate.css';
+import { AppContext } from './context';
 
 const socket = io(process.env.REACT_APP_BACKEND_URL);
 
@@ -132,7 +133,7 @@ const CreateTemplate = () => {
   const [name, setName] = useState('');
   const [language, setLanguage] = useState('es');
   const [headerType, setHeaderType] = useState('none');
-  const [mediaType, setMediaType] = useState('image');
+  const [mediaType, setMediaType] = useState('IMAGE');
   const [headerText, setHeaderText] = useState('');
   const [headerExample, setHeaderExample] = useState('');
   const [headerSource, setHeaderSource] = useState('');
@@ -165,6 +166,95 @@ const CreateTemplate = () => {
   const [buttons, setButtons] = useState([]);
 
   const navigate = useNavigate();
+  const {state} = useContext(AppContext);
+  const {id_plantilla} = useParams();
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      if (id_plantilla) {
+        const companyId = localStorage.getItem('company_id');
+        const token = localStorage.getItem('token');
+        if (!companyId || !token) {
+          console.error('No company ID or token found');
+          return;
+        }
+        try {
+          if (id_plantilla) {
+               const templete = state.plantillas.find(temp => temp.id == id_plantilla)
+               console.log("template:", templete)
+               setCategory(templete.type)
+               setName(templete.nombre)
+               setLanguage(templete.language)
+
+                if (templete.header_type == 'IMAGE' || templete.header_type == 'VIDEO' || templete.header_type == 'DOCUMENT'){ setHeaderType('MEDIA');}
+                   else{setHeaderType('MEDIA')}
+               setHeaderText(templete.header_text)
+               setBodyText(templete.body_text)
+               setFooterText(templete.footer)
+               setMediaType(templete.type_medio)
+               const newBodyExample = templete.bodyVariables.reduce((acc, variable, index) => {
+                acc[`{{${index + 1}}}`] = variable?.example;
+                return acc;
+              }, {});
+              setHeaderExample(templete.headerVariables[0]?.example)
+
+              setBodyExamples(newBodyExample);
+              if (templete.header_text) {
+                setHeaderVariableAdded(true);
+              }
+              const buttonsData = templete.buttonVariables.map((btn) => {
+                let button = {};
+              
+                switch (btn.variable) {
+                  case 'QUICK_REPLY':
+                    button = {
+                      text: btn.name,
+                      type: btn.variable,
+                      url: '',
+                      phoneCode: '',
+                      urlExample: '',
+                      urlType: ''
+                    };
+                    break;
+              
+                  case 'PHONE_NUMBER':
+                    button = {
+                      text: btn.name,
+                      type: btn.variable,
+                      url: '',
+                      phoneCode: '',
+                      urlExample: '',
+                      urlType: ''
+                    };
+                    break;
+              
+                  case 'URL':
+                    button = {
+                      text: btn.name,
+                      type: btn.variable,
+                      url: '',
+                      phoneCode: '',
+                      urlExample: '',
+                      urlType: ''
+                    };
+                    break;
+              
+                  default:
+                    break;
+                }
+              
+                return button;
+              });
+              
+              setButtons(buttonsData) 
+          }
+        } catch (error) {
+          console.error('Error fetching templates:', error);
+        }
+      }   
+    };
+    fetchTemplates();
+  }, [])
 
   useEffect(() => {
     socket.on('templateStatusUpdate', ({ templateId, status }) => {
@@ -176,7 +266,7 @@ const CreateTemplate = () => {
       socket.off('templateStatusUpdate');
     };
   }, []);
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -196,16 +286,16 @@ const CreateTemplate = () => {
     const headerVariableArray = headerVariableAdded ? [headerVariable] : [];
   
     const components = [
-      ...(headerType === 'text' ? [{
+      ...(headerType === 'TEXT' ? [{
         type: 'HEADER',
         format: 'TEXT',
         text: headerText,
         example: headerVariableAdded ? { header_text: headerExampleArray } : undefined,
-      }] : headerType === 'media' ? [{
+      }] : headerType === 'MEDIA' ? [{
         type: 'HEADER',
-        format: mediaType.toUpperCase(),
+        format: 'MEDIA',
         example: { header_handle: [headerImageUrl || headerVideoUrl || headerDocumentUrl] }
-      }] : headerType === 'location' ? [{
+      }] : headerType === 'LOCATION' ? [{
         type: 'HEADER',
         format: 'LOCATION'
       }] : []),
@@ -247,18 +337,18 @@ const CreateTemplate = () => {
     ];
   
     const componentsWithSourceAndVariable = [
-      ...(headerType === 'text' ? [{
+      ...(headerType === 'TEXT' ? [{
         type: 'HEADER',
         format: 'TEXT',
         text: headerText,
         example: headerVariableAdded ? { header_text: headerExampleArray } : undefined,
         source: headerVariableAdded ? headerSourceArray : undefined,
         variable: headerVariableAdded ? headerVariableArray : undefined
-      }] : headerType === 'media' ? [{
+      }] : headerType === 'MEDIA' ? [{
         type: 'HEADER',
         format: mediaType.toUpperCase(),
         example: { header_handle: [headerImageUrl || headerVideoUrl || headerDocumentUrl] }
-      }] : headerType === 'location' ? [{
+      }] : headerType === 'LOCATION' ? [{
         type: 'HEADER',
         format: 'LOCATION'
       }] : []),
@@ -321,14 +411,16 @@ const CreateTemplate = () => {
       setLoading(false);
       return;
     }
-  
+   console.log(templateData)
+   console.log("datos a conocer:", componentsWithSourceAndVariable)
+
+   if (id_plantilla) {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/create-template`, templateData, {
+      const response = await axios.put(`${process.env.REACT_APP_API_URL}/edit-template`, {...templateData, id_plantilla}, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-  
       console.log('Template created successfully:', response.data);
   
       if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(mediaType.toUpperCase())) {
@@ -347,6 +439,33 @@ const CreateTemplate = () => {
       setLoading(false);
       setShowModal(true);
     }
+   }else{
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/create-template`, templateData, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      console.log('Template created successfully:', response.data);
+  
+      if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(mediaType.toUpperCase())) {
+        setResponseMessage('Plantilla almacenada con éxito. Ahora debe crear la misma plantilla con las mismas características en WhatsApp.');
+      } else {
+        setResponseMessage(`Estado de la Plantilla: ${response.data.status}`);
+      }
+  
+      setTemplateStatus(response.data.status);
+      setLoading(false);
+      setShowModal(true);
+      resetForm();
+    } catch (error) {
+      console.error('Error creating template:', error);
+      setResponseMessage('Error al crear la plantilla. Por favor, inténtelo de nuevo.');
+      setLoading(false);
+      setShowModal(true);
+    }
+   }
   }; 
 
   const resetForm = () => {
@@ -382,42 +501,49 @@ const CreateTemplate = () => {
     setCustomValidity(false);
     setValidityPeriod('');
   };
-
+ 
   const handleMediaChange = async (e, mediaType) => {
     const file = e.target.files[0];
-    if (mediaType === 'image') {
+    const formData = new FormData();
+    console.log(file)
+    if (mediaType == 'image') {
       setHeaderImage(file);
       setHeaderVideo(null);
+      formData.append('media', file);
       setHeaderDocument(null);
-    } else if (mediaType === 'video') {
+    } else if (mediaType == 'video') {
       setHeaderImage(null);
       setHeaderVideo(file);
       setHeaderDocument(null);
-    } else if (mediaType === 'document') {
+      formData.append('media', file);
+    } else if (mediaType == 'document') {
       setHeaderImage(null);
       setHeaderVideo(null);
       setHeaderDocument(file);
+      formData.append('media', file);
     }
 
-    const formData = new FormData();
-    formData.append('media', file);
 
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('No token found');
       return;
     }
+     // Debugging FormData content
+  for (let [key, value] of formData.entries()) {
+    console.log(key, value);
+  }
 
     try {
       setLoading(true);
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/upload-template-media`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`
+        },
       });
 
-      const mediaUrl = response.data.mediaUrl;
+      const mediaUrl = response.data.path;
       if (mediaType === 'image') {
         setHeaderImageUrl(mediaUrl);
       } else if (mediaType === 'video') {
@@ -427,6 +553,7 @@ const CreateTemplate = () => {
       }
       setLoading(false);
       console.log('Media uploaded successfully:', mediaUrl);
+      console.log('datos de la direccion:', response);
     } catch (error) {
       console.error('Error uploading media:', error);
       setLoading(false);
@@ -460,8 +587,9 @@ const CreateTemplate = () => {
     setHeaderVariable('');
     setHeaderVariableAdded(false);
   };
-
+ 
   const addBodyVariable = () => {
+    
     const variableCount = Object.keys(bodyExamples).length + 1;
     setBodyText(`${bodyText} {{${variableCount}}}`);
     setBodyExamples({ ...bodyExamples, [`{{${variableCount}}}`]: '' });
@@ -476,8 +604,8 @@ const CreateTemplate = () => {
   const updateBodySource = (variable, value) => {
     setBodySources({ ...bodySources, [variable]: value });
   };
-
   const updateBodyVariable = (variable, value) => {
+    console.log("cariables app", variable, value)
     setBodyVariables({ ...bodyVariables, [variable]: value });
   };
 
@@ -606,6 +734,7 @@ const CreateTemplate = () => {
   const phoneButtonsCount = buttons.filter(button => button.type === 'PHONE_NUMBER').length;
 
   const addButton = (type) => {
+    console.log("tipo:", type)
     const urlButtons = buttons.filter(button => button.type === 'URL').length;
     const phoneButtons = buttons.filter(button => button.type === 'PHONE_NUMBER').length;
 
@@ -645,7 +774,6 @@ const CreateTemplate = () => {
     newButtons[index].type = type;
     setButtons(newButtons);
   };
-
   const handleButtonTextChange = (index, text) => {
     const newButtons = [...buttons];
     newButtons[index].text = text;
@@ -687,7 +815,6 @@ const CreateTemplate = () => {
     setButtons(newButtons);
   };
 
-
   return (
     <Container fluid>
       {loading && (
@@ -718,7 +845,7 @@ const CreateTemplate = () => {
               <Form.Label>Categoría:</Form.Label>
               <Form.Select value={category} onChange={(e) => setCategory(e.target.value)}>
                 <option value="">Seleccionar Categoría</option>
-                <option value="Marketing">Marketing</option>
+                <option value="MARKETING">Marketing</option>
                 <option value="UTILITY">Utilidad</option>
               </Form.Select>
             </Form.Group>
@@ -745,27 +872,27 @@ const CreateTemplate = () => {
             <br></br>
             <Form.Group className="mb-3">
               <Form.Label>Tipo de Encabezado:</Form.Label>
-              <Form.Select value={headerType} onChange={(e) => setHeaderType(e.target.value)}>
+              <Form.Select value={headerType} onChange={(e) => {setHeaderType(e.target.value); console.log("Tipo de en",e.target.value)}}>
                 <option value="none">Ninguno</option>
-                <option value="text">Mensaje de texto</option>
-                <option value="media">Medios (Beta)</option>
-                <option value="location">Ubicación</option>
+                <option value="TEXT">Mensaje de texto</option>
+                <option value="MEDIA">Medios (Beta)</option>
+                <option value="LOCATION">Ubicación</option>
               </Form.Select>
             </Form.Group>
-            {headerType === 'media' && (
+            {(headerType == 'IMAGE' || headerType == 'VIDEO' || headerType == 'DOCUMENT' || headerType == 'MEDIA') && (
               <Form.Group className="mb-3">
                 <Form.Label>Tipo de Medio:</Form.Label>
                 <Form.Select value={mediaType} onChange={(e) => setMediaType(e.target.value)}>
-                  <option value="image">Imagen</option>
-                  <option value="video">Video</option>
-                  <option value="document">Documento</option>
+                  <option value="IMAGE">Imagen</option>
+                  <option value="VIDEO">Video</option>
+                  <option value="DOCUMENT">Documento</option>
                 </Form.Select>
                 <p className="text-warning">
                   Este proceso está en etapa beta. Debes crear también la plantilla en WhatsApp con el mismo nombre y la misma estructura.
                 </p>
               </Form.Group>
             )}
-            {headerType === 'text' && (
+            {headerType === 'TEXT' && (
               <>
                 <Form.Group className="mb-3">
                   <Form.Label>Texto de Encabezado:</Form.Label>
@@ -798,8 +925,8 @@ const CreateTemplate = () => {
                       </Col>
                       <Col>
                         <Form.Group className="mb-3">
-                          <Form.Label>Variable:</Form.Label>
-                          <Form.Select value={headerVariable} onChange={(e) => setHeaderVariable(e.target.value)} required>
+                          <Form.Label>Variables:</Form.Label>
+                          <Form.Select value={headerVariable} onChange={(e) => {setHeaderVariable(e.target.value); console.log(e)}} required>
                             <option value="">Seleccionar Variable</option>
                             {headerSource && sources[headerSource]?.map(variable => (
                               <option key={variable.value} value={variable.value}>{variable.name}</option>
@@ -819,7 +946,7 @@ const CreateTemplate = () => {
                 )}
               </>
             )}
-            {headerType === 'media' && mediaType === 'image' && (
+            {(headerType === 'IMAGE' || headerType === 'MEDIA') && mediaType === 'IMAGE' && (
               <Form.Group className="mb-3">
                 <Form.Label>Imagen de Encabezado:</Form.Label>
                 <Form.Control type="file" accept="image/*" onChange={(e) => handleMediaChange(e, 'image')} />
@@ -831,7 +958,7 @@ const CreateTemplate = () => {
                 )}
               </Form.Group>
             )}
-            {headerType === 'media' && mediaType === 'video' && (
+            {(headerType === 'VIDEO'|| headerType === 'MEDIA') && mediaType === 'VIDEO' && (
               <Form.Group className="mb-3">
                 <Form.Label>Video de Encabezado:</Form.Label>
                 <Form.Control type="file" accept="video/*" onChange={(e) => handleMediaChange(e, 'video')} />
@@ -843,7 +970,7 @@ const CreateTemplate = () => {
                 )}
               </Form.Group>
             )}
-            {headerType === 'media' && mediaType === 'document' && (
+            {(headerType === 'DOCUMENT'|| headerType === 'MEDIA') && mediaType === 'DOCUMENT' && (
               <Form.Group className="mb-3">
                 <Form.Label>Documento de Encabezado:</Form.Label>
                 <Form.Control type="file" accept=".pdf,.doc,.docx" onChange={(e) => handleMediaChange(e, 'document')} />
@@ -855,7 +982,7 @@ const CreateTemplate = () => {
                 )}
               </Form.Group>
             )}
-            {headerType === 'location' && (
+            {headerType === 'LOCATION' && (
               <div className="mb-3">
                 <p>La ubicación se proporcionará en el momento del envío.</p>
               </div>
@@ -1051,9 +1178,9 @@ const CreateTemplate = () => {
                 <div className="message">
                   <div className="header">
                     {headerType === 'text' && <div><strong>{renderTextWithExamples(headerText, { '{{1}}': headerExample })}</strong></div>}
-                    {headerType === 'media' && mediaType === 'image' && headerImageUrl && <img src={`${process.env.REACT_APP_API_URL}${headerImageUrl}`} alt="Header" style={{ width: '100%' }} />}
-                    {headerType === 'media' && mediaType === 'video' && headerVideoUrl && <video src={`${process.env.REACT_APP_API_URL}${headerVideoUrl}`} controls style={{ width: '100%' }} />}
-                    {headerType === 'media' && mediaType === 'document' && headerDocumentUrl && (
+                    {(headerType === 'MEDIA' || headerType === 'IMAGE') && mediaType === 'IMAGE' && headerImageUrl && <img src={`${process.env.REACT_APP_API_URL}${headerImageUrl}`} alt="Header" style={{ width: '100%' }} />}
+                    {(headerType === 'MEDIA'|| headerType === 'VIDEO') && mediaType === 'VIDEO' && headerVideoUrl && <video src={`${process.env.REACT_APP_API_URL}${headerVideoUrl}`} controls style={{ width: '100%' }} />}
+                    {(headerType === 'MEDIA'|| headerType === 'DOCUMENT') && mediaType === 'DOCUMENT' && headerDocumentUrl && (
                       <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                         <iframe
                           src={`${process.env.REACT_APP_API_URL}${headerDocumentUrl}`}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Button, Table, Form, InputGroup, FormControl, DropdownButton, Dropdown } from 'react-bootstrap';
 import TemplatePreview from './TemplatePreview';
@@ -6,58 +6,64 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import './Campaigns.css';
 import { ArrowUpSquare, CheckCircle, Clock, RocketFill, ThreeDotsVertical, XCircle } from 'react-bootstrap-icons';
+import Swal from 'sweetalert2';
+import { AppContext } from './context';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "./components"
+
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Label,
+  LabelList,
+  Line,
+  LineChart,
+  PolarAngleAxis,
+  RadialBar,
+  RadialBarChart,
+  Rectangle,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+} from "recharts"
+import moment from 'moment';
 
 const socket = io(process.env.REACT_APP_API_URL);
 
-const Campaigns = () => {
+export const Campaigns = () => {
+
+  const {state, setTemplates, setCampaigns} = useContext(AppContext);
+
   const navigate = useNavigate();
-  const [templates, setTemplates] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [campaigns, setCampaigns] = useState([]);
+  const [showDialog, setShowDialog] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [timeLefts, setTimeLefts] = useState({});
 
   useEffect(() => {
-    const fetchTemplates = async () => {
-      const companyId = localStorage.getItem('company_id');
-      const token = localStorage.getItem('token');
-      if (!companyId || !token) {
-        console.error('No company ID or token found');
-        return;
-      }
-
-      try {
-        console.log('Fetching templates with company ID:', companyId);
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/templates`, {
-          params: { company_id: companyId },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        console.log('Fetched templates:', response.data);
-        setTemplates(response.data);
-      } catch (error) {
-        console.error('Error fetching templates:', error);
-      }
-    };
-
-    const fetchCampaigns = async () => {
-      const companyId = localStorage.getItem('company_id');
-      const token = localStorage.getItem('token');
-      try {
-        console.log('Fetching campaigns');
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/campaigns`, {
-          params: { company_id: companyId },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        console.log('Fetched campaigns:', response.data);
-        setCampaigns(response.data);
-      } catch (error) {
-        console.error('Error fetching campaigns:', error);
-      }
-    };
-
-    fetchTemplates();
-    fetchCampaigns();
-
     socket.on('templateStatusUpdate', ({ templateId, status }) => {
       console.log(`Estado de la plantilla "${templateId}" actualizada a: ${status}`);
       setTemplates(prevTemplates =>
@@ -70,8 +76,8 @@ const Campaigns = () => {
     return () => {
       socket.off('templateStatusUpdate');
     };
-  }, []);
-
+  }, [])
+  
   const handleCreateTemplateClick = () => {
     navigate('/create-template');
   };
@@ -81,42 +87,94 @@ const Campaigns = () => {
   };
 
   const handleUseTemplateClick = (template) => {
-    console.log('Using template:', template);
+    navigate(`/create-campaign/${template.id}`);
   };
 
   const handleEditTemplateClick = (template) => {
     navigate(`/edit-template/${template.id}`);
   };
 
-  const handleDeleteTemplateClick = async (templateId) => {
+  const handleDeleteTemplateClick = async (template) => {
     const token = localStorage.getItem('token');
-    try {
-      console.log('Deleting template with ID:', templateId);
-      await axios.delete(`${process.env.REACT_APP_API_URL}/api/templates/${templateId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setTemplates(templates.filter(template => template.id !== templateId));
-    } catch (error) {
-      console.error('Error deleting template:', error);
-    }
+    const company_id = localStorage.getItem('company_id')
+    console.log(template)
+    Swal.fire({
+      title: "Esta seguro que desea eliminar esta Plantilla?",
+      showDenyButton: true,
+      confirmButtonText: "Eliminar",
+    }).then(async (result) => { 
+      if (result.isConfirmed) {
+        try {
+          console.log('Deleting template with ID:', template.id);
+          await axios.delete(`${process.env.REACT_APP_API_URL}/api/templates/${template.id}/${template.nombre}/${company_id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setTemplates(state.plantillas.filter(templ => templ.id !== template.id));
+          await Swal.fire({
+            title: "Perfecto",
+            text: `Plantilla Eliminada.`,
+            icon: "success"
+          });
+        } catch (error) {
+          console.log(error)
+          Swal.fire({
+            title: "Error",
+            text: `Error al eliminar Plantilla.
+            Error: ${error.response.data.error}`,
+            icon: "error"
+          });
+        }
+      } 
+    });
   };
 
   const handleEditCampaignClick = (campaign) => {
     navigate(`/edit-campaign/${campaign.id}`);
   };
 
+  const handleDetailsCampaignClick = (campaign) => {
+    setSelectedCampaign(campaign); 
+    console.log(campaign)
+    setShowDialog(true); // Muestra el diálogo
+  };
+
+  const handleCloseDialog = () => {
+    setShowDialog(false); 
+    setSelectedCampaign(null); 
+  };
+
   const handleDeleteCampaignClick = async (campaignId) => {
     const token = localStorage.getItem('token');
-    try {
-      console.log('Deleting campaign with ID:', campaignId);
-      await axios.delete(`${process.env.REACT_APP_API_URL}/api/campaigns/${campaignId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setCampaigns(campaigns.filter(campaign => campaign.id !== campaignId));
-    } catch (error) {
-      console.error('Error deleting campaign:', error);
-    }
-  };
+    Swal.fire({
+      title: "Esta seguro que desea eliminar esta Campaña?",
+      showDenyButton: true,
+      confirmButtonText: "Eliminar",
+    }).then(async (result) => { 
+      if (result.isConfirmed) {
+        try {
+          console.log('Deleting campaign with ID:', campaignId);
+          await axios.delete(`${process.env.REACT_APP_API_URL}/api/campaigns/${campaignId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setCampaigns(state.campañas.filter(campaign => campaign.id !== campaignId));
+          await Swal.fire({
+            title: "Perfecto",
+            text: `Campaña Eliminada.`,
+            icon: "success"
+          });
+        } catch (error) {
+          console.error('Error deleting campaign:', error);
+          Swal.fire({
+            title: "Error",
+            text: `Error al eliminar Campaña.
+            Error: ${error}`,
+            icon: "error"
+          });
+        }
+      }
+   
+    });
+  }
 
   const handleLaunchCampaignClick = async (campaignId) => {
     const token = localStorage.getItem('token');
@@ -125,10 +183,18 @@ const Campaigns = () => {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/launch-campaign/${campaignId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert('Campaign launched successfully');
+      Swal.fire({
+        title: "Perfecto",
+        text: `Se envio la campaña a los usuarios de la lista.`,
+        icon: "success"
+      });
     } catch (error) {
-      console.error('Error launching campaign:', error);
-      alert('Error launching campaign');
+      Swal.fire({
+        title: "Error",
+        text: `Error al Crear Campaña.
+        Error: ${error}`,
+        icon: "error"
+      });
     }
   };
 
@@ -140,12 +206,80 @@ const Campaigns = () => {
     return replacedText;
   };
 
-  const filteredTemplates = templates.filter(template => {
+  const filteredTemplates = state.plantillas.filter(template => {
     return (
       template.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) &&
       (filterType ? template.type === filterType : true)
     );
   });
+
+  const formatTimeLeft = (timeLeft) => {
+    const days = timeLeft.days > 0 ? String(timeLeft.days).padStart(2, '0') : '00';
+    const hours = String(timeLeft.hours).padStart(2, '0');
+    const minutes = String(timeLeft.minutes).padStart(2, '0');
+    const seconds = String(timeLeft.seconds).padStart(2, '0');
+  
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  };
+
+  const calculateTimeLeft = (scheduledLaunch) => {
+    const launchTime = moment(scheduledLaunch);
+    const now = moment();
+    const duration = moment.duration(launchTime.diff(now));
+
+    if (duration.asMilliseconds() <= 0) {
+      return null;  // El tiempo ha pasado o es inválido
+    }
+
+    return {
+      days: Math.floor(duration.asDays()),
+      hours: duration.hours(),
+      minutes: duration.minutes(),
+      seconds: duration.seconds()
+    };
+  };
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const updatedTimeLefts = state.campañas.reduce((acc, campaign) => {
+        acc[campaign.id] = calculateTimeLeft(campaign.scheduled_launch);
+        return acc;
+      }, {});
+      setTimeLefts(updatedTimeLefts);
+    }, 1000);
+
+    return () => clearInterval(intervalId); // Limpiar el temporizador al desmontar
+  }, [state.campañas]);
+
+  const renderLaunchButtonOrTimer = (campaign) => {
+    const timeLeft = timeLefts[campaign.id];
+
+    if (!campaign.scheduled_launch || !timeLeft) {
+      // Si no hay fecha programada o el tiempo ha pasado, mostrar directamente el botón de "Lanzar"
+      return (
+        <Button variant="primary" size="sm" onClick={() => handleLaunchCampaignClick(campaign.id)}>
+          <RocketFill /> Lanzar
+        </Button>
+      );
+    }
+
+  // Mostrar la cuenta regresiva con un formato fijo
+  const formattedTimeLeft = formatTimeLeft(timeLeft);
+
+  return (
+    <Button
+      variant="primary"
+      disabled
+      style={{
+        display: 'inline-block',
+        width: `90%`,
+        textAlign: 'center',
+      }}
+    >
+      {formattedTimeLeft}
+    </Button>
+  );
+  };
 
   return (
     <Container className="campaigns-container">
@@ -206,7 +340,7 @@ const Campaigns = () => {
                               Editar
                             </Dropdown.Item>
                             <Dropdown.Divider />
-                            <Dropdown.Item className="text-danger" onClick={() => handleDeleteTemplateClick(template.id)}>
+                            <Dropdown.Item className="text-danger" onClick={() => handleDeleteTemplateClick(template)}>
                               Eliminar
                             </Dropdown.Item>
                           </DropdownButton>
@@ -247,19 +381,19 @@ const Campaigns = () => {
                 </tr>
               </thead>
               <tbody>
-                {campaigns.length > 0 ? (
-                  campaigns.map(campaign => (
+                {state.campañas.length > 0 ? (
+                  state.campañas.map(campaign => (
                     <tr key={campaign.id}>
                       <td>{campaign.name}</td>
                       <td>{campaign.objective}</td>
                       <td>{campaign.type}</td>
                       <td>{campaign.template_name}</td>
                       <td className="d-flex justify-content-between align-items-center">
-                        <Button variant="primary" size="sm" onClick={() => handleLaunchCampaignClick(campaign.id)}>
-                          <RocketFill /> Lanzar
-                        </Button>
+                     
+                        {renderLaunchButtonOrTimer(campaign)}
+                        
                         <DropdownButton id="dropdown-basic-button" className="custom-dropdown-toggle" title={<ThreeDotsVertical />} variant="ghost" size="sm">
-                          <Dropdown.Item onClick={() => handleEditCampaignClick(campaign)}>
+                          <Dropdown.Item onClick={() => handleDetailsCampaignClick(campaign)}>
                             Detalles
                           </Dropdown.Item>
                           <Dropdown.Item onClick={() => handleEditCampaignClick(campaign)}>
@@ -286,8 +420,124 @@ const Campaigns = () => {
           </Col>
         </Row>
       </Col>
+      {showDialog && (
+      <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
+        <AlertDialogTrigger asChild>
+          {/* Un solo botón que actúa como trigger */}
+          <button style={{ display: 'none' }}>Open</button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Detalles de la campaña</AlertDialogTitle>
+            <AlertDialogDescription>
+              <Card
+                  className="max-w-full" x-chunk="charts-01-chunk-5"
+                >
+                  <CardContent className="flex gap-4 p-4">
+                    <div className="grid items-center gap-2">
+                      <div className="grid flex-1 auto-rows-min gap-0.5">
+                        <div className="text-sm text-muted-foreground">Total enviadas</div>
+                        <div className="flex items-baseline gap-1 text-xl font-bold tabular-nums leading-none">
+                          {`${selectedCampaign.interactions}`}/{`${selectedCampaign.conversions}`}
+                          <span className="text-sm font-normal text-muted-foreground">
+                            Personas
+                          </span>
+                        </div>
+                      </div>
+                      <div className="grid flex-1 auto-rows-min gap-0.5">
+                        <div className="text-sm text-muted-foreground">Recibidas</div>
+                        <div className="flex items-baseline gap-1 text-xl font-bold tabular-nums leading-none">
+                        {`${selectedCampaign.delivered}`}
+                          <span className="text-sm font-normal text-muted-foreground">
+                            Mensajes
+                          </span>
+                        </div>
+                      </div>
+                      <div className="grid flex-1 auto-rows-min gap-0.5">
+                        <div className="text-sm text-muted-foreground">Leídas</div>
+                        <div className="flex items-baseline gap-1 text-xl font-bold tabular-nums leading-none">
+                        {`${selectedCampaign.read}`}
+                          <span className="text-sm font-normal text-muted-foreground">
+                            Mensajes
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChartContainer
+                      config={{
+                        move: {
+                          label: "Totales",
+                          color: "hsl(var(--chart-1))",
+                        },
+                        exercise: {
+                          label: "Recibidas",
+                          color: "hsl(var(--chart-2))",
+                        },
+                        stand: {
+                          label: "Leídas",
+                          color: "hsl(var(--chart-3))",
+                        },
+                      }}
+                      className="mx-auto aspect-square w-full max-w-[80%]"
+                    >
+                      <RadialBarChart
+                        margin={{
+                          left: -10,
+                          right: -10,
+                          top: -10,
+                          bottom: -10,
+                        }}
+                        data={[
+                          {
+                            name: "Leidos",
+                            activity: "stand",
+                            value: (selectedCampaign.delivered / selectedCampaign.interactions)* 100,
+                            fill: "var(--color-stand)",
+                          },
+                          {
+                            name: "Recibidos",
+                            activity: "exercise",
+                            value: (selectedCampaign.read / selectedCampaign.interactions) * 100,
+                            fill: "var(--color-exercise)",
+                          },
+                          {
+                            name: "Enviados",
+                            activity: "move",
+                            value: (selectedCampaign.interactions / selectedCampaign.conversions) * 100,
+                            fill: "var(--color-move)",
+                          },
+                        ]}
+                        innerRadius="20%"
+                        barSize={27}
+                        startAngle={90}
+                        endAngle={450}
+                      >
+                        <PolarAngleAxis
+                          type="number"
+                          domain={[0, 100]}
+                          dataKey="value"
+                          tick={false}
+                        />
+                        <RadialBar dataKey="value" background cornerRadius={5} > 
+                          <LabelList
+                            position="insideStart"
+                            dataKey="name"
+                            className="fill-white capitalize mix-blend-luminosity"
+                            fontSize={15}
+                          />
+                        </RadialBar>
+                      </RadialBarChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCloseDialog}>Cerrar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+     )}
     </Container>
   );
 };
-
-export default Campaigns;

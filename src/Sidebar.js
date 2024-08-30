@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { ListGroup, Tooltip, OverlayTrigger, Dropdown, Button, InputGroup, FormControl, Form } from 'react-bootstrap';
-import { PlusSquare, Funnel, PersonCircle, BookmarkFill } from 'react-bootstrap-icons';
+import { PlusSquare, Funnel, PersonCircle, BookmarkFill, List } from 'react-bootstrap-icons';
 import moment from 'moment';
 import { useConversations } from './ConversationsContext';
 import axios from 'axios';
+import { AppContext } from './context';
+import { useMediaQuery } from 'react-responsive';
 
 function Sidebar() {
   const {
@@ -19,6 +21,10 @@ function Sidebar() {
   const [selectedLabels, setSelectedLabels] = useState([]);
   const [selectedOrigins, setSelectedOrigins] = useState([]);
   const [selectedPhases, setSelectedPhases] = useState([]);
+
+  const isMobile = useMediaQuery({ maxWidth: 767 });
+
+  const {setConversacionActual, setStatus} = useContext(AppContext)
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
@@ -160,11 +166,15 @@ function Sidebar() {
   const handleConversationSelect = async (conversation) => {
     await resetUnreadMessages(conversation.conversation_id);
     setCurrentConversation(conversation);
+    setConversacionActual({...conversation, position_scroll: false})
   };
 
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center p-3 shadow-sm">
+    
+     { isMobile && <List color="black" size={30}  onClick={() => {setStatus(true); console.log("click")}}/>}
+
         <h5 className="mb-0">Chats</h5>
         <div className="d-flex">
           <Button variant="outline-secondary" size="sm" className="mr-2"><PlusSquare /></Button>

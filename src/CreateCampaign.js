@@ -1,12 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Container, Row, Col, Button, Form, Card, InputGroup, FormControl, Table, Collapse } from 'react-bootstrap';
 import axios from 'axios';
 import './CreateCampaign.css';
 import { PersonCircle, Robot } from 'react-bootstrap-icons';
 import TemplatePreview from './TemplatePreview';
+import { AppContext } from './context';
 
 const CreateCampaign = () => {
+  const { id_plantilla, id_camp } = useParams();
+
+  const {state} = useContext(AppContext);
+
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [filteredTemplates, setFilteredTemplates] = useState([]);
@@ -16,7 +21,7 @@ const CreateCampaign = () => {
   const [selectedContacts, setSelectedContacts] = useState([]);
   const [name, setName] = useState('');
   const [objective, setObjective] = useState('');
-  const [templateId, setTemplateId] = useState('');
+  const [templateId, setTemplateId] = useState(id_plantilla || '');
   const [scheduledLaunch, setScheduledLaunch] = useState('');
   const [type, setType] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,7 +55,7 @@ const CreateCampaign = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [filterOpen, setFilterOpen] = useState(false);
   const [role, setRole] = useState('');
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState('new');
   const [responsible, setResponsible] = useState('');
   const [bot, setBot] = useState('');
   const [departments, setDepartments] = useState([]);
@@ -61,23 +66,44 @@ const CreateCampaign = () => {
   const [filteredBots, setFilteredBots] = useState([]);
 
   useEffect(() => {
-    const fetchTemplates = async () => {
-      const companyId = localStorage.getItem('company_id');
-      const token = localStorage.getItem('token');
-      if (!companyId || !token) {
-        console.error('No company ID or token found');
-        return;
+      if (id_camp) {
+          const campania = state.campañas.find(camp => camp.id == id_camp)
+          const plantilla = state.plantillas.find(plant => plant.id == campania.template_id)
+     
+           setName(campania.name)
+           setObjective(campania.objective)
+           setType(campania.type)
+           setRole(campania.type_responsible)
+           setSelectedTemplate(plantilla)
+           setTemplateSearchTerm(plantilla.nombre)
+           setTemplateId(plantilla.id)
+           setTemplates(state.plantillas)
+           setFilteredTemplates(state.plantillas)
+           setScheduledLaunch(campania.scheduled_launch)
       }
-
-      try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/templates`, {
-          params: { company_id: companyId },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setTemplates(response.data);
-        setFilteredTemplates(response.data);
-      } catch (error) {
-        console.error('Error fetching templates:', error);
+  }, [])
+  
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      if (!id_camp) {        
+          const companyId = localStorage.getItem('company_id');
+          const token = localStorage.getItem('token');
+          if (!companyId || !token) {
+            console.error('No company ID or token found');
+            return;
+          }
+          try {
+            setTemplates(state.plantillas);
+            setFilteredTemplates(state.plantillas);
+          
+            if (id_plantilla) {
+                const templete = state.plantillas.find(temp => temp.id == id_plantilla)
+                setSelectedTemplate(templete)
+                setTemplateSearchTerm(templete.nombre)
+            }
+          } catch (error) {
+            console.error('Error fetching templates:', error);
+          }
       }
     };
 
@@ -90,11 +116,7 @@ const CreateCampaign = () => {
       }
 
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`, {
-          params: { company_id: companyId },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setContacts(response.data);
+        setContacts(state.contactos);
       } catch (error) {
         console.error('Error fetching contacts:', error);
       }
@@ -109,10 +131,7 @@ const CreateCampaign = () => {
       }
 
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/company/${companyId}/phases`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setPhases(response.data);
+        setPhases(state.fases);
       } catch (error) {
         console.error('Error fetching phases:', error);
       }
@@ -127,27 +146,23 @@ const CreateCampaign = () => {
       }
 
       try {
-        const usersResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/users?company_id=${companyId}`);
-        const rolesResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/roles/${companyId}`);
-        const departmentsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/departments/${companyId}`);
+        setRoles(state.roles);
+        setDepartments(state.departamentos);
 
-        setRoles(rolesResponse.data);
-        setDepartments(departmentsResponse.data);
-
-        const humanUsers = usersResponse.data.filter(user => {
-          const userRole = rolesResponse.data.find(role => role.id === user.rol);
+        const humanUsers = state.usuarios.filter(user => {
+          const userRole = state.roles.find(role => role.id === user.rol);
           return userRole && userRole.type === 'Humano';
         });
 
-        const botUsers = usersResponse.data.filter(user => {
-          const userRole = rolesResponse.data.find(role => role.id === user.rol);
+        const botUsers = state.usuarios.filter(user => {
+          const userRole = state.roles.find(role => role.id === user.rol);
           return userRole && (userRole.type === 'Bot de Chat' || userRole.type === 'Bot de Chat IA');
         });
 
         setFilteredUsers(humanUsers);
-        setUsers(humanUsers); // Store the users for filtering
+        setUsers(humanUsers); 
         setFilteredBots(botUsers);
-        setBots(botUsers); // Store the bots for filtering
+        setBots(botUsers); 
       } catch (error) {
         console.error('Error fetching users:', error);
       }
@@ -174,54 +189,91 @@ const CreateCampaign = () => {
       }
 
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/templates/${templateId}`, {
-          params: { company_id: companyId },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setSelectedTemplate(response.data);
+        const response = state.plantillas.find(plant => plant.id == templateId)
+        setSelectedTemplate(response);
       } catch (error) {
         console.error('Error fetching template:', error);
       }
     };
-
-    fetchTemplate();
+     
+    if (!id_camp) {
+      fetchTemplate();
+    }
   }, [templateId]);
+
 
   const handleCreateCampaign = async () => {
     const companyId = localStorage.getItem('company_id');
     const token = localStorage.getItem('token');
-
-    try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/campaigns`, {
-        name,
-        objective,
-        template_id: templateId,
-        scheduled_launch: scheduledLaunch || null,
-        type,
-        state_conversation: status || null,
-        company_id: companyId
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/contacts`, {
-        contact_ids: selectedContacts
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (selectedUsers.length > 0) {
-        await axios.post(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/responsibles`, {
-          responsible_ids: selectedUsers
+   
+    if (id_camp) {
+      try {
+        const response = await axios.put(`${process.env.REACT_APP_API_URL}/api/campaigns/${id_camp}`, {
+          name,
+          objective,
+          type_responsible: role,
+          template_id: templateId,
+          scheduled_launch: scheduledLaunch || null,
+          type,
+          state_conversation: status || null,
+          company_id: companyId
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
+  
+        await axios.post(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/contacts`, {
+          contact_ids: selectedContacts
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+  
+        if (selectedUsers.length > 0) {
+          await axios.post(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/responsibles`, {
+            responsible_ids: selectedUsers
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+  
+        console.log('Campaign created:', response.data);
+        navigate('/campaigns');
+      } catch (error) {
+        console.error('Error creating campaign:', error);
       }
-
-      console.log('Campaign created:', response.data);
-      navigate('/campaigns');
-    } catch (error) {
-      console.error('Error creating campaign:', error);
+    } else {  
+      try {
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/campaigns`, {
+          name,
+          objective,
+          template_id: templateId,
+          scheduled_launch: scheduledLaunch || null,
+          type,
+          type_responsible: role,
+          state_conversation: status || null,
+          company_id: companyId
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+  
+        await axios.post(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/contacts`, {
+          contact_ids: selectedContacts
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+  
+        if (selectedUsers.length > 0) {
+          await axios.post(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/responsibles`, {
+            responsible_ids: selectedUsers
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+  
+        console.log('Campaign created:', response.data);
+        navigate('/campaigns');
+      } catch (error) {
+        console.error('Error creating campaign:', error);
+      }
     }
   };
 
@@ -251,6 +303,7 @@ const CreateCampaign = () => {
 
   const handleTemplateSearchChange = (e) => {
     const searchTerm = e.target.value.toLowerCase().replace(/\s+/g, '_');
+    console.log(e.target.value)
     setTemplateSearchTerm(searchTerm);
     if (searchTerm === '') {
       setFilteredTemplates(templates);
@@ -351,6 +404,7 @@ const CreateCampaign = () => {
   };
 
   const handleTemplateSelect = (template) => {
+    console.log(template)
     setSelectedTemplate(template);
     setTemplateId(template.id);
     setTemplateSearchTerm(template.nombre);
@@ -643,7 +697,7 @@ const CreateCampaign = () => {
                               <Form.Check
                                 type="radio"
                                 name="templateSelect"
-                                checked={selectedTemplate?.id === template.id}
+                                checked={selectedTemplate?.id == template.id}
                                 onChange={() => handleTemplateSelect(template)}
                               />
                             </td>
@@ -746,7 +800,6 @@ const CreateCampaign = () => {
                   </div>
                 </>
               )}
-
               {role === 'bot' && (
                 <>
                   <Form.Group className="mb-3" controlId="formBotSearch">
@@ -796,7 +849,7 @@ const CreateCampaign = () => {
               </Form.Group>
 
               <Button variant="primary" onClick={handleCreateCampaign}>
-                Crear Campaña
+               {id_camp ? 'Actualizar campaña' : 'Crear Campaña'}
               </Button>
             </Form>
           )}

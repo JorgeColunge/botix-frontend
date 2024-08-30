@@ -7,6 +7,7 @@ const TemplatePreview = ({ template }) => {
     return <h3>Selecciona una plantilla para ver la vista previa</h3>;
   }
 
+
   const replaceVariables = (text, variables) => {
     let replacedText = text;
     variables.forEach(variable => {
@@ -14,6 +15,9 @@ const TemplatePreview = ({ template }) => {
     });
     return replacedText;
   };
+
+  // Validar que template.buttons sea un array
+  const buttons = Array.isArray(template.buttons) ? template.buttons : [];
 
   return (
     <>
@@ -25,9 +29,9 @@ const TemplatePreview = ({ template }) => {
           <div className="message">
             <div className="header">
               {template.header_type === 'TEXT' && <div><strong>{replaceVariables(template.header_text, template.headerVariables)}</strong></div>}
-              {template.header_type === 'IMAGE' && template.medio && <img src={`${process.env.REACT_APP_API_URL}${template.medio}`} alt="Header" style={{ width: '100%' }} />}
-              {template.header_type === 'VIDEO' && template.medio && <video src={`${process.env.REACT_APP_API_URL}${template.medio}`} controls style={{ width: '100%' }} />}
-              {template.header_type === 'DOCUMENT' && template.medio && (
+              {(template.header_type === 'MEDIA' || template.header_type === 'IMAGE') && template.type_medio === 'IMAGE' && template.medio && <img src={`${process.env.REACT_APP_API_URL}${template.medio}`} alt="Header" style={{ width: '100%' }} />}
+              {(template.header_type === 'MEDIA'|| template.header_type === 'VIDEO') && template.type_medio === 'VIDEO' && template.medio && <video src={`${process.env.REACT_APP_API_URL}${template.medio}`} controls style={{ width: '100%' }} />}
+              {(template.header_type === 'MEDIA'|| template.header_type === 'DOCUMENT') && template.type_medio === 'DOCUMENT' && template.medio && (
                 <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                   <iframe 
                     src={`${process.env.REACT_APP_API_URL}${template.medio}`} 
@@ -41,23 +45,23 @@ const TemplatePreview = ({ template }) => {
               {replaceVariables(template.body_text, template.bodyVariables)}
             </div>
             {template.footer && <div className="footer small">{template.footer}</div>}
-            {template.buttons && template.buttons.length > 0 && (
+            {buttons.length > 0 && (
               <div className="buttons">
-                {template.buttons.slice(0, template.buttons.length > 3 ? 2 : 3).map((button, index) => (
-                  <>
+                {buttons.slice(0, buttons.length > 3 ? 2 : 3).map((button, index) => (
+                  <React.Fragment key={index}>
                     <hr />
-                    <Button key={index} variant="link" style={{textDecoration: 'none',padding: '0 10px', backgroundColor: 'transparent', color: '#46afec', fontWeight: 'bold'}}>
+                    <Button variant="link" style={{textDecoration: 'none', padding: '0 10px', backgroundColor: 'transparent', color: '#46afec', fontWeight: 'bold'}}>
                       {button.text}
                     </Button>
-                  </>
+                  </React.Fragment>
                 ))}
-                {template.buttons.length > 3 && (
-                  <>
+                {buttons.length > 3 && (
+                  <React.Fragment>
                     <hr />
-                    <Button variant="link" style={{textDecoration: 'none',padding: '0 10px', backgroundColor: 'transparent', color: '#46afec', fontWeight: 'bold'}}>
+                    <Button variant="link" style={{textDecoration: 'none', padding: '0 10px', backgroundColor: 'transparent', color: '#46afec', fontWeight: 'bold'}}>
                       <ListUl /> Ver todas las opciones
                     </Button>
-                  </>
+                  </React.Fragment>
                 )}
               </div>
             )}

@@ -3,8 +3,9 @@ import { Button } from 'react-bootstrap';
 import { MicFill, StopFill, PauseFill, PlayFill, TrashFill, SendFill, ArrowClockwise } from 'react-bootstrap-icons';
 import axios from 'axios';
 import './App.css';
+import Swal from 'sweetalert2';
 
-const AudioRecorder = ({ onSend }) => {
+export const AudioRecorder = ({ onSend }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
@@ -15,41 +16,69 @@ const AudioRecorder = ({ onSend }) => {
   const audioChunksRef = useRef([]);
 
   const startRecording = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorderRef.current = new MediaRecorder(stream);
-
-    mediaRecorderRef.current.ondataavailable = (event) => {
-      audioChunksRef.current.push(event.data);
-    };
-
-    mediaRecorderRef.current.onstop = async () => {
-      setIsProcessing(true);
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/aac' });
-      const audioUrl = URL.createObjectURL(audioBlob);
-      setAudioUrl(audioUrl);
-      setAudioBlob(audioBlob);
-      audioChunksRef.current = [];
-      try {
-        const formData = new FormData();
-        formData.append('audio', audioBlob, 'recording.aac');
-        const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-audio`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-        const backendUrl = response.data.audioUrl;
-        setBackendAudioUrl(backendUrl);
-      } catch (error) {
-        console.error('Error uploading audio:', error);
-      } finally {
-        setIsProcessing(false);
+    try {
+      // Solicitar acceso al micrófono
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1, // Intentar forzar la captura de un solo canal de audio (mono)
+        }
+      });
+  
+      // Verificar si el navegador soporta 'audio/ogg; codecs=opus'
+      const isOpusSupported = MediaRecorder.isTypeSupported('audio/ogg; codecs=opus');
+      
+      if (!isOpusSupported) {
+        console.error('Este navegador no soporta audio/ogg con codecs=opus');
+        return;
       }
-    };
-
-    mediaRecorderRef.current.start();
-    setIsRecording(true);
-    setIsPaused(false);
-  };
+  
+      // Inicializar MediaRecorder con el códec 'audio/ogg; codecs=opus'
+      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/ogg; codecs=opus' });
+  
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+  
+      mediaRecorderRef.current.onstop = async () => {
+        setIsProcessing(true);
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/ogg' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        setAudioUrl(audioUrl);
+        setAudioBlob(audioBlob);
+        audioChunksRef.current = [];
+  
+        try {
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'recording.ogg');
+  
+          const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-audio`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+  
+          const backendUrl = response.data.audioUrl;
+          setBackendAudioUrl(backendUrl);
+        } catch (error) {
+          console.error('Error subiendo el audio:', error);
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+  
+      // Iniciar la grabación
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      setIsPaused(false);
+    } catch (error) {
+      Swal.fire({
+        title: "Error",
+        text: `Error al intentar grabar audio. 
+        Error: ${error}`,
+        icon: "error"
+      });
+    }
+  };  
 
   const stopRecording = () => {
     mediaRecorderRef.current.stop();
@@ -79,7 +108,7 @@ const AudioRecorder = ({ onSend }) => {
 
   const handleSendAudio = () => {
     if (backendAudioUrl) {
-      onSend(backendAudioUrl, 'audio/aac');
+      onSend(backendAudioUrl, 'audio/ogg');
       deleteRecording();
     }
   };
@@ -122,5 +151,3 @@ const AudioRecorder = ({ onSend }) => {
     </div>
   );
 };
-
-export default AudioRecorder;

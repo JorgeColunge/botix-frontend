@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Table, Form, InputGroup, FormControl, Row, Col, Nav, Spinner } from 'react-bootstrap';
 import { ArrowDownCircle, ArrowLeft, ArrowLeftCircle, ArrowRightCircle, ArrowUpCircle } from 'react-bootstrap-icons';
+import { ArrowDownCircle, ArrowLeft, ArrowLeftCircle, ArrowRightCircle, ArrowUpCircle } from 'react-bootstrap-icons';
 import axios from 'axios';
 import CodeMirror, { color } from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
@@ -146,28 +147,37 @@ const GroupNode = ({ id, data }) => {
         </button>
       </div>
       <div style={{ position: 'absolute', top: '10px', left: '-40px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'absolute', top: '10px', left: '-40px', display: 'flex', flexDirection: 'column' }}>
         <button
           onClick={decreaseHeight}
           className="btn button-custom p-0 m-1"
+          className="btn button-custom p-0 m-1"
         >
+        <ArrowUpCircle />
         <ArrowUpCircle />
         </button>
         <button
           onClick={increaseHeight}
           className="btn button-custom p-0 m-1"
+          className="btn button-custom p-0 m-1"
         >
+        <ArrowDownCircle />
         <ArrowDownCircle />
         </button>
         <button
           onClick={increaseWidth}
           className="btn button-custom p-0 m-1"
+          className="btn button-custom p-0 m-1"
         >
+        <ArrowRightCircle />
         <ArrowRightCircle />
         </button>
         <button
           onClick={decreaseWidth}
           className="btn button-custom p-0 m-1"
+          className="btn button-custom p-0 m-1"
         >
+        <ArrowLeftCircle />
         <ArrowLeftCircle />
         </button>
       </div>
@@ -242,6 +252,7 @@ const nodeTypes = {
 };
 
 const EditChatBotModal = ({ show, handleClose, bot }) => {
+  const [selectedTab, setSelectedTab] = useState('Diagrama');
   const [selectedTab, setSelectedTab] = useState('Diagrama');
   const [code, setCode] = useState('');
   const [nodes, setNodes, onNodesChangeState] = useNodesState([]);
@@ -414,6 +425,7 @@ const closeToolModal = () => {
   
       if (bot.react_flow) {
         const { nodes: initialNodesFromCode, edges: initialEdgesFromCode, variables: initialVariables, assistants: initialAssistants = [] } = JSON.parse(bot.react_flow);
+        const { nodes: initialNodesFromCode, edges: initialEdgesFromCode, variables: initialVariables, assistants: initialAssistants = [] } = JSON.parse(bot.react_flow);
         
         // Filtra duplicados basados en nombre y displayName
         const uniqueVariables = [
@@ -424,6 +436,16 @@ const closeToolModal = () => {
         ].filter((v, index, self) =>
           index === self.findIndex((t) => (
             t.name === v.name && t.displayName === v.displayName
+          ))
+        );
+
+        // Filtrar duplicados para asistentes
+        const uniqueAssistants = [
+          { name: 'Seleccione asistente', displayName: 'Seleccione asistente' },
+          ...initialAssistants
+        ].filter((a, index, self) =>
+          index === self.findIndex((t) => (
+            t.name === a.name && t.displayName === a.displayName && t.model === a.model && t.personality === a.personality
           ))
         );
 
@@ -451,6 +473,7 @@ const closeToolModal = () => {
         setNodes(nodesWithFunctions);
         setEdges(initialEdgesFromCode);
         setVariables(uniqueVariables);
+        setAssistants(uniqueAssistants);
         setAssistants(uniqueAssistants);
       }
     }
@@ -939,6 +962,7 @@ function handleResult(result) {
   const handleSave = async () => {
     try {
       const fullCode = `${baseHeader}\n${code}\n${baseFooter}`;
+      const reactFlowData = JSON.stringify({ nodes, edges, variables, assistants });
       const reactFlowData = JSON.stringify({ nodes, edges, variables, assistants });
       await axios.put(`${process.env.REACT_APP_API_URL}/api/bots/${bot.id_usuario}`, { codigo: fullCode, react_flow: reactFlowData });
       handleClose();
@@ -2018,6 +2042,13 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     }
   
     const newAssistant = { name: assistantName, displayName: assistantName, model: gptModel, personality };
+
+    if (assistants.some(assistant => assistant.name === assistantName)) {
+      alert('Ya existe un asistente con ese nombre. Por favor, elige otro nombre.');
+      return;
+    }
+  
+    const newAssistant = { name: assistantName, displayName: assistantName, model: gptModel, personality };
   
     const newNode = {
       id: `${nodes.length + 1}`,
@@ -2090,6 +2121,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     generateCodeFromNodes(updatedNodes, updatedEdges);
   
     // Insertar el nuevo asistente en la lista de asistentes
+    setAssistants([...assistants, newAssistant]);
     setAssistants([...assistants, newAssistant]);
   
     setShowGptAssistantModal(false);
@@ -3279,8 +3311,20 @@ const generateNodeCode = (node, indent = '') => {
                 >
                   Diagrama
                 </button>
+                <button
+                  className={`button-tool ${selectedTab === 'Diagrama' ? 'active' : ''}`}
+                  onClick={() => setSelectedTab('Diagrama')}
+                >
+                  Diagrama
+                </button>
               </Nav.Item>
               <Nav.Item>
+                <button
+                  className={`button-tool ${selectedTab === 'Código' ? 'active' : ''}`}
+                  onClick={() => setSelectedTab('Código')}
+                >
+                  Código
+                </button>
                 <button
                   className={`button-tool ${selectedTab === 'Código' ? 'active' : ''}`}
                   onClick={() => setSelectedTab('Código')}

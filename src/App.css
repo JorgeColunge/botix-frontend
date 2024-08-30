@@ -637,6 +637,30 @@
   background-color: #fff;
 }
 
+@media (max-width: 767px) {
+  .reply-bar-container {
+    gap: 0;
+    padding: 0;
+  }
+  .message-input {
+    padding: 1.2em 0;
+    padding-left: 1.5em;
+  }
+  .reply-button {
+    padding: 0.1em;
+  }
+  .message-bubble {
+    margin-right: 1em;
+    margin-left: 1em;
+  }
+  .container-fluid{
+    padding-right: 0;
+  }
+  .renderContent{
+    width: 100vw;
+  }
+}
+
 .reply-button, .audio-recorder button {
   background: none;
   border: none;
@@ -709,20 +733,24 @@
 .collapsible-sidebar .nav-item span {
   margin-left: 10px;
 }
+@media all and (min-width: 767px) {
 
-.content-collapsed {
-  margin-left: 70px; /* Ancho cuando la barra está colapsada */
-  transition: margin-left 0.3s;
+  .content-collapsed {
+    margin-left: 70px; /* Ancho cuando la barra está colapsada */
+    transition: margin-left 0.3s;
+  }
+  .renderContent{
+    width: 90vw;
+  }
 }
+
 
 .content-expanded {
   margin-left: 250px; /* Ancho cuando la barra está expandida */
   transition: margin-left 0.3s;
 }
 
-.renderContent{
-  width: 100%;
-}
+
 
 .reply-preview {
   background: rgba(255, 255, 255, 0.8); /* Fondo blanco con transparencia */
@@ -749,4 +777,11 @@
 .message-time svg {
   width: 1.5em;
   height: 1.5em;
+}
+
+.modal-90w {
+  width: 90%;
+  height: 90vh;
+  max-width: none;
+  max-height: none;
 }
