@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Table, Form, InputGroup, FormControl, Row, Col, Nav, Spinner } from 'react-bootstrap';
+import { ArrowDownCircle, ArrowLeft, ArrowLeftCircle, ArrowRightCircle, ArrowUpCircle } from 'react-bootstrap-icons';
 import axios from 'axios';
 import CodeMirror, { color } from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
@@ -17,7 +18,6 @@ import ReactFlow, {
   applyEdgeChanges,
   MarkerType,
 } from 'reactflow';
-import { ResizableBox } from 'react-resizable';
 import 'reactflow/dist/style.css';
 import './BotDiagram.css';
 
@@ -145,70 +145,30 @@ const GroupNode = ({ id, data }) => {
           <span style={{ lineHeight: '1', fontSize: '16px', marginBottom: '4px' }}>+</span>
         </button>
       </div>
-      <div style={{ position: 'absolute', top: '10px', right: '-40px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'absolute', top: '10px', left: '-40px', display: 'flex', flexDirection: 'column' }}>
         <button
           onClick={decreaseHeight}
-          className="btn btn-primary"
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            marginBottom: '5px',
-          }}
+          className="btn button-custom p-0 m-1"
         >
-          ↑
+        <ArrowUpCircle />
         </button>
         <button
           onClick={increaseHeight}
-          className="btn btn-primary"
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            marginBottom: '5px',
-          }}
+          className="btn button-custom p-0 m-1"
         >
-          ↓
+        <ArrowDownCircle />
         </button>
         <button
           onClick={increaseWidth}
-          className="btn btn-primary"
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            marginBottom: '5px',
-          }}
+          className="btn button-custom p-0 m-1"
         >
-          →
+        <ArrowRightCircle />
         </button>
         <button
           onClick={decreaseWidth}
-          className="btn btn-primary"
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            marginBottom: '5px',
-          }}
+          className="btn button-custom p-0 m-1"
         >
-          ←
+        <ArrowLeftCircle />
         </button>
       </div>
     </div>
@@ -282,11 +242,26 @@ const nodeTypes = {
 };
 
 const EditChatBotModal = ({ show, handleClose, bot }) => {
-  const [selectedTab, setSelectedTab] = useState('Código');
+  const [selectedTab, setSelectedTab] = useState('Diagrama');
   const [code, setCode] = useState('');
   const [nodes, setNodes, onNodesChangeState] = useNodesState([]);
   const [edges, setEdges, onEdgesChangeState] = useEdgesState([]);
-  const [variables, setVariables] = useState([{ name: 'Seleccione variable', displayName: 'Seleccione variable' }]);
+  const [variables, setVariables] = useState([{ name: 'Seleccione variable', displayName: 'Seleccione variable' },
+    {name: 'messageData.text', displayName: 'Mensaje de Texto'},
+    {name: 'conversationState', displayName: 'Estado de la conversación'},
+    {name: 'responsibleUserId', displayName: 'Responsable de la conversación'},
+    { name: 'contactInfo', displayName: 'Información del contacto' },
+    { name: 'contactInfo.first_name', displayName: 'Nombre del contacto' },
+    { name: 'contactInfo.last_name', displayName: 'Apellido del contacto' },
+    { name: 'contactInfo.phone_number', displayName: 'Número del contacto' },
+    { name: 'contactInfo.organization', displayName: 'Organización' },
+    { name: 'contactInfo.profile_url', displayName: 'Foto perfil' },
+    { name: 'contactInfo.edad_approx', displayName: 'Edad aproximada' },
+    { name: 'contactInfo.fecha_nacimiento', displayName: 'Fecha de nacimiento' },
+    { name: 'contactInfo.nacionalidad', displayName: 'Nacionalidad' },
+    { name: 'contactInfo.ciudad_residencia', displayName: 'Ciudad de residencia' },
+    { name: 'contactInfo.direccion_completa', displayName: 'Dirección completa' },
+    { name: 'contactInfo.email', displayName: 'Email' }]);
   const [showModal, setShowModal] = useState(false);
   const [selectedVariable, setSelectedVariable] = useState('');
   const [selectedOperator, setSelectedOperator] = useState('==');
@@ -379,8 +354,12 @@ const EditChatBotModal = ({ show, handleClose, bot }) => {
   const [currentState, setCurrentState] = useState({ state: '', description: '' });
   const [showIntentionModal, setShowIntentionModal] = useState(false);
   const [showToolModal, setShowToolModal] = useState(false);
-const [currentNodeId, setCurrentNodeId] = useState(null);
-const [isInternal, setIsInternal] = useState(true);
+  const [currentNodeId, setCurrentNodeId] = useState(null);
+  const [isInternal, setIsInternal] = useState(true);
+  const [showContextModal, setShowContextModal] = useState(false);
+  const [messageCount, setMessageCount] = useState(5); // Default to 5 messages
+  const [selectAllMessages, setSelectAllMessages] = useState(false);
+
 
 const openToolModal = (nodeId, isInternal) => {
   setCurrentNodeId(nodeId);
@@ -434,17 +413,27 @@ const closeToolModal = () => {
       setCode(codeWithoutWrapper.trim());
   
       if (bot.react_flow) {
-        const { nodes: initialNodesFromCode, edges: initialEdgesFromCode, variables: initialVariables = [] } = JSON.parse(bot.react_flow);
+        const { nodes: initialNodesFromCode, edges: initialEdgesFromCode, variables: initialVariables, assistants: initialAssistants = [] } = JSON.parse(bot.react_flow);
         
         // Filtra duplicados basados en nombre y displayName
         const uniqueVariables = [
           { name: 'Seleccione variable', displayName: 'Seleccione variable' },
           { name: 'messageData.text', displayName: 'Mensaje de Texto' },
-          { name: 'responsibleUserId', displayName: 'ID del Responsable' },
+          { name: 'responsibleUserId', displayName: 'Responsable de la conversación' },
           ...initialVariables
         ].filter((v, index, self) =>
           index === self.findIndex((t) => (
             t.name === v.name && t.displayName === v.displayName
+          ))
+        );
+
+        // Filtrar duplicados para asistentes
+        const uniqueAssistants = [
+          { name: 'Seleccione asistente', displayName: 'Seleccione asistente' },
+          ...initialAssistants
+        ].filter((a, index, self) =>
+          index === self.findIndex((t) => (
+            t.name === a.name && t.displayName === a.displayName && t.model === a.model && t.personality === a.personality
           ))
         );
   
@@ -462,6 +451,7 @@ const closeToolModal = () => {
         setNodes(nodesWithFunctions);
         setEdges(initialEdgesFromCode);
         setVariables(uniqueVariables);
+        setAssistants(uniqueAssistants);
       }
     }
   }, [bot]);
@@ -491,66 +481,188 @@ const handleSaveIntentionModal = () => {
   generateCodeForIntentions();
 };
 
-const generateCodeForIntentions = () => {
+const generateCodeForIntentions = async () => {
   let codeArray = [];
-  codeArray.push("const intentions = [\n");
+
+  // Inicio de la generación de código para las intenciones
+  codeArray.push("intentions = [\n");
+
   intentions.forEach(intention => {
-      codeArray.push(`  {\n    name: "${intention.name}",\n    states: [\n`);
-      intention.states.forEach(state => {
-          codeArray.push(`      { state: "${state.state}", description: "${state.description}" },\n`);
-      });
-      codeArray.push("    ]\n  },\n");
+    codeArray.push(`  {\n    name: "${intention.name}",\n    states: [\n`);
+    intention.states.forEach(state => {
+      codeArray.push(`      { state: "${state.state}", description: "${state.description}" },\n`);
+    });
+    codeArray.push("    ]\n  },\n");
   });
+
   codeArray.push("];\n");
 
-  const newNode = {
-      id: `${nodes.length + 1}`,
-      type: 'custom',
-      position: { x: Math.random() * 250, y: Math.random() * 250 },
-      data: {
-          label: `Intenciones`,
-          code: codeArray,
-          onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false)
-      },
-      parentId: isInternal ? currentNodeId : null,
-    };
-    let newEdge
-    if(isInternal){
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
-    }else{
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        sourceHandle: 'b',
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
+  // Generar código para la lógica de evaluación de intenciones usando GPT en partes
+  codeArray.push(`
+  async function evalIntentionGPT(prompt) {
+  apiKey = process.env.OPENAI_API_KEY;
+  url = "https://api.openai.com/v1/chat/completions";
+  headers = {
+    'Authorization': \`Bearer \${apiKey}\`,
+    'Content-Type': 'application/json'
+  };
+  payload = {
+    model: "gpt-4o",
+    messages: [
+      { role: "system", content: \`Compruebas la intención que tiene un cliente con el mensaje que envía. Tienes una lista de intenciones y estados con su descripción. Respondes a las consultas únicamente con la intención y el estado en esta estructura intención,estado, sin paréntesis, espacios adicionales, o cualquier otro carácter. Solo puedes devolver intenciones y estados que existan en las listas proporcionadas, quiero que la respuesta sea exactamente como en la lista que recibes de estados e intenciones, no inventes nombres, ponle exactamente el nombre que se encuentra en la lista. Si no hay coincidencia, responde "null".\` },
+      { role: "user", content: prompt }
+    ]
+  };
+  try {
+    responseGpt = await axios.post(url, payload, { headers });
+    gptResponse = responseGpt.data.choices[0].message.content.trim();
+    console.log(\`Respuesta de GPT: \${gptResponse}\`); // Log para depuración
+    return gptResponse;
+  } catch (error) {
+    console.error("Error al obtener respuesta de GPT:", error);
+    return "Error al obtener la respuesta";
+  }
+}
+
+async function evaluateIntentions(conversationState, messageText) {
+  return new Promise(async (resolve, reject) => {
+    let prompt, result;
+
+    console.log(\`Evaluando intenciones para el estado: \${conversationState} y mensaje: "\${messageText}"\`);
+    console.log("Intenciones y estados enviados a GPT:", JSON.stringify(intentions, null, 2));
+
+    // Primera consulta: Evaluar estado actual dentro de su intención
+    const currentState = intentions.flatMap(i => i.states).find(s => s.state === conversationState);
+    if (currentState) {
+      prompt = \`El estado actual es "\${conversationState}" y el mensaje del cliente es "\${messageText}". Evalúa si el mensaje coincide con esta descripción: "\${currentState.description}". Devuelve solo los valores de intención y estado en el formato intención,estado sin espacios adicionales, paréntesis, o cualquier otro carácter. Si no hay coincidencia, responde "null". Los únicos valores válidos para intención son: \${intentions.map(i => i.name).join(", ")}. Los únicos valores válidos para estado son: \${intentions.flatMap(i => i.states).map(s => s.state).join(", ")}.\`;
+      result = await evalIntentionGPT(prompt);
+      console.log(\`Resultado de la primera consulta: \${result}\`);
     }
+
+    // Si el resultado es nulo o inválido, proceder a la segunda consulta
+    if (!result || result === "null") {
+      const currentIntention = intentions.find(i => i.states.some(s => s.state === conversationState));
+      if (currentIntention) {
+        prompt = \`El mensaje del cliente es "\${messageText}". Evalúa si coincide con alguna de estas descripciones: \${currentIntention.states.map(s => \`"\${s.description}"\`).join(", ")}. Devuelve solo los valores de intención y estado en el formato intención,estado sin espacios adicionales, paréntesis, o cualquier otro carácter. Si no hay coincidencia, responde "null". Los únicos valores válidos para intención son: \${currentIntention.name}. Los únicos valores válidos para estado son: \${currentIntention.states.map(s => s.state).join(", ")}.\`;
+        result = await evalIntentionGPT(prompt);
+        console.log(\`Resultado de la segunda consulta: \${result}\`);
+      }
+    }
+
+    // Si todavía no coincide, proceder a la tercera consulta
+    if (!result || result === "null") {
+      prompt = \`El mensaje del cliente es "\${messageText}". Evalúa si coincide con alguna de estas intenciones y estados:\n\`;
+      intentions.forEach(intention => {
+        prompt += \`Intención: \${intention.name}\n\`;
+        intention.states.forEach(state => {
+          prompt += \`  - Estado: \${state.state}, Descripción: \${state.description}\n\`;
+        });
+      });
+      prompt += \`Devuelve solo los valores de intención y estado en el formato intención,estado sin espacios adicionales, paréntesis, o cualquier otro carácter. Si no hay coincidencia, responde "null". Los únicos valores válidos para intención son: \${intentions.map(i => i.name).join(", ")}. Los únicos valores válidos para estado son: \${intentions.flatMap(i => i.states).map(s => s.state).join(", ")}.\`;
+      result = await evalIntentionGPT(prompt);
+      console.log(\`Resultado de la tercera consulta: \${result}\`);
+    }
+
+    // Manejar el resultado final
+    handleResult(result);
+    resolve();
+  });
+}
+
+function handleResult(result) {
+  if (!result || result === "null" || !result.includes(",")) {
+    console.log("No se encontró ninguna intención o estado relevante o el formato es incorrecto.");
+    return;
+  }
+
+  const [Intent, newConversationState] = result.split(",").map(s => s.trim());
+
+  if (!Intent || !newConversationState) {
+    console.log("El formato del resultado no es válido.");
+    return;
+  }
+
+  // Validar intención y estado contra los valores válidos
+  const validIntentions = intentions.map(i => i.name);
+  const validStates = intentions.flatMap(i => i.states).map(s => s.state);
+
+  if (!validIntentions.includes(Intent) || !validStates.includes(newConversationState)) {
+    console.log("Intención o estado inválido devuelto por GPT.");
+    console.log(\`Intención devuelta: \${Intent}, Estado devuelto: \${newConversationState}\`);
+    return;
+  }
+
+  const validStateForIntention = intentions.find(i => i.name === Intent).states.some(s => s.state === newConversationState);
+  if (!validStateForIntention) {
+    console.log("El estado devuelto no pertenece a la intención devuelta.");
+    return;
+  }
+
+  conversationState = newConversationState;
+  console.log(\`Nueva intención: \${Intent}, Nuevo estado: \${conversationState}\`);
+}
+
+  let messageText = messageData.text;
+
+  // Esperar a que se complete la evaluación de intenciones antes de proceder
+  await evaluateIntentions(conversationState, messageText);
+
+  console.log(\`Estado inicial para el switch: \${conversationState}\`);
+
+`);
+
+  // Añadir el nuevo nodo con el código generado
+  const newNode = {
+    id: `${nodes.length + 1}`,
+    type: 'custom',
+    position: { x: Math.random() * 250, y: Math.random() * 250 },
+    data: {
+      label: `Intenciones`,
+      code: codeArray,
+      onAddClick: (id) => openToolModal(id, true),
+      onAddExternalClick: (id) => openToolModal(id, false)
+    },
+    parentId: isInternal ? currentNodeId : null,
+  };
+
+  // Creación de la nueva arista (edge)
+  let newEdge;
+  if (isInternal) {
+    newEdge = {
+      id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+      source: currentParentId || `${nodes.length}`,
+      target: `${nodes.length + 1}`,
+      animated: true,
+      style: { stroke: '#d033b9' },
+      zIndex: 10,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: '#d033b9',
+      },
+    };
+  } else {
+    newEdge = {
+      id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+      source: currentParentId || `${nodes.length}`,
+      target: `${nodes.length + 1}`,
+      animated: true,
+      sourceHandle: 'b',
+      style: { stroke: '#d033b9' },
+      zIndex: 10,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: '#d033b9',
+      },
+    };
+  }
 
   const updatedNodes = [...nodes, newNode];
   const updatedEdges = [...edges, newEdge];
   setNodes(updatedNodes);
   setEdges(updatedEdges);
 
-  // Aquí puedes guardar o manejar el código generado
-  console.log(codeArray.join('')); 
+  // Imprimir el código generado para verificación
+  console.log(codeArray.join(''));
 };
 
 
@@ -827,7 +939,7 @@ const generateCodeForIntentions = () => {
   const handleSave = async () => {
     try {
       const fullCode = `${baseHeader}\n${code}\n${baseFooter}`;
-      const reactFlowData = JSON.stringify({ nodes, edges, variables });
+      const reactFlowData = JSON.stringify({ nodes, edges, variables, assistants });
       await axios.put(`${process.env.REACT_APP_API_URL}/api/bots/${bot.id_usuario}`, { codigo: fullCode, react_flow: reactFlowData });
       handleClose();
     } catch (error) {
@@ -954,7 +1066,65 @@ const generateCodeForIntentions = () => {
     generateCodeFromNodes(updatedNodes, updatedEdges);
   };
 
-  const addConversationStateNode = () => {
+  // Función para manejar la apertura del modal de contexto
+  const handleOpenContextModal = () => {
+    setShowContextModal(true);
+    setMessageCount(5); // Resetea la cantidad de mensajes a 5 por defecto
+    setSelectAllMessages(false); // Resetea el checkbox
+  };
+
+  // Función para manejar el guardado del modal de contexto
+const handleContextModalSave = () => {
+  const numberOfMessages = selectAllMessages ? 'ALL' : messageCount;
+
+  // Modificar la consulta SQL para incluir el origen del mensaje
+  const newNode = {
+    id: `${nodes.length + 1}`,
+    type: 'custom',
+    position: { x: Math.random() * 250, y: Math.random() * 250 },
+    data: {
+      label: `Generar Contexto: ${selectAllMessages ? 'Todos los mensajes' : messageCount + ' mensajes'}`,
+      code: [
+        `const getLastMessagesQuery = \`
+(SELECT 'cliente' AS origin, message_text AS text, received_at AS created_at FROM messages WHERE sender_id = $1 AND conversation_fk = $2 ORDER BY received_at DESC LIMIT ${numberOfMessages})
+UNION ALL
+(SELECT 'yo' AS origin, reply_text AS text, created_at FROM replies WHERE sender_id = $1 AND conversation_fk = $2 ORDER BY created_at DESC LIMIT ${numberOfMessages})
+ORDER BY created_at ASC\`;
+  
+const messagesRes = await pool.query(getLastMessagesQuery, [senderId, conversationId]);
+const lastMessages = messagesRes.rows.map(row => \`\${row.origin}: \${row.text}\`); // Agregar el origen al mensaje
+console.log('Contexto generado:', lastMessages.join(' '));`
+      ],
+      onAddClick: (id) => openToolModal(id, true),
+      onAddExternalClick: (id) => openToolModal(id, false)
+    },
+    parentId: null, // Ajusta según sea necesario
+  };
+
+  // Crear el edge si es necesario
+  const newEdge = {
+    id: `e${nodes.length}-${nodes.length + 1}`,
+    source: `${nodes.length}`,
+    target: `${nodes.length + 1}`,
+    animated: true,
+    style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+    zIndex: 10, // Ajusta el zIndex si es necesario
+    markerEnd: {
+      type: MarkerType.ArrowClosed, // Flecha al final de la línea
+      color: '#d033b9', // Ajusta el color de la flecha aquí
+    },
+  };
+
+  const updatedNodes = [...nodes, newNode];
+  const updatedEdges = [...edges, newEdge];
+
+  setNodes(updatedNodes);
+  setEdges(updatedEdges);
+  setVariables((vars) => [...vars, { name: "lastMessages", displayName: "Mensajes con contexto", nodeId: newNode.id }]);
+  setShowContextModal(false);
+};
+
+  /*const addConversationStateNode = () => {
     const newNode = {
       id: `${nodes.length + 1}`,
       type: 'custom',
@@ -965,7 +1135,7 @@ const generateCodeForIntentions = () => {
           `// Obtener el estado de la conversación`,
           `const conversationStateQuery = 'SELECT state FROM conversations WHERE conversation_id = $1';`,
           `const conversationStateResult = await pool.query(conversationStateQuery, [conversationId]);`,
-          `const conversationState = conversationStateResult.rows[0]?.state;`
+          `let conversationState = conversationStateResult.rows[0]?.state;\n\n`
         ],
         onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false)
       },
@@ -1015,9 +1185,9 @@ const generateCodeForIntentions = () => {
     setEdges(updatedEdges);
     setVariables(uniqueVariables);
     generateCodeFromNodes(updatedNodes, updatedEdges);
-  };
+  };*/
 
-  const addResponsibleNode = () => {
+  /*const addResponsibleNode = () => {
     const newNode = {
       id: `${nodes.length + 1}`,
       type: 'custom',
@@ -1076,9 +1246,9 @@ const generateCodeForIntentions = () => {
     setEdges(updatedEdges);
     setVariables(uniqueVariables);
     generateCodeFromNodes(updatedNodes, updatedEdges);
-  };  
+  };*/
 
-  const addContactInfoNode = () => {
+  /*const addContactInfoNode = () => {
     const newNode = {
       id: `${nodes.length + 1}`,
       type: 'custom',
@@ -1149,7 +1319,7 @@ const generateCodeForIntentions = () => {
     setEdges(updatedEdges);
     setVariables(uniqueVariables);
     generateCodeFromNodes(updatedNodes, updatedEdges);
-  };
+  };*/
   
 
   const handleConcatVariablesSave = () => {
@@ -1841,6 +2011,13 @@ const generateCodeForIntentions = () => {
       alert('Ya existe un asistente con ese nombre. Por favor, elige otro nombre.');
       return;
     }
+
+    if (assistants.some(assistant => assistant.name === assistantName)) {
+      alert('Ya existe un asistente con ese nombre. Por favor, elige otro nombre.');
+      return;
+    }
+  
+    const newAssistant = { name: assistantName, displayName: assistantName, model: gptModel, personality };
   
     const newNode = {
       id: `${nodes.length + 1}`,
@@ -1850,13 +2027,13 @@ const generateCodeForIntentions = () => {
         label: `Asistente GPT: ${assistantName}`,
         code: [
           `async function ${assistantName}(prompt) {`,
-          `  const apiKey = process.env.OPENAI_API_KEY;`,
+          `  apiKey = process.env.OPENAI_API_KEY;`,
           `  const url = "https://api.openai.com/v1/chat/completions";`,
-          `  const headers = {`,
+          `  headers = {`,
           `    'Authorization': \`Bearer \${apiKey}\`,`,
           `    'Content-Type': 'application/json'`,
           `  };`,
-          `  const payload = {`,
+          `  payload = {`,
           `    model: "${gptModel}",`,
           `    messages: [`,
           `      { role: "system", content: "${personality}" },`,
@@ -1864,8 +2041,8 @@ const generateCodeForIntentions = () => {
           `    ]`,
           `  };`,
           `  try {`,
-          `    const response = await axios.post(url, payload, { headers });`,
-          `    return response.data.choices[0].message.content.trim();`,
+          `    responseGpt = await axios.post(url, payload, { headers });`,
+          `    return responseGpt.data.choices[0].message.content.trim();`,
           `  } catch (error) {`,
           `    console.error("Error al obtener respuesta de GPT:", error);`,
           `    return "Error al obtener la respuesta";`,
@@ -1913,7 +2090,7 @@ const generateCodeForIntentions = () => {
     generateCodeFromNodes(updatedNodes, updatedEdges);
   
     // Insertar el nuevo asistente en la lista de asistentes
-    setAssistants([...assistants, { name: assistantName, displayName: assistantName }]);
+    setAssistants([...assistants, newAssistant]);
   
     setShowGptAssistantModal(false);
     setAssistantName('');
@@ -2819,7 +2996,7 @@ const generateCodeForIntentions = () => {
   };   
 
   const generateCodeFromNodes = (nodes, edges) => {
-    let initialDeclarations = 'let responseText;\nlet responseImage;\nlet responseVideo;\nlet responseDocument;\nlet responseAudio;\nlet latitude;\nlet longitude;\nlet streetName;\nlet videoDuration;\nlet videoThumbnail;\nlet payload;\nlet requestType;\nlet requestStatus;\nlet nuevoStatus;\nlet requestData;\nlet existingRequestQuery;\nlet existingRequestResult;\nlet requestId;\nlet updateRequestQuery;\nlet insertRequestQuery;\nlet headersRequest;\nlet requestQueryExternal;\nlet requestResultExternal;\nlet requestDataExternal;\nlet credentialsRequest;\nlet updateStatusQueryExternal;\nlet responseExternal;\n';
+    let initialDeclarations = 'let responseText;\nlet responseImage;\nlet responseVideo;\nlet responseDocument;\nlet responseAudio;\nlet latitude;\nlet longitude;\nlet streetName;\nlet videoDuration;\nlet videoThumbnail;\nlet payload;\nlet requestType;\nlet requestStatus;\nlet nuevoStatus;\nlet requestData;\nlet existingRequestQuery;\nlet existingRequestResult;\nlet requestId;\nlet updateRequestQuery;\nlet insertRequestQuery;\nlet headersRequest;\nlet requestQueryExternal;\nlet requestResultExternal;\nlet requestDataExternal;\nlet credentialsRequest;\nlet updateStatusQueryExternal;\nlet responseExternal;\nlet intentions;\nlet apiKey;\nlet url;\nlet headers;\nlet responseGpt;\nlet gptResponse;\n';
 
     initialDeclarations += `const queryConversation = \`
     SELECT
@@ -2968,7 +3145,39 @@ let resTemplate = {
     console.log('Response:', data);
     return this;
   }
-};\n\n`;
+};\n\n
+
+async function updateContact(io, phoneNumber, companyId, contactFieldName, contactFieldValue) {
+ const query = \`
+ UPDATE contacts SET
+ \${contactFieldName} = $3
+ WHERE phone_number = $1 AND company_id = $2
+ RETURNING *;
+ \`;
+ try {
+ const result = await pool.query(query, [phoneNumber, companyId, contactFieldValue]);
+ if (result.rows.length > 0) {
+ const updatedContact = result.rows[0];
+ io.emit('contactUpdated', updatedContact);
+ } else {
+ console.log('No contact found for the given phone number and company ID.');
+ }
+ } catch (err) {
+ console.error('Database error in updateContact:', err);
+ throw err;
+ }
+ }\n\n
+`;
+
+initialDeclarations +=`const contactInfo = await getContactInfo(senderId, integrationDetails.company_id);
+
+const responsibleRes = await pool.query('SELECT id_usuario FROM conversations WHERE conversation_id = $1', [conversationId]);
+const responsibleUserId = responsibleRes.rows[0].id_usuario;
+
+// Obtener el estado de la conversación,
+const conversationStateQuery = 'SELECT state FROM conversations WHERE conversation_id = $1';
+const conversationStateResult = await pool.query(conversationStateQuery, [conversationId]);
+let conversationState = conversationStateResult.rows[0]?.state;\n\n`;
   
 const generateNodeCode = (node, indent = '') => {
   let nodeCode = '';
@@ -3064,10 +3273,20 @@ const generateNodeCode = (node, indent = '') => {
           <Col md={2}>
             <Nav variant="pills" className="flex-column">
               <Nav.Item>
-                <Nav.Link active={selectedTab === 'Código'} onClick={() => setSelectedTab('Código')}>Código</Nav.Link>
+                <button
+                  className={`button-tool ${selectedTab === 'Diagrama' ? 'active' : ''}`}
+                  onClick={() => setSelectedTab('Diagrama')}
+                >
+                  Diagrama
+                </button>
               </Nav.Item>
               <Nav.Item>
-                <Nav.Link active={selectedTab === 'Diagrama'} onClick={() => setSelectedTab('Diagrama')}>Diagrama</Nav.Link>
+                <button
+                  className={`button-tool ${selectedTab === 'Código' ? 'active' : ''}`}
+                  onClick={() => setSelectedTab('Código')}
+                >
+                  Código
+                </button>
               </Nav.Item>
             </Nav>
           </Col>
@@ -3182,6 +3401,7 @@ const generateNodeCode = (node, indent = '') => {
                     <option value=">=">Mayor igual</option>
                     <option value="<=">Menor igual</option>
                     <option value="!">No Existe</option>
+                    <option value="includes">Incluye</option>
                   </Form.Control>
                 </Form.Group>
                 {condition.operator !== '!' && (
@@ -4381,6 +4601,42 @@ const generateNodeCode = (node, indent = '') => {
             </Modal.Footer>
         </Modal>
 
+        <Modal show={showContextModal} onHide={() => setShowContextModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Generar Contexto</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group controlId="formMessageCount">
+              <Form.Label>Cantidad de Mensajes</Form.Label>
+              <Form.Control 
+                type="number" 
+                min="1" 
+                disabled={selectAllMessages}
+                value={messageCount} 
+                onChange={(e) => setMessageCount(e.target.value)} 
+              />
+            </Form.Group>
+            <Form.Group controlId="formSelectAllMessages">
+              <Form.Check 
+                type="checkbox" 
+                label="Todos" 
+                checked={selectAllMessages}
+                onChange={(e) => setSelectAllMessages(e.target.checked)} 
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowContextModal(false)}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={handleContextModalSave}>
+            Generar
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
         <Modal show={showToolModal} onHide={closeToolModal}>
   <Modal.Header closeButton>
     <Modal.Title>Seleccionar Herramienta</Modal.Title>
@@ -4388,12 +4644,9 @@ const generateNodeCode = (node, indent = '') => {
   <Modal.Body>
     <div className="toolbar">
       <button onClick={() => addConsoleLogNode(currentNodeId)}>Imprimir en consola</button>
-      <button onClick={() => addConversationStateNode(currentNodeId)}>Estado de la conversación</button>
-      <button onClick={() => addResponsibleNode(currentNodeId)}>Responsable conversación</button>
-      <button onClick={() => addContactInfoNode(currentNodeId)}>Información del contacto</button>
+      <button onClick={handleOpenContextModal}>Generar Contexto</button>
       <button onClick={() => addConditionalNode(currentNodeId)}>Condicional</button>
       <button onClick={() => addSwitchNode(currentNodeId)}>Switch</button>
-      <button onClick={() => addCaseNode(currentNodeId)} disabled={!currentSwitchNode}>Caso</button>
       <button onClick={() => addSendTextNode(currentNodeId)}>Enviar Texto</button>
       <button onClick={() => setShowResponseImageModal(true)}>Enviar Imagen</button>
       <button onClick={() => setShowResponseVideoModal(true)}>Enviar Video</button>
@@ -4407,14 +4660,7 @@ const generateNodeCode = (node, indent = '') => {
       <button onClick={() => addGptQueryNode(currentNodeId)}>Consultar GPT</button>
       <button onClick={() => addSplitVariableNode(currentNodeId)}>Dividir Variable</button>
       <button onClick={() => addUpdateContactNameNode(currentNodeId)}>Actualizar nombre contacto</button>
-      <button onClick={() => setShowUpdateContactInitializerModal(true)}>Actualizador contacto</button>
-      <button onClick={() => {
-        if (nodes.some(node => node.data.label === 'Actualizador contacto')) {
-          setShowUpdateContactModal(true);
-        } else {
-          alert('Debe agregar primero un "Actualizador contacto".');
-        }
-      }}>Actualizar contacto</button>
+      <button onClick={() => {setShowUpdateContactModal(true);}}>Actualizar contacto</button>
       <button onClick={() => addChangeResponsibleNode(currentNodeId)}>Cambiar responsable</button>
       <button onClick={() => setShowRequestModal(true)}>Llenar Solicitud</button>
       <button onClick={() => addExternalRequestNode(currentNodeId)}>Crear Solicitud Externa</button>
