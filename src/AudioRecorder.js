@@ -16,61 +16,36 @@ export const AudioRecorder = ({ onSend }) => {
   const audioChunksRef = useRef([]);
 
   const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    
-      // Intenta inicializar MediaRecorder sin especificar códec
-      if (MediaRecorder.isTypeSupported('audio/webm; codecs=opus')) {
-        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm; codecs=opus' });
-      } else {
-        mediaRecorderRef.current = new MediaRecorder(stream);
-      }
-    
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-    
-      mediaRecorderRef.current.onstop = async () => {
-        setIsProcessing(true);
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setAudioUrl(audioUrl);
-        setAudioBlob(audioBlob);
-        audioChunksRef.current = [];
-    
-        try {
-          const formData = new FormData();
-          formData.append('audio', audioBlob, 'recording.webm');
-    
-          const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-audio`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-    
-          const backendUrl = response.data.audioUrl;
-          setBackendAudioUrl(backendUrl);
-        } catch (error) {
-          console.error('Error subiendo el audio:', error);
-        } finally {
-          setIsProcessing(false);
+      // Solicitar acceso al micrófono
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1, // Intentar forzar la captura de un solo canal de audio (mono)
         }
-      };
-    
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-      setIsPaused(false);
-    } catch (error) {
-      console.log(error);
-      Swal.fire({
-        title: "Error",
-        text: `Error al intentar grabar audio. 
-        Error: ${error}`,
-        icon: "error"
       });
-    }
-    
-  };  
+
+
+      setIsProcessing(true);
+      const audioBlob = new Blob(audioChunksRef.current, {  type: 'audio/ogg; codecs=opus' })
+      const audioUrl = URL.createObjectURL(audioBlob);
+      setAudioUrl(audioUrl);
+      setAudioBlob(audioBlob);
+      audioChunksRef.current = [];
+      try {
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'recording.ogg');
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-audio`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        const backendUrl = response.data.audioUrl;
+        setBackendAudioUrl(backendUrl);
+      } catch (error) {
+        console.error('Error uploading audio:', error);
+      } finally {
+        setIsProcessing(false);
+      }
+    };
 
   const stopRecording = () => {
     mediaRecorderRef.current.stop();
