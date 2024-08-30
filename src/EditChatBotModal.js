@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Table, Form, InputGroup, FormControl, Row, Col, Nav, Spinner } from 'react-bootstrap';
 import { ArrowDownCircle, ArrowLeft, ArrowLeftCircle, ArrowRightCircle, ArrowUpCircle } from 'react-bootstrap-icons';
-import { ArrowDownCircle, ArrowLeft, ArrowLeftCircle, ArrowRightCircle, ArrowUpCircle } from 'react-bootstrap-icons';
 import axios from 'axios';
 import CodeMirror, { color } from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
@@ -23,18 +22,18 @@ import 'reactflow/dist/style.css';
 import './BotDiagram.css';
 
 const baseHeader = `(async function(
-  sendTextMessage, 
-  sendImageMessage, 
-  sendVideoMessage, 
-  sendDocumentMessage, 
-  sendAudioMessage, 
-  sendTemplateMessage, 
-  sendTemplateToSingleContact, 
+  sendTextMessage,
+  sendImageMessage,
+  sendVideoMessage,
+  sendDocumentMessage,
+  sendAudioMessage,
+  sendTemplateMessage,
+  sendTemplateToSingleContact,
   sendLocationMessage,
-  io, 
-  senderId, 
-  messageData, 
-  conversationId, 
+  io,
+  senderId,
+  messageData,
+  conversationId,
   pool,
   axios,
   getContactInfo,
@@ -147,37 +146,28 @@ const GroupNode = ({ id, data }) => {
         </button>
       </div>
       <div style={{ position: 'absolute', top: '10px', left: '-40px', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ position: 'absolute', top: '10px', left: '-40px', display: 'flex', flexDirection: 'column' }}>
         <button
           onClick={decreaseHeight}
           className="btn button-custom p-0 m-1"
-          className="btn button-custom p-0 m-1"
         >
-        <ArrowUpCircle />
         <ArrowUpCircle />
         </button>
         <button
           onClick={increaseHeight}
           className="btn button-custom p-0 m-1"
-          className="btn button-custom p-0 m-1"
         >
-        <ArrowDownCircle />
         <ArrowDownCircle />
         </button>
         <button
           onClick={increaseWidth}
           className="btn button-custom p-0 m-1"
-          className="btn button-custom p-0 m-1"
         >
-        <ArrowRightCircle />
         <ArrowRightCircle />
         </button>
         <button
           onClick={decreaseWidth}
           className="btn button-custom p-0 m-1"
-          className="btn button-custom p-0 m-1"
         >
-        <ArrowLeftCircle />
         <ArrowLeftCircle />
         </button>
       </div>
@@ -212,7 +202,7 @@ const nodeTypes = {
         <span style={{ lineHeight: '1', fontSize: '16px', marginBottom: '4px' }}>+</span>
       </button>
     </div>
-  ), 
+  ),
   conditional: ({ data }) => (
     <div style={{position: 'relative', padding: '10px', paddingTop: '25px', paddingBottom: '25px', border: '1px solid #b1b1b1', borderRadius: '15px', background: '#fff', boxShadow: '0px 0px 20px #7a7a7a' }}>
       <Handle type="target" position="top" />
@@ -252,7 +242,6 @@ const nodeTypes = {
 };
 
 const EditChatBotModal = ({ show, handleClose, bot }) => {
-  const [selectedTab, setSelectedTab] = useState('Diagrama');
   const [selectedTab, setSelectedTab] = useState('Diagrama');
   const [code, setCode] = useState('');
   const [nodes, setNodes, onNodesChangeState] = useNodesState([]);
@@ -414,7 +403,7 @@ const closeToolModal = () => {
     { name: 'estilo_de_vida', displayName: 'Estilo de Vida' },
     { name: 'personalidad', displayName: 'Personalidad' },
     { name: 'cultura', displayName: 'Cultura' }
-  ];  
+  ];
 
 
   useEffect(() => {
@@ -422,11 +411,10 @@ const closeToolModal = () => {
       const initialCode = bot.codigo || `${baseHeader}\n// Insert generated code here\n${baseFooter}`;
       const codeWithoutWrapper = initialCode.replace(baseHeader, '').replace(baseFooter, '');
       setCode(codeWithoutWrapper.trim());
-  
+
       if (bot.react_flow) {
         const { nodes: initialNodesFromCode, edges: initialEdgesFromCode, variables: initialVariables, assistants: initialAssistants = [] } = JSON.parse(bot.react_flow);
-        const { nodes: initialNodesFromCode, edges: initialEdgesFromCode, variables: initialVariables, assistants: initialAssistants = [] } = JSON.parse(bot.react_flow);
-        
+
         // Filtra duplicados basados en nombre y displayName
         const uniqueVariables = [
           { name: 'Seleccione variable', displayName: 'Seleccione variable' },
@@ -449,16 +437,6 @@ const closeToolModal = () => {
           ))
         );
 
-        // Filtrar duplicados para asistentes
-        const uniqueAssistants = [
-          { name: 'Seleccione asistente', displayName: 'Seleccione asistente' },
-          ...initialAssistants
-        ].filter((a, index, self) =>
-          index === self.findIndex((t) => (
-            t.name === a.name && t.displayName === a.displayName && t.model === a.model && t.personality === a.personality
-          ))
-        );
-  
         // Añadir métodos onAddClick y onAddExternalClick a cada nodo, independientemente del tipo
         const nodesWithFunctions = initialNodesFromCode.map((node) => ({
           ...node,
@@ -469,17 +447,16 @@ const closeToolModal = () => {
             setNodes,
           },
         }));
-  
+
         setNodes(nodesWithFunctions);
         setEdges(initialEdgesFromCode);
         setVariables(uniqueVariables);
         setAssistants(uniqueAssistants);
-        setAssistants(uniqueAssistants);
       }
     }
   }, [bot]);
-  
-  
+
+
 
     const handleAddState = () => {
       if (currentState.state && currentState.description) {
@@ -490,8 +467,8 @@ const closeToolModal = () => {
           setCurrentState({ state: '', description: '' });
       }
   };
- 
-  
+
+
   const handleAddIntention = () => {
     if (currentIntention.name) {
         setIntentions([...intentions, currentIntention]);
@@ -693,18 +670,18 @@ function handleResult(result) {
     const handleAddExternalData = () => {
       setExternalDataItems([...externalDataItems, { variableName: '', dataPath: '' }]);
     };
-    
+
     const handleExternalDataChange = (index, field, value) => {
       const updatedItems = [...externalDataItems];
       updatedItems[index][field] = value;
       setExternalDataItems(updatedItems);
     };
-    
+
     const handleExternalDataSave = () => {
       const variablesToAdd = externalDataItems.map(item => {
         return `const ${item.variableName} = externalData.${item.dataPath};`;
       }).join('\n');
-    
+
       // Crear el nuevo nodo y actualizar el flujo
       const newNode = {
         id: `${nodes.length + 1}`,
@@ -746,14 +723,14 @@ function handleResult(result) {
         },
       };
     }
-    
+
       // Crear las nuevas variables con el formato requerido
       const newVariables = externalDataItems.map(item => ({
         name: item.variableName,
         displayName: item.variableName,
         nodeId: newNode.id,
       }));
-    
+
       const updatedNodes = [...nodes, newNode];
       const updatedEdges = [...edges, newEdge];
       setNodes(updatedNodes);
@@ -781,13 +758,13 @@ function handleResult(result) {
     const addExternalRequestNode = () => {
       setShowExternalRequestModal(true);
     };
-    
+
     const handleExternalRequestModalSave = () => {
       const functionName = `sendRequestTo${externalServiceName}`;
       const credentialsCode = externalCredentials
         .map(cred => `const ${cred.key} = "${cred.value}";`)
         .join('\n');
-    
+
       let externalRequestCode = `
     async function ${functionName}(requestId) {
       console.log("Enviando solicitud a ${externalServiceName}");
@@ -796,13 +773,13 @@ function handleResult(result) {
         requestResultExternal = await pool.query(requestQueryExternal, [requestId]);
         requestDataExternal = requestResultExternal.rows[0];
       `;
-    
+
       if (credentialsLocation === 'headers') {
         externalRequestCode += `
         headersRequest = {
           ${externalCredentials.map(cred => `"${cred.key}": "${cred.value}"`).join(',\n')}
         };
-    
+
         responseExternal = await axios.post('${externalServiceUrl}', requestData, {
           headers: headersRequest
         });
@@ -812,11 +789,11 @@ function handleResult(result) {
         credentialsRequest = {
           ${externalCredentials.map(cred => `${cred.key}: "${cred.value}"`).join(',\n')}
         };
-    
+
         responseExternal = await axios.post('${externalServiceUrl}', {...requestData, ...credentialsRequest});
         `;
       }
-    
+
       externalRequestCode += `
         if (responseExternal.status === 200) {
           updateStatusQuery = 'UPDATE requests SET status = $1 WHERE request_id = $2';
@@ -827,7 +804,7 @@ function handleResult(result) {
       }
     }
     `;
-        
+
       const newNode = {
         id: `${nodes.length + 1}`,
         type: 'custom',
@@ -864,13 +841,13 @@ function handleResult(result) {
         },
       };
     }
-    
+
       const updatedNodes = [...nodes, newNode];
       const updatedEdges = [...edges, newEdge];
-    
+
       // Guardar el nombre del servicio en un arreglo de solicitudes externas
       setExternalRequests((reqs) => [...reqs, { name: externalServiceName, url: externalServiceUrl }]);
-      
+
       setNodes(updatedNodes);
       setEdges(updatedEdges);
       generateCodeFromNodes(updatedNodes, updatedEdges);
@@ -883,7 +860,7 @@ function handleResult(result) {
 
     const handleAddRequestComponent = () => {
       if (!selectedService) return;
-    
+
       const functionName = `sendRequestTo${selectedService}`;
       const newNode = {
         id: `${nodes.length + 1}`,
@@ -921,10 +898,10 @@ function handleResult(result) {
         },
       };
     }
-    
+
       const updatedNodes = [...nodes, newNode];
       const updatedEdges = [...edges, newEdge];
-    
+
       setNodes(updatedNodes);
       setEdges(updatedEdges);
       generateCodeFromNodes(updatedNodes, updatedEdges);
@@ -963,7 +940,6 @@ function handleResult(result) {
     try {
       const fullCode = `${baseHeader}\n${code}\n${baseFooter}`;
       const reactFlowData = JSON.stringify({ nodes, edges, variables, assistants });
-      const reactFlowData = JSON.stringify({ nodes, edges, variables, assistants });
       await axios.put(`${process.env.REACT_APP_API_URL}/api/bots/${bot.id_usuario}`, { codigo: fullCode, react_flow: reactFlowData });
       handleClose();
     } catch (error) {
@@ -978,7 +954,7 @@ function handleResult(result) {
       }
       return edge;
     }));
-  
+
     // Actualizar el parentId del nodo hijo con la nueva conexión
     setNodes((nds) => nds.map((node) => {
       if (node.id === newConnection.target) {
@@ -989,11 +965,11 @@ function handleResult(result) {
       }
       return node;
     }));
-  };  
+  };
 
   const handleEdgeDelete = (edgeToDelete) => {
     setEdges((eds) => eds.filter((edge) => edge.id !== edgeToDelete.id));
-  
+
     // Eliminar el parentId del nodo hijo que estaba conectado, si existía una conexión previa
     setNodes((nds) => nds.map((node) => {
       if (node.id === edgeToDelete.target) {
@@ -1005,7 +981,7 @@ function handleResult(result) {
       return node;
     }));
   };
-  
+
   const onConnect = (params) => {
     const newEdge = {
       id: `e${params.source}-${params.target}`,
@@ -1023,15 +999,15 @@ function handleResult(result) {
     const updatedEdges = [...edges, newEdge];
     setEdges(updatedEdges);
   };
-  
+
   const onEdgeUpdate = (oldEdge, newConnection) => {
     handleEdgeUpdate(oldEdge, newConnection);
   };
-  
+
   const onEdgeDelete = (edgeToDelete) => {
     handleEdgeDelete(edgeToDelete);
   };
-  
+
 
   const onElementsRemove = useCallback(
     (elementsToRemove) => {
@@ -1082,7 +1058,7 @@ function handleResult(result) {
         },
       };
     }
-    
+
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
     setNodes(updatedNodes);
@@ -1114,7 +1090,7 @@ const handleContextModalSave = () => {
 UNION ALL
 (SELECT 'yo' AS origin, reply_text AS text, created_at FROM replies WHERE sender_id = $1 AND conversation_fk = $2 ORDER BY created_at DESC LIMIT ${numberOfMessages})
 ORDER BY created_at ASC\`;
-  
+
 const messagesRes = await pool.query(getLastMessagesQuery, [senderId, conversationId]);
 const lastMessages = messagesRes.rows.map(row => \`\${row.origin}: \${row.text}\`); // Agregar el origen al mensaje
 console.log('Contexto generado:', lastMessages.join(' '));`
@@ -1153,8 +1129,8 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       id: `${nodes.length + 1}`,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
-      data: { 
-        label: 'Obtener el estado de la conversación', 
+      data: {
+        label: 'Obtener el estado de la conversación',
         code: [
           `// Obtener el estado de la conversación`,
           `const conversationStateQuery = 'SELECT state FROM conversations WHERE conversation_id = $1';`,
@@ -1196,7 +1172,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     }
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
-  
+
     // Filtra duplicados
     const newVariable = { name: 'conversationState', displayName: 'Estado de la Conversación', nodeId: newNode.id };
     const uniqueVariables = [...variables, newVariable].filter((v, index, self) =>
@@ -1204,7 +1180,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         t.name === v.name && t.displayName === v.displayName
       ))
     );
-  
+
     setNodes(updatedNodes);
     setEdges(updatedEdges);
     setVariables(uniqueVariables);
@@ -1257,7 +1233,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     }
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
-  
+
     // Filtra duplicados
     const newVariable = { name: 'responsibleUserId', displayName: 'ID del Responsable', nodeId: newNode.id };
     const uniqueVariables = [...variables, newVariable].filter((v, index, self) =>
@@ -1265,7 +1241,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         t.name === v.name && t.displayName === v.displayName
       ))
     );
-  
+
     setNodes(updatedNodes);
     setEdges(updatedEdges);
     setVariables(uniqueVariables);
@@ -1277,8 +1253,8 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       id: `${nodes.length + 1}`,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
-      data: { 
-        label: 'Obtener información del contacto', 
+      data: {
+        label: 'Obtener información del contacto',
         code: [`const contactInfo = await getContactInfo(senderId, integrationDetails.company_id);`],
         onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false)
       },
@@ -1315,7 +1291,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     }
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
-  
+
     // Filtra duplicados
     const newVariables = [
       { name: 'contactInfo', displayName: 'Información del contacto', nodeId: newNode.id },
@@ -1332,19 +1308,19 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       { name: 'contactInfo.direccion_completa', displayName: 'Dirección completa', nodeId: newNode.id },
       { name: 'contactInfo.email', displayName: 'Email', nodeId: newNode.id }
     ];
-  
+
     const uniqueVariables = [...variables, ...newVariables].filter((v, index, self) =>
       index === self.findIndex((t) => (
         t.name === v.name && t.displayName === v.displayName
       ))
     );
-  
+
     setNodes(updatedNodes);
     setEdges(updatedEdges);
     setVariables(uniqueVariables);
     generateCodeFromNodes(updatedNodes, updatedEdges);
   };*/
-  
+
 
   const handleConcatVariablesSave = () => {
     const variablesStr = concatVariables
@@ -1352,7 +1328,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       .join(' ');
 
     const concatCode = `const ${concatResultName} = \`${variablesStr}\`;`;
-    
+
     const newNode = {
       id: `${nodes.length + 1}`,
       type: 'custom',
@@ -1408,7 +1384,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       console.error('No company ID or token found');
       return;
     }
-  
+
     try {
       setLoading(true);
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/templates`, {
@@ -1422,7 +1398,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       setLoading(false);
     }
   };
-  
+
   const openTemplateModal = () => {
     fetchTemplates();
     setShowResponseTemplateModal(true);
@@ -1431,11 +1407,11 @@ console.log('Contexto generado:', lastMessages.join(' '));`
   const addRequestData = () => {
     setRequestData([...requestData, { key: '', value: '' }]);
   };
-  
+
   const removeRequestData = (index) => {
     setRequestData(requestData.filter((_, i) => i !== index));
   };
-  
+
   const updateRequestData = (index, field, value) => {
     const newRequestData = [...requestData];
     newRequestData[index][field] = value;
@@ -1445,17 +1421,17 @@ console.log('Contexto generado:', lastMessages.join(' '));`
   const addValidationCondition = () => {
     setValidationConditions([...validationConditions, { key: '', value: '' }]);
   };
-  
+
   const removeValidationCondition = (index) => {
     setValidationConditions(validationConditions.filter((_, i) => i !== index));
   };
-  
+
   const updateValidationCondition = (index, field, value) => {
     const newValidationConditions = [...validationConditions];
     newValidationConditions[index][field] = value;
     setValidationConditions(newValidationConditions);
   };
-  
+
 
   const handleRequestModalSave = () => {
     const requestDataObject = requestData.reduce((obj, item) => {
@@ -1469,8 +1445,8 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         .map(condition => `(request_data->>'${condition.key}') = '${condition.value}'`);
 
     // Genera la cadena de condiciones de validación
-    const validationConditionString = validationConditionsArray.length > 0 
-        ? ` AND ${validationConditionsArray.join(' AND ')}` 
+    const validationConditionString = validationConditionsArray.length > 0
+        ? ` AND ${validationConditionsArray.join(' AND ')}`
         : '';
 
     // Genera el código para la inserción/actualización de la solicitud
@@ -1482,12 +1458,12 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     if (validateExistence) {
         code += `
         existingRequestQuery = \`
-          SELECT request_id 
-          FROM requests 
-          WHERE conversation_id = $1 
-            AND request_type = $2 
-            AND status = $3 
-            AND company_id = $4 
+          SELECT request_id
+          FROM requests
+          WHERE conversation_id = $1
+            AND request_type = $2
+            AND status = $3
+            AND company_id = $4
             ${validationConditionString};
         \`;
         existingRequestResult = await pool.query(existingRequestQuery, [conversationId, requestType, requestStatus, integrationDetails.company_id]);
@@ -1583,23 +1559,23 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     setRequestData([{ key: '', value: '' }]);
     setValidationConditions([{ key: '', value: '' }]);  // Resetear las condiciones de validación
 };
-  
+
 
   const handleResponseImageModalSave = async () => {
     try {
       // Cargar la imagen al backend
       const formData = new FormData();
       formData.append('image', responseImage);
-  
+
       const uploadResponse = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-image`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-  
+
       const imageUrl = uploadResponse.data.imageUrl;
       const uniqueResponseImageName = `responseImage_${nodes.length + 1}`;
-  
+
       const newNode = {
         id: `${nodes.length + 1}`,
         type: 'custom',
@@ -1643,7 +1619,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
       const updatedNodes = [...nodes, newNode];
       const updatedEdges = [...edges, newEdge];
       setNodes(updatedNodes);
@@ -1656,25 +1632,25 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     } catch (error) {
       console.error('Error uploading image:', error);
     }
-  };  
+  };
 
   const handleResponseVideoModalSave = async () => {
     try {
       // Cargar el video al backend
       const formData = new FormData();
       formData.append('video', responseVideo);
-  
+
       const uploadResponse = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-video`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-  
+
       const videoUrl = uploadResponse.data.videoUrl;
       const videoDuration = uploadResponse.data.videoDuration;
       const videoThumbnail = uploadResponse.data.videoThumbnail;
       const uniqueResponseVideoName = `responseVideo_${nodes.length + 1}`;
-  
+
       const newNode = {
         id: `${nodes.length + 1}`,
         type: 'custom',
@@ -1720,7 +1696,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
       const updatedNodes = [...nodes, newNode];
       const updatedEdges = [...edges, newEdge];
       setNodes(updatedNodes);
@@ -1735,23 +1711,23 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     } catch (error) {
       console.error('Error uploading video:', error);
     }
-  };  
+  };
 
   const handleResponseDocumentModalSave = async () => {
     try {
       // Cargar el documento al backend
       const formData = new FormData();
       formData.append('document', responseDocument);
-  
+
       const uploadResponse = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-document`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-  
+
       const documentUrl = uploadResponse.data.documentUrl;
       const uniqueResponseDocumentName = `responseDocument_${nodes.length + 1}`;
-  
+
       const newNode = {
         id: `${nodes.length + 1}`,
         type: 'custom',
@@ -1795,7 +1771,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
       const updatedNodes = [...nodes, newNode];
       const updatedEdges = [...edges, newEdge];
       setNodes(updatedNodes);
@@ -1815,16 +1791,16 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       // Cargar el audio al backend
       const formData = new FormData();
       formData.append('audio', responseAudio);
-  
+
       const uploadResponse = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-audio`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-  
+
       const audioUrl = uploadResponse.data.audioUrl;
       const uniqueResponseAudioName = `responseAudio_${nodes.length + 1}`;
-  
+
       const newNode = {
         id: `${nodes.length + 1}`,
         type: 'custom',
@@ -1868,7 +1844,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
       const updatedNodes = [...nodes, newNode];
       const updatedEdges = [...edges, newEdge];
       setNodes(updatedNodes);
@@ -1882,7 +1858,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       console.error('Error uploading audio:', error);
     }
   };
-  
+
   const handleResponseLocationModalSave = () => {
     const newNode = {
       id: `${nodes.length + 1}`,
@@ -1929,7 +1905,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
     setNodes(updatedNodes);
@@ -1939,7 +1915,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     setLocationLatitude('');
     setLocationLongitude('');
     setLocationStreetName('');
-  };  
+  };
 
   const addConcatVariable = () => {
     setConcatVariables([...concatVariables, { variable: '', validateExistence: false }]);
@@ -1965,7 +1941,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
 
   const addConcatVariablesNode = () => {
     setShowConcatVariablesModal(true);
-  };  
+  };
 
   const addSwitchNode = () => {
     setShowSwitchModal(true);
@@ -1992,7 +1968,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
   const addUpdateContactNode = () => {
     setShowUpdateContactModal(true);
   };
-  
+
   const addUpdateStateNode = () => {
     setShowUpdateStateModal(true);
   };
@@ -2014,22 +1990,22 @@ console.log('Contexto generado:', lastMessages.join(' '));`
   const addSplitVariableNode = () => {
     setShowSplitVariableModal(true);
   };
-  
+
   const addSplitResultName = () => {
     setSplitResultNames([...splitResultNames, '']);
   };
-  
+
   const removeSplitResultName = (index) => {
     setSplitResultNames(splitResultNames.filter((_, i) => i !== index));
   };
-  
-  
+
+
   const updateSplitResultName = (index, value) => {
     const newSplitResultNames = [...splitResultNames];
     newSplitResultNames[index] = value;
     setSplitResultNames(newSplitResultNames);
   };
-  
+
   const handleGptAssistantModalSave = () => {
     if (assistants.some(assistant => assistant.name === assistantName)) {
       alert('Ya existe un asistente con ese nombre. Por favor, elige otro nombre.');
@@ -2040,16 +2016,9 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       alert('Ya existe un asistente con ese nombre. Por favor, elige otro nombre.');
       return;
     }
-  
+
     const newAssistant = { name: assistantName, displayName: assistantName, model: gptModel, personality };
 
-    if (assistants.some(assistant => assistant.name === assistantName)) {
-      alert('Ya existe un asistente con ese nombre. Por favor, elige otro nombre.');
-      return;
-    }
-  
-    const newAssistant = { name: assistantName, displayName: assistantName, model: gptModel, personality };
-  
     const newNode = {
       id: `${nodes.length + 1}`,
       type: 'custom',
@@ -2113,17 +2082,16 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
     setNodes(updatedNodes);
     setEdges(updatedEdges);
     generateCodeFromNodes(updatedNodes, updatedEdges);
-  
+
     // Insertar el nuevo asistente en la lista de asistentes
     setAssistants([...assistants, newAssistant]);
-    setAssistants([...assistants, newAssistant]);
-  
+
     setShowGptAssistantModal(false);
     setAssistantName('');
     setGptModel('');
@@ -2140,10 +2108,10 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       console.error('No template selected');
       return;
     }
-  
+
     const companyId = localStorage.getItem('company_id');
     const uniqueId = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`; // Crear un identificador único
-  
+
     const headerVariableCalculations = selectedTemplate.headerVariables?.map((variable, index) => {
       const varName = `header${uniqueId}_${index + 1}`;
       if (variable.source === 'date') {
@@ -2152,7 +2120,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         return `const ${varName} = await fetchVariableValue('${variable.source}', '${variable.variable}', senderId, ${companyId}, pool);`;
       }
     }).join('\n') || '';
-  
+
     const bodyVariableCalculations = selectedTemplate.bodyVariables?.map((variable, index) => {
       const varName = `body${uniqueId}_${index + 1}`;
       if (variable.source === 'date') {
@@ -2161,7 +2129,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         return `const ${varName} = await fetchVariableValue('${variable.source}', '${variable.variable}', senderId, ${companyId}, pool);`;
       }
     }).join('\n') || '';
-  
+
     const buttonVariableCalculations = selectedTemplate.buttonVariables?.map((variable, index) => {
       const varName = `button${uniqueId}_${index + 1}`;
       if (variable.source === 'date') {
@@ -2170,7 +2138,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         return `const ${varName} = await fetchVariableValue('${variable.source}', '${variable.variable}', senderId, ${companyId}, pool);`;
       }
     }).join('\n') || '';
-  
+
     const payloadCode = `
       payload = {
         conversation: conversationData,
@@ -2209,17 +2177,17 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       };
       await sendTemplateToSingleContact(io, { body: payload }, resTemplate);
     `;
-  
+
     const generatedCode = `
       ${headerVariableCalculations}
-  
+
       ${bodyVariableCalculations}
-  
+
       ${buttonVariableCalculations}
-  
+
       ${payloadCode}
     `;
-  
+
     const newNode = {
       id: `${nodes.length + 1}`,
       type: 'custom',
@@ -2260,20 +2228,20 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
     setNodes(updatedNodes);
     setEdges(updatedEdges);
     generateCodeFromNodes(updatedNodes, updatedEdges);
     setShowResponseTemplateModal(false);
-  };   
-  
-  
+  };
+
+
   const handleChangeResponsibleModalSave = () => {
     const selectedResponsibleObject = responsibles.find(r => r.id_usuario === parseInt(selectedResponsible));
     const fullName = `${selectedResponsibleObject.nombre} ${selectedResponsibleObject.apellido}`;
-  
+
     const newNode = {
       id: `${nodes.length + 1}`,
       type: 'custom',
@@ -2317,7 +2285,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
     setNodes(updatedNodes);
@@ -2325,7 +2293,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     generateCodeFromNodes(updatedNodes, updatedEdges);
     setShowChangeResponsibleModal(false);
     setSelectedResponsible('');
-  };  
+  };
 
   const handleUpdateContactInitializerModalSave = () => {
     const newNode = {
@@ -2389,19 +2357,19 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
     setNodes(updatedNodes);
     setEdges(updatedEdges);
     generateCodeFromNodes(updatedNodes, updatedEdges);
     setShowUpdateContactInitializerModal(false);
-  };  
-  
+  };
+
   const handleUpdateContactModalSave = () => {
     let contactField = selectedContactField;
     let contactFieldValue;
-  
+
     // Si el campo seleccionado es 'label', utilizamos el ID de la fase seleccionada
     if (selectedContactField === 'label') {
       contactFieldValue = selectedPhase;
@@ -2409,9 +2377,9 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       // En los demás casos, utilizamos la variable seleccionada
       contactFieldValue = selectedContactVariable;
     }
-  
+
     const contactFieldDisplay = contactFields.find((f) => f.name === contactField)?.displayName;
-  
+
     const newNode = {
       id: `${nodes.length + 1}`,
       type: 'custom',
@@ -2454,7 +2422,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
     setNodes(updatedNodes);
@@ -2465,7 +2433,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     setSelectedContactVariable('');
     setSelectedDepartment('');
     setSelectedPhase('');
-  };    
+  };
 
   const handleUpdateContactNameModalSave = () => {
     const newNode = {
@@ -2510,17 +2478,17 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
     setNodes(updatedNodes);
     setEdges(updatedEdges);
     generateCodeFromNodes(updatedNodes, updatedEdges);
-  
+
     setShowUpdateContactNameModal(false);
     setSelectedFirstName('');
     setSelectedLastName('');
-  };  
+  };
 
   const handleSwitchModalSave = () => {
     const variable = variables.find(v => v.name === selectedVariable);
@@ -2532,7 +2500,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       data: { label: `Switch (${variableName})`, code: [`switch (${variableName}) {`], onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false), addCaseNode: (id) => addCaseNode(id) },
       parentId: isInternal ? currentNodeId : null,
     };
-    
+
     const defaultGroup = {
       id: `${newNode.id}-default`,
       type: 'groupNode',
@@ -2706,7 +2674,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
     setNodes(updatedNodes);
@@ -2718,7 +2686,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
 
   const handleResponseTextModalSave = () => {
     const finalResponseText = `\`${responseText.replace(/\${([^}]+)}/g, '${$1}')}\``;
-  
+
     const newNode = {
       id: `${nodes.length + 1}`,
       type: 'custom',
@@ -2762,7 +2730,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
     setNodes(updatedNodes);
@@ -2774,7 +2742,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     setResponseTextName('');
     setSelectedVariables([]);
   };
-  
+
   const handleModalSave = () => {
     const conditionStr = conditions
       .map((condition, index) => {
@@ -2794,7 +2762,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       data: { label: `Si ${conditionStr}`, code: [`if (${conditionStr})`, `{`, `} else {`], onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false) },
       parentId: isInternal ? currentNodeId : null,
     };
-  
+
     const ifGroup = {
       id: `${newNode.id}-if`,
       type: 'groupNode',
@@ -2802,7 +2770,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       data: { label: 'Si', onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false), setNodes },
       parentId: newNode.id,
     };
-  
+
     const elseGroup = {
       id: `${newNode.id}-else`,
       type: 'groupNode',
@@ -2896,7 +2864,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       ];
     }
-  
+
     setNodes((nds) => nds.concat(newNode, ifGroup, elseGroup));
     setEdges((eds) => eds.concat(newEdges));
     setShowModal(false);
@@ -2909,7 +2877,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
 
   const handleGptQueryModalSave = () => {
     const finalPrompt = `\`${queryPrompt.replace(/\${([^}]+)}/g, '${$1}')}\``;
-  
+
     const newNode = {
       id: `${nodes.length + 1}`,
       type: 'custom',
@@ -2952,7 +2920,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
     setNodes(updatedNodes);
@@ -2969,7 +2937,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
   const handleSplitVariableModalSave = () => {
     const resultNamesStr = splitResultNames.join(', ');
     const splitCode = `const [${resultNamesStr}] = ${splitVariable}.split('${splitParameter}');`;
-  
+
     const newNode = {
       id: `${nodes.length + 1}`,
       type: 'custom',
@@ -3010,22 +2978,22 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         },
       };
     }
-  
+
     const updatedNodes = [...nodes, newNode];
     const updatedEdges = [...edges, newEdge];
-  
+
     const newVariables = splitResultNames.map((name) => ({ name, displayName: name, nodeId: newNode.id }));
     setVariables((vars) => [...vars, ...newVariables]);
-    
+
     setNodes(updatedNodes);
     setEdges(updatedEdges);
     generateCodeFromNodes(updatedNodes, updatedEdges);
-  
+
     setShowSplitVariableModal(false);
     setSplitVariable('');
     setSplitParameter('');
     setSplitResultNames(['']);
-  };   
+  };
 
   const generateCodeFromNodes = (nodes, edges) => {
     let initialDeclarations = 'let responseText;\nlet responseImage;\nlet responseVideo;\nlet responseDocument;\nlet responseAudio;\nlet latitude;\nlet longitude;\nlet streetName;\nlet videoDuration;\nlet videoThumbnail;\nlet payload;\nlet requestType;\nlet requestStatus;\nlet nuevoStatus;\nlet requestData;\nlet existingRequestQuery;\nlet existingRequestResult;\nlet requestId;\nlet updateRequestQuery;\nlet insertRequestQuery;\nlet headersRequest;\nlet requestQueryExternal;\nlet requestResultExternal;\nlet requestDataExternal;\nlet credentialsRequest;\nlet updateStatusQueryExternal;\nlet responseExternal;\nlet intentions;\nlet apiKey;\nlet url;\nlet headers;\nlet responseGpt;\nlet gptResponse;\n';
@@ -3081,7 +3049,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
       last_message_info.last_message,
       last_message_info.last_message_time,
       last_message_info.message_type
-    FROM 
+    FROM
       conversations c
     LEFT JOIN users u ON c.id_usuario = u.id_usuario
     LEFT JOIN contacts ct ON c.contact_id = ct.id
@@ -3147,7 +3115,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         return '';
     }
   };\n\n
-  
+
   // Asegúrate de que esta función esté en el alcance del código generado
   const fetchVariableValue = async (source, variable, senderId, companyId, pool) => {
   let query = '';
@@ -3210,7 +3178,7 @@ const responsibleUserId = responsibleRes.rows[0].id_usuario;
 const conversationStateQuery = 'SELECT state FROM conversations WHERE conversation_id = $1';
 const conversationStateResult = await pool.query(conversationStateQuery, [conversationId]);
 let conversationState = conversationStateResult.rows[0]?.state;\n\n`;
-  
+
 const generateNodeCode = (node, indent = '') => {
   let nodeCode = '';
 
@@ -3281,15 +3249,15 @@ const generateNodeCode = (node, indent = '') => {
   return nodeCode;
 };
 
-  
+
     const rootNodes = nodes.filter((node) => !node.parentId);
     let fullCode = initialDeclarations;
     rootNodes.forEach((rootNode) => {
       fullCode += generateNodeCode(rootNode);
     });
-  
+
     setCode(fullCode);
-  };  
+  };
 
   useEffect(() => {
     generateCodeFromNodes(nodes, edges);
@@ -3311,20 +3279,8 @@ const generateNodeCode = (node, indent = '') => {
                 >
                   Diagrama
                 </button>
-                <button
-                  className={`button-tool ${selectedTab === 'Diagrama' ? 'active' : ''}`}
-                  onClick={() => setSelectedTab('Diagrama')}
-                >
-                  Diagrama
-                </button>
               </Nav.Item>
               <Nav.Item>
-                <button
-                  className={`button-tool ${selectedTab === 'Código' ? 'active' : ''}`}
-                  onClick={() => setSelectedTab('Código')}
-                >
-                  Código
-                </button>
                 <button
                   className={`button-tool ${selectedTab === 'Código' ? 'active' : ''}`}
                   onClick={() => setSelectedTab('Código')}
@@ -3396,7 +3352,7 @@ const generateNodeCode = (node, indent = '') => {
                 </div>
               </div>
             </ReactFlowProvider>
-            
+
             )}
           </Col>
         </Row>
@@ -3496,7 +3452,7 @@ const generateNodeCode = (node, indent = '') => {
         </Modal.Footer>
       </Modal>
 
-      
+
 
       <Modal show={showResponseTextModal} onHide={() => setShowResponseTextModal(false)}>
         <Modal.Header closeButton>
@@ -3514,10 +3470,10 @@ const generateNodeCode = (node, indent = '') => {
             </Form.Group>
             <Form.Group controlId="formVariables">
               <Form.Label>Agregar Variables</Form.Label>
-              <Form.Control 
-                as="select" 
-                multiple 
-                value={selectedVariables} 
+              <Form.Control
+                as="select"
+                multiple
+                value={selectedVariables}
                 onChange={(e) => {
                   const selectedOptions = [...e.target.selectedOptions].map(o => o.value);
                   setSelectedVariables(selectedOptions);
@@ -3606,9 +3562,9 @@ const generateNodeCode = (node, indent = '') => {
           <Form>
             <Form.Group controlId="formAssistantName">
               <Form.Label>Nombre del Asistente</Form.Label>
-              <Form.Control 
-                type="text" 
-                value={assistantName} 
+              <Form.Control
+                type="text"
+                value={assistantName}
                 onChange={(e) => {
                   const { value } = e.target;
                   setAssistantName(value);
@@ -3621,9 +3577,9 @@ const generateNodeCode = (node, indent = '') => {
             </Form.Group>
             <Form.Group controlId="formGptModel">
               <Form.Label>Modelo GPT</Form.Label>
-              <Form.Control 
-                as="select" 
-                value={gptModel} 
+              <Form.Control
+                as="select"
+                value={gptModel}
                 onChange={(e) => setGptModel(e.target.value)}
               >
                 <option value="gpt-3.5">gpt-3.5</option>
@@ -3635,11 +3591,11 @@ const generateNodeCode = (node, indent = '') => {
             </Form.Group>
             <Form.Group controlId="formPersonality">
               <Form.Label>Personalidad</Form.Label>
-              <Form.Control 
-                as="textarea" 
-                rows={3} 
-                value={personality} 
-                onChange={(e) => setPersonality(e.target.value)} 
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={personality}
+                onChange={(e) => setPersonality(e.target.value)}
               />
             </Form.Group>
           </Form>
@@ -3678,10 +3634,10 @@ const generateNodeCode = (node, indent = '') => {
             </Form.Group>
             <Form.Group controlId="formVariables">
               <Form.Label>Agregar Variables</Form.Label>
-              <Form.Control 
-                as="select" 
-                multiple 
-                value={selectedVariables} 
+              <Form.Control
+                as="select"
+                multiple
+                value={selectedVariables}
                 onChange={(e) => {
                   const selectedOptions = [...e.target.selectedOptions].map(o => o.value);
                   const newVariables = selectedOptions.filter(option => !selectedVariables.includes(option));
@@ -3809,7 +3765,7 @@ const generateNodeCode = (node, indent = '') => {
           </Button>
         </Modal.Footer>
       </Modal>
-      
+
       <Modal show={showUpdateContactModal} onHide={() => setShowUpdateContactModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Actualizar contacto</Modal.Title>
@@ -3819,9 +3775,9 @@ const generateNodeCode = (node, indent = '') => {
             {/* Selector para elegir el campo a modificar */}
             <Form.Group controlId="formContactField">
               <Form.Label>Campo a Modificar</Form.Label>
-              <Form.Control 
-                as="select" 
-                value={selectedContactField} 
+              <Form.Control
+                as="select"
+                value={selectedContactField}
                 onChange={(e) => {
                   setSelectedContactField(e.target.value);
                   if (e.target.value !== 'label') {
@@ -4086,9 +4042,9 @@ const generateNodeCode = (node, indent = '') => {
             </Form.Group>
             <Form.Group controlId="formVariables">
               <Form.Label>Agregar Variables</Form.Label>
-              <Form.Control 
-                as="select" 
-                multiple 
+              <Form.Control
+                as="select"
+                multiple
                 onChange={(e) => {
                   const selectedOptions = [...e.target.selectedOptions].map(o => o.value);
                   if (selectedOptions.length > 0) {
@@ -4189,9 +4145,9 @@ const generateNodeCode = (node, indent = '') => {
                             {selectedTemplate.header_type === 'VIDEO' && selectedTemplate.medio && <video src={`${process.env.REACT_APP_API_URL}${selectedTemplate.medio}`} controls style={{ width: '100%' }} />}
                             {selectedTemplate.header_type === 'DOCUMENT' && selectedTemplate.medio && (
                               <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                                <iframe 
-                                  src={`${process.env.REACT_APP_API_URL}${selectedTemplate.medio}`} 
-                                  style={{ width: '100%', aspectRatio: '4/3', zoom: 2, border: '0', overflow: 'hidden' }} 
+                                <iframe
+                                  src={`${process.env.REACT_APP_API_URL}${selectedTemplate.medio}`}
+                                  style={{ width: '100%', aspectRatio: '4/3', zoom: 2, border: '0', overflow: 'hidden' }}
                                   frameBorder="0"
                                 ></iframe>
                               </div>
@@ -4267,8 +4223,8 @@ const generateNodeCode = (node, indent = '') => {
             Cerrar
           </Button>
           {selectedTemplate && (
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               onClick={handleResponseTemplateModalSave}
             >
               Guardar
@@ -4298,7 +4254,7 @@ const generateNodeCode = (node, indent = '') => {
           </Button>
         </Modal.Footer>
       </Modal>
-      
+
       <Modal show={showRequestModal} onHide={() => setShowRequestModal(false)}>
   <Modal.Header closeButton>
     <Modal.Title>Llenar Solicitud</Modal.Title>
@@ -4653,20 +4609,20 @@ const generateNodeCode = (node, indent = '') => {
           <Form>
             <Form.Group controlId="formMessageCount">
               <Form.Label>Cantidad de Mensajes</Form.Label>
-              <Form.Control 
-                type="number" 
-                min="1" 
+              <Form.Control
+                type="number"
+                min="1"
                 disabled={selectAllMessages}
-                value={messageCount} 
-                onChange={(e) => setMessageCount(e.target.value)} 
+                value={messageCount}
+                onChange={(e) => setMessageCount(e.target.value)}
               />
             </Form.Group>
             <Form.Group controlId="formSelectAllMessages">
-              <Form.Check 
-                type="checkbox" 
-                label="Todos" 
+              <Form.Check
+                type="checkbox"
+                label="Todos"
                 checked={selectAllMessages}
-                onChange={(e) => setSelectAllMessages(e.target.checked)} 
+                onChange={(e) => setSelectAllMessages(e.target.checked)}
               />
             </Form.Group>
           </Form>
@@ -4733,9 +4689,9 @@ const generateNodeCode = (node, indent = '') => {
 
     </Modal>
 
-    
 
-    
+
+
   );
 };
 
