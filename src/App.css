@@ -740,7 +740,7 @@
     transition: margin-left 0.3s;
   }
   .renderContent{
-    width: 90vw;
+    width: 100%;
   }
 }
 

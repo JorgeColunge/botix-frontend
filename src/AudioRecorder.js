@@ -16,7 +16,7 @@ export const AudioRecorder = ({ onSend }) => {
   const audioChunksRef = useRef([]);
 
   const startRecording = async () => {
-      // Solicitar acceso al micrófono
+     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1, // Intentar forzar la captura de un solo canal de audio (mono)
@@ -45,7 +45,15 @@ export const AudioRecorder = ({ onSend }) => {
       } finally {
         setIsProcessing(false);
       }
-    };
+     } catch (error) {
+      console.log(error);
+      Swal.fire({
+        title: "Error",
+        text: `Error al intentar grabar audio. Error: ${error}`,
+        icon: "error"
+        });
+     }  
+  };
 
   const stopRecording = () => {
     mediaRecorderRef.current.stop();
