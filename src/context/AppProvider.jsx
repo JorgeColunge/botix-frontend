@@ -17,9 +17,7 @@ export const AppProvider = ({ children }) => {
     departamentos: [],
   });
 
-  const setConversacionActual = (conversacion_Actual) => {
-    setState((prevState) => ({ ...prevState, conversacion_Actual }));
-  };
+  const setConversacionActual = (conversacion_Actual) => {setState((prevState) => ({ ...prevState, conversacion_Actual }));};
   const setDepartments = (departamentos) => setState((prevState) => ({ ...prevState, departamentos }));
   const setCampaigns = (campañas) => setState((prevState) => ({ ...prevState, campañas }));
   const setTemplates = (plantillas) => setState((prevState) => ({ ...prevState, plantillas }));
