@@ -10,7 +10,7 @@ import { AppContext } from './context';
 const CreateCampaign = () => {
   const { id_plantilla, id_camp } = useParams();
 
-  const {state} = useContext(AppContext);
+  const {state, setCampaigns} = useContext(AppContext);
 
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
@@ -269,7 +269,7 @@ const CreateCampaign = () => {
           });
         }
   
-        console.log('Campaign created:', response.data);
+        setCampaigns([...state.campañas, response.data]);
         navigate('/campaigns');
       } catch (error) {
         console.error('Error creating campaign:', error);
