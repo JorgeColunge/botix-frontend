@@ -24,7 +24,6 @@ export const AudioRecorder = ({ onSend }) => {
         }
       });
 
-  
       // Inicializar MediaRecorder con el códec 'audio/ogg; codecs=opus'
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/ogg; codecs=opus' });
   
@@ -64,6 +63,7 @@ export const AudioRecorder = ({ onSend }) => {
       setIsRecording(true);
       setIsPaused(false);
     } catch (error) {
+      console.log(error)
       Swal.fire({
         title: "Error",
         text: `Error al intentar grabar audio. 
