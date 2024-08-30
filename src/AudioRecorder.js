@@ -23,14 +23,7 @@ export const AudioRecorder = ({ onSend }) => {
           channelCount: 1, // Intentar forzar la captura de un solo canal de audio (mono)
         }
       });
-  
-      // Verificar si el navegador soporta 'audio/ogg; codecs=opus'
-      const isOpusSupported = MediaRecorder.isTypeSupported('audio/ogg; codecs=opus');
-      
-      if (!isOpusSupported) {
-        console.error('Este navegador no soporta audio/ogg con codecs=opus');
-        return;
-      }
+
   
       // Inicializar MediaRecorder con el códec 'audio/ogg; codecs=opus'
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/ogg; codecs=opus' });
