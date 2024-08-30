@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { Container, Row, Col, Form, Button, Modal, Spinner, ButtonGroup } from 'react-bootstrap';
 import { Code, TypeBold, TypeItalic, TypeStrikethrough } from 'react-bootstrap-icons'
 import { useNavigate, useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 import './CreateTemplate.css';
+import { AppContext } from './context';
 
 const socket = io(process.env.REACT_APP_BACKEND_URL);
 
@@ -132,7 +133,7 @@ const CreateTemplate = () => {
   const [name, setName] = useState('');
   const [language, setLanguage] = useState('es');
   const [headerType, setHeaderType] = useState('none');
-  const [mediaType, setMediaType] = useState('image');
+  const [mediaType, setMediaType] = useState('IMAGE');
   const [headerText, setHeaderText] = useState('');
   const [headerExample, setHeaderExample] = useState('');
   const [headerSource, setHeaderSource] = useState('');
@@ -165,6 +166,7 @@ const CreateTemplate = () => {
   const [buttons, setButtons] = useState([]);
 
   const navigate = useNavigate();
+  const {state} = useContext(AppContext);
   const {id_plantilla} = useParams();
 
   useEffect(() => {
@@ -176,19 +178,16 @@ const CreateTemplate = () => {
           console.error('No company ID or token found');
           return;
         }
-  
         try {
-          const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/templates`, {
-            params: { company_id: companyId },
-            headers: { Authorization: `Bearer ${token}` }
-          });
           if (id_plantilla) {
-               const templete = response.data.find(temp => temp.id == id_plantilla)
+               const templete = state.plantillas.find(temp => temp.id == id_plantilla)
                console.log("template:", templete)
                setCategory(templete.type)
                setName(templete.nombre)
                setLanguage(templete.language)
-               setHeaderType(templete.header_type)
+
+                if (templete.header_type == 'IMAGE' || templete.header_type == 'VIDEO' || templete.header_type == 'DOCUMENT'){ setHeaderType('MEDIA');}
+                   else{setHeaderType('MEDIA')}
                setHeaderText(templete.header_text)
                setBodyText(templete.body_text)
                setFooterText(templete.footer)
@@ -267,7 +266,7 @@ const CreateTemplate = () => {
       socket.off('templateStatusUpdate');
     };
   }, []);
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -287,16 +286,16 @@ const CreateTemplate = () => {
     const headerVariableArray = headerVariableAdded ? [headerVariable] : [];
   
     const components = [
-      ...(headerType === 'text' ? [{
+      ...(headerType === 'TEXT' ? [{
         type: 'HEADER',
         format: 'TEXT',
         text: headerText,
         example: headerVariableAdded ? { header_text: headerExampleArray } : undefined,
-      }] : headerType === 'media' ? [{
+      }] : headerType === 'MEDIA' ? [{
         type: 'HEADER',
         format: 'MEDIA',
         example: { header_handle: [headerImageUrl || headerVideoUrl || headerDocumentUrl] }
-      }] : headerType === 'location' ? [{
+      }] : headerType === 'LOCATION' ? [{
         type: 'HEADER',
         format: 'LOCATION'
       }] : []),
@@ -338,18 +337,18 @@ const CreateTemplate = () => {
     ];
   
     const componentsWithSourceAndVariable = [
-      ...(headerType === 'text' ? [{
+      ...(headerType === 'TEXT' ? [{
         type: 'HEADER',
         format: 'TEXT',
         text: headerText,
         example: headerVariableAdded ? { header_text: headerExampleArray } : undefined,
         source: headerVariableAdded ? headerSourceArray : undefined,
         variable: headerVariableAdded ? headerVariableArray : undefined
-      }] : headerType === 'media' ? [{
+      }] : headerType === 'MEDIA' ? [{
         type: 'HEADER',
         format: mediaType.toUpperCase(),
         example: { header_handle: [headerImageUrl || headerVideoUrl || headerDocumentUrl] }
-      }] : headerType === 'location' ? [{
+      }] : headerType === 'LOCATION' ? [{
         type: 'HEADER',
         format: 'LOCATION'
       }] : []),
@@ -505,39 +504,46 @@ const CreateTemplate = () => {
  
   const handleMediaChange = async (e, mediaType) => {
     const file = e.target.files[0];
-    if (mediaType === 'image') {
+    const formData = new FormData();
+    console.log(file)
+    if (mediaType == 'image') {
       setHeaderImage(file);
       setHeaderVideo(null);
+      formData.append('media', file);
       setHeaderDocument(null);
-    } else if (mediaType === 'video') {
+    } else if (mediaType == 'video') {
       setHeaderImage(null);
       setHeaderVideo(file);
       setHeaderDocument(null);
-    } else if (mediaType === 'document') {
+      formData.append('media', file);
+    } else if (mediaType == 'document') {
       setHeaderImage(null);
       setHeaderVideo(null);
       setHeaderDocument(file);
+      formData.append('media', file);
     }
 
-    const formData = new FormData();
-    formData.append('media', file);
 
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('No token found');
       return;
     }
+     // Debugging FormData content
+  for (let [key, value] of formData.entries()) {
+    console.log(key, value);
+  }
 
     try {
       setLoading(true);
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/upload-template-media`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`
+        },
       });
 
-      const mediaUrl = response.data.mediaUrl;
+      const mediaUrl = response.data.path;
       if (mediaType === 'image') {
         setHeaderImageUrl(mediaUrl);
       } else if (mediaType === 'video') {
@@ -547,6 +553,7 @@ const CreateTemplate = () => {
       }
       setLoading(false);
       console.log('Media uploaded successfully:', mediaUrl);
+      console.log('datos de la direccion:', response);
     } catch (error) {
       console.error('Error uploading media:', error);
       setLoading(false);
@@ -872,7 +879,7 @@ const CreateTemplate = () => {
                 <option value="LOCATION">Ubicación</option>
               </Form.Select>
             </Form.Group>
-            {headerType == 'MEDIA' && (
+            {(headerType == 'IMAGE' || headerType == 'VIDEO' || headerType == 'DOCUMENT' || headerType == 'MEDIA') && (
               <Form.Group className="mb-3">
                 <Form.Label>Tipo de Medio:</Form.Label>
                 <Form.Select value={mediaType} onChange={(e) => setMediaType(e.target.value)}>
@@ -939,7 +946,7 @@ const CreateTemplate = () => {
                 )}
               </>
             )}
-            {headerType === 'MEDIA' && mediaType === 'IMAGE' && (
+            {(headerType === 'IMAGE' || headerType === 'MEDIA') && mediaType === 'IMAGE' && (
               <Form.Group className="mb-3">
                 <Form.Label>Imagen de Encabezado:</Form.Label>
                 <Form.Control type="file" accept="image/*" onChange={(e) => handleMediaChange(e, 'image')} />
@@ -951,7 +958,7 @@ const CreateTemplate = () => {
                 )}
               </Form.Group>
             )}
-            {headerType === 'MEDIA' && mediaType === 'VIDEO' && (
+            {(headerType === 'VIDEO'|| headerType === 'MEDIA') && mediaType === 'VIDEO' && (
               <Form.Group className="mb-3">
                 <Form.Label>Video de Encabezado:</Form.Label>
                 <Form.Control type="file" accept="video/*" onChange={(e) => handleMediaChange(e, 'video')} />
@@ -963,7 +970,7 @@ const CreateTemplate = () => {
                 )}
               </Form.Group>
             )}
-            {headerType === 'MEDIA' && mediaType === 'DOCUMENT' && (
+            {(headerType === 'DOCUMENT'|| headerType === 'MEDIA') && mediaType === 'DOCUMENT' && (
               <Form.Group className="mb-3">
                 <Form.Label>Documento de Encabezado:</Form.Label>
                 <Form.Control type="file" accept=".pdf,.doc,.docx" onChange={(e) => handleMediaChange(e, 'document')} />
@@ -1171,9 +1178,9 @@ const CreateTemplate = () => {
                 <div className="message">
                   <div className="header">
                     {headerType === 'text' && <div><strong>{renderTextWithExamples(headerText, { '{{1}}': headerExample })}</strong></div>}
-                    {headerType === 'media' && mediaType === 'image' && headerImageUrl && <img src={`${process.env.REACT_APP_API_URL}${headerImageUrl}`} alt="Header" style={{ width: '100%' }} />}
-                    {headerType === 'media' && mediaType === 'video' && headerVideoUrl && <video src={`${process.env.REACT_APP_API_URL}${headerVideoUrl}`} controls style={{ width: '100%' }} />}
-                    {headerType === 'media' && mediaType === 'document' && headerDocumentUrl && (
+                    {(headerType === 'MEDIA' || headerType === 'IMAGE') && mediaType === 'IMAGE' && headerImageUrl && <img src={`${process.env.REACT_APP_API_URL}${headerImageUrl}`} alt="Header" style={{ width: '100%' }} />}
+                    {(headerType === 'MEDIA'|| headerType === 'VIDEO') && mediaType === 'VIDEO' && headerVideoUrl && <video src={`${process.env.REACT_APP_API_URL}${headerVideoUrl}`} controls style={{ width: '100%' }} />}
+                    {(headerType === 'MEDIA'|| headerType === 'DOCUMENT') && mediaType === 'DOCUMENT' && headerDocumentUrl && (
                       <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                         <iframe
                           src={`${process.env.REACT_APP_API_URL}${headerDocumentUrl}`}

@@ -18,10 +18,11 @@ import { PrivateRoute, PublicRoute } from './PrivateRoute';
 import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';
 import { Campaigns } from './Campaigns';
+import axios from 'axios';
 
 
 function App() {
-  const {state, setStatus } = useContext(AppContext)
+  const {state, setStatus, setCampaigns: addCampaigns, setTemplates: addTemplates, setContacts, setUsers, setPhases, setRoles, setDepartments } = useContext(AppContext)
   const isMobile = useMediaQuery({ maxWidth: 767 });
 
   const [socket, setSocket] = useState(null);
@@ -76,6 +77,110 @@ function App() {
       window.removeEventListener('click', handleFirstUserInteraction);
       window.removeEventListener('touchstart', handleFirstUserInteraction);
     };
+  }, []);
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      const companyId = localStorage.getItem('company_id');
+      const token = localStorage.getItem('token');
+      if (!companyId || !token) {
+        console.error('No company ID or token found');
+        return;
+      }
+
+      try {
+      
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/templates`, {
+          params: { company_id: companyId },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        addTemplates(response.data)
+      } catch (error) {
+        console.error('Error fetching templates:', error);
+      }
+    };
+
+    const fetchCampaigns = async () => {
+      const companyId = localStorage.getItem('company_id');
+      const token = localStorage.getItem('token');
+      try {
+        console.log('Fetching campaigns');
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/campaigns`, {
+          params: { company_id: companyId },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log('Fetched campaigns:', response.data);
+        addCampaigns(response.data)
+      } catch (error) {
+        console.error('Error fetching campaigns:', error);
+      }
+    };
+   
+    const fetchContacts = async () => {
+      const companyId = localStorage.getItem('company_id');
+      const token = localStorage.getItem('token');
+      if (!companyId || !token) {
+        console.error('No company ID or token found');
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`, {
+          params: { company_id: companyId },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setContacts(response.data);
+      } catch (error) {
+        console.error('Error fetching contacts:', error);
+      }
+    };
+
+    const fetchPhases = async () => {
+      const companyId = localStorage.getItem('company_id');
+      const token = localStorage.getItem('token');
+      if (!companyId || !token) {
+        console.error('No company ID or token found');
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/company/${companyId}/phases`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setPhases(response.data);
+      } catch (error) {
+        console.error('Error fetching phases:', error);
+      }
+    };
+
+    const fetchUsers = async () => {
+      const companyId = localStorage.getItem('company_id');
+      const token = localStorage.getItem('token');
+      if (!companyId || !token) {
+        console.error('No company ID or token found');
+        return;
+      }
+
+      try {
+        const usersResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/users?company_id=${companyId}`);
+        const rolesResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/roles/${companyId}`);
+        const departmentsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/departments/${companyId}`);
+
+        setRoles(rolesResponse.data);
+        setDepartments(departmentsResponse.data);
+        setUsers(usersResponse.data); 
+
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    fetchTemplates();
+    fetchCampaigns();
+    fetchContacts();
+    fetchPhases();
+    fetchUsers();
+
   }, []);
 
   const handleSidebarToggle = () => {

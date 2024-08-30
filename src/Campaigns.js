@@ -53,61 +53,17 @@ const socket = io(process.env.REACT_APP_API_URL);
 
 export const Campaigns = () => {
 
-  const {setCampaigns: addCampaigns, setTemplates: addTemplates} = useContext(AppContext);
+  const {state, setTemplates, setCampaigns} = useContext(AppContext);
 
   const navigate = useNavigate();
-  const [templates, setTemplates] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [campaigns, setCampaigns] = useState([]);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [timeLefts, setTimeLefts] = useState({});
 
   useEffect(() => {
-    const fetchTemplates = async () => {
-      const companyId = localStorage.getItem('company_id');
-      const token = localStorage.getItem('token');
-      if (!companyId || !token) {
-        console.error('No company ID or token found');
-        return;
-      }
-
-      try {
-      
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/templates`, {
-          params: { company_id: companyId },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        setTemplates(response.data);
-        addTemplates(response.data)
-      } catch (error) {
-        console.error('Error fetching templates:', error);
-      }
-    };
-
-    const fetchCampaigns = async () => {
-      const companyId = localStorage.getItem('company_id');
-      const token = localStorage.getItem('token');
-      try {
-        console.log('Fetching campaigns');
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/campaigns`, {
-          params: { company_id: companyId },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        console.log('Fetched campaigns:', response.data);
-        setCampaigns(response.data);
-        addCampaigns(response.data)
-      } catch (error) {
-        console.error('Error fetching campaigns:', error);
-      }
-    };
-
-    fetchTemplates();
-    fetchCampaigns();
-
     socket.on('templateStatusUpdate', ({ templateId, status }) => {
       console.log(`Estado de la plantilla "${templateId}" actualizada a: ${status}`);
       setTemplates(prevTemplates =>
@@ -120,8 +76,8 @@ export const Campaigns = () => {
     return () => {
       socket.off('templateStatusUpdate');
     };
-  }, []);
-
+  }, [])
+  
   const handleCreateTemplateClick = () => {
     navigate('/create-template');
   };
@@ -153,7 +109,7 @@ export const Campaigns = () => {
           await axios.delete(`${process.env.REACT_APP_API_URL}/api/templates/${template.id}/${template.nombre}/${company_id}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          setTemplates(templates.filter(templ => templ.id !== template.id));
+          setTemplates(state.plantillas.filter(templ => templ.id !== template.id));
           await Swal.fire({
             title: "Perfecto",
             text: `Plantilla Eliminada.`,
@@ -200,7 +156,7 @@ export const Campaigns = () => {
           await axios.delete(`${process.env.REACT_APP_API_URL}/api/campaigns/${campaignId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          setCampaigns(campaigns.filter(campaign => campaign.id !== campaignId));
+          setCampaigns(state.campañas.filter(campaign => campaign.id !== campaignId));
           await Swal.fire({
             title: "Perfecto",
             text: `Campaña Eliminada.`,
@@ -227,7 +183,11 @@ export const Campaigns = () => {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/launch-campaign/${campaignId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert('Campaign launched successfully');
+      Swal.fire({
+        title: "Perfecto",
+        text: `Se envio la campaña a los usuarios de la lista.`,
+        icon: "success"
+      });
     } catch (error) {
       Swal.fire({
         title: "Error",
@@ -246,7 +206,7 @@ export const Campaigns = () => {
     return replacedText;
   };
 
-  const filteredTemplates = templates.filter(template => {
+  const filteredTemplates = state.plantillas.filter(template => {
     return (
       template.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) &&
       (filterType ? template.type === filterType : true)
@@ -281,7 +241,7 @@ export const Campaigns = () => {
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      const updatedTimeLefts = campaigns.reduce((acc, campaign) => {
+      const updatedTimeLefts = state.campañas.reduce((acc, campaign) => {
         acc[campaign.id] = calculateTimeLeft(campaign.scheduled_launch);
         return acc;
       }, {});
@@ -289,7 +249,7 @@ export const Campaigns = () => {
     }, 1000);
 
     return () => clearInterval(intervalId); // Limpiar el temporizador al desmontar
-  }, [campaigns]);
+  }, [state.campañas]);
 
   const renderLaunchButtonOrTimer = (campaign) => {
     const timeLeft = timeLefts[campaign.id];
@@ -421,8 +381,8 @@ export const Campaigns = () => {
                 </tr>
               </thead>
               <tbody>
-                {campaigns.length > 0 ? (
-                  campaigns.map(campaign => (
+                {state.campañas.length > 0 ? (
+                  state.campañas.map(campaign => (
                     <tr key={campaign.id}>
                       <td>{campaign.name}</td>
                       <td>{campaign.objective}</td>

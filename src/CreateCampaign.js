@@ -64,7 +64,7 @@ const CreateCampaign = () => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [filteredBots, setFilteredBots] = useState([]);
-console.log(scheduledLaunch)
+
   useEffect(() => {
       if (id_camp) {
           const campania = state.campañas.find(camp => camp.id == id_camp)
@@ -92,17 +92,12 @@ console.log(scheduledLaunch)
             console.error('No company ID or token found');
             return;
           }
-    
           try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/templates`, {
-              params: { company_id: companyId },
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            setTemplates(response.data);
-            setFilteredTemplates(response.data);
+            setTemplates(state.plantillas);
+            setFilteredTemplates(state.plantillas);
           
             if (id_plantilla) {
-                const templete = response.data.find(temp => temp.id == id_plantilla)
+                const templete = state.plantillas.find(temp => temp.id == id_plantilla)
                 setSelectedTemplate(templete)
                 setTemplateSearchTerm(templete.nombre)
             }
@@ -121,11 +116,7 @@ console.log(scheduledLaunch)
       }
 
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`, {
-          params: { company_id: companyId },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setContacts(response.data);
+        setContacts(state.contactos);
       } catch (error) {
         console.error('Error fetching contacts:', error);
       }
@@ -140,10 +131,7 @@ console.log(scheduledLaunch)
       }
 
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/company/${companyId}/phases`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setPhases(response.data);
+        setPhases(state.fases);
       } catch (error) {
         console.error('Error fetching phases:', error);
       }
@@ -158,27 +146,23 @@ console.log(scheduledLaunch)
       }
 
       try {
-        const usersResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/users?company_id=${companyId}`);
-        const rolesResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/roles/${companyId}`);
-        const departmentsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/departments/${companyId}`);
+        setRoles(state.roles);
+        setDepartments(state.departamentos);
 
-        setRoles(rolesResponse.data);
-        setDepartments(departmentsResponse.data);
-
-        const humanUsers = usersResponse.data.filter(user => {
-          const userRole = rolesResponse.data.find(role => role.id === user.rol);
+        const humanUsers = state.usuarios.filter(user => {
+          const userRole = state.roles.find(role => role.id === user.rol);
           return userRole && userRole.type === 'Humano';
         });
 
-        const botUsers = usersResponse.data.filter(user => {
-          const userRole = rolesResponse.data.find(role => role.id === user.rol);
+        const botUsers = state.usuarios.filter(user => {
+          const userRole = state.roles.find(role => role.id === user.rol);
           return userRole && (userRole.type === 'Bot de Chat' || userRole.type === 'Bot de Chat IA');
         });
 
         setFilteredUsers(humanUsers);
-        setUsers(humanUsers); // Store the users for filtering
+        setUsers(humanUsers); 
         setFilteredBots(botUsers);
-        setBots(botUsers); // Store the bots for filtering
+        setBots(botUsers); 
       } catch (error) {
         console.error('Error fetching users:', error);
       }
@@ -205,11 +189,8 @@ console.log(scheduledLaunch)
       }
 
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/templates/${templateId}`, {
-          params: { company_id: companyId },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setSelectedTemplate(response.data);
+        const response = state.plantillas.find(plant => plant.id == templateId)
+        setSelectedTemplate(response);
       } catch (error) {
         console.error('Error fetching template:', error);
       }
