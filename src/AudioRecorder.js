@@ -4,6 +4,7 @@ import { MicFill, StopFill, PauseFill, PlayFill, TrashFill, SendFill, ArrowClock
 import axios from 'axios';
 import './App.css';
 import Swal from 'sweetalert2';
+import Recorder from 'recorder-js';
 
 export const AudioRecorder = ({ onSend }) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -12,65 +13,66 @@ export const AudioRecorder = ({ onSend }) => {
   const [backendAudioUrl, setBackendAudioUrl] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const mediaRecorderRef = useRef(null);
+  const recorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
   const startRecording = async () => {
-     try {
+    try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1, // Intentar forzar la captura de un solo canal de audio (mono)
         }
       });
 
-
-      setIsProcessing(true);
-      const audioBlob = new Blob(audioChunksRef.current, {  type: 'audio/ogg; codecs=opus' })
-      const audioUrl = URL.createObjectURL(audioBlob);
-      setAudioUrl(audioUrl);
-      setAudioBlob(audioBlob);
-      audioChunksRef.current = [];
-      try {
-        const formData = new FormData();
-        formData.append('audio', audioBlob, 'recording.ogg');
-        const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-audio`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-        const backendUrl = response.data.audioUrl;
-        setBackendAudioUrl(backendUrl);
-      } catch (error) {
-        console.error('Error uploading audio:', error);
-      } finally {
-        setIsProcessing(false);
-      }
-     } catch (error) {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      recorderRef.current = new Recorder(audioContext);
+      await recorderRef.current.init(stream);
+      recorderRef.current.start();
+      setIsRecording(true);
+    } catch (error) {
       console.log(error);
       Swal.fire({
         title: "Error",
         text: `Error al intentar grabar audio. Error: ${error}`,
         icon: "error"
-        });
-     }  
+      });
+    }
   };
 
-  const stopRecording = () => {
-    mediaRecorderRef.current.stop();
-    setIsRecording(false);
-    setIsPaused(false);
+  const stopRecording = async () => {
+    try {
+      const { blob } = await recorderRef.current.stop();
+      const audioUrl = URL.createObjectURL(blob);
+      setAudioUrl(audioUrl);
+      setAudioBlob(blob);
+      setIsRecording(false);
+      setIsPaused(false);
+
+      // Subir el archivo al servidor
+      const formData = new FormData();
+      formData.append('audio', blob, 'recording.ogg');
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-audio`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      const backendUrl = response.data.audioUrl;
+      setBackendAudioUrl(backendUrl);
+    } catch (error) {
+      console.error('Error al detener la grabación:', error);
+    }
   };
 
   const pauseRecording = () => {
-    if (mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.pause();
+    if (recorderRef.current) {
+      recorderRef.current.pause();
       setIsPaused(true);
     }
   };
 
   const resumeRecording = () => {
-    if (mediaRecorderRef.current.state === 'paused') {
-      mediaRecorderRef.current.resume();
+    if (recorderRef.current) {
+      recorderRef.current.resume();
       setIsPaused(false);
     }
   };

@@ -52,6 +52,7 @@
     "react-textarea-autosize": "^8.5.3",
     "reactflow": "^11.11.4",
     "recharts": "^2.12.7",
+    "recorder-js": "^1.0.7",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5",
     "sweetalert2": "^11.12.4",
