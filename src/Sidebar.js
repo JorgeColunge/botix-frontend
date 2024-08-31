@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { ListGroup, Tooltip, OverlayTrigger, Dropdown, Button, InputGroup, FormControl, Form } from 'react-bootstrap';
 import { PlusSquare, Funnel, PersonCircle, BookmarkFill, List } from 'react-bootstrap-icons';
 import moment from 'moment';
-import { useConversations } from './ConversationsContext';
+import { ConversationsProvider, useConversations } from './ConversationsContext';
 import axios from 'axios';
 import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';

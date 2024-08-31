@@ -83,15 +83,6 @@ function ChatWindow() {
     };
   }, [socket, currentConversation, setMessages, setCurrentConversation, setCurrentMessage]);
 
-  const checkIfScrolledToEnd = () => {
-    if (messagesEndRef.current) {
-      const scrollTop = messagesEndRef.current.scrollTop;
-      const scrollHeight = messagesEndRef.current.scrollHeight;
-      const clientHeight = messagesEndRef.current.clientHeight;
-      setIsScrolledToEnd(scrollTop + clientHeight >= scrollHeight);
-    }
-  };
-
   useEffect(() => {
     const handleScroll = () => {
       if (messagesEndRef.current) {
@@ -101,12 +92,13 @@ function ChatWindow() {
     };
   
     const currentElement = messagesEndRef.current;
+  
     if (currentElement) {
       currentElement.addEventListener('scroll', handleScroll);
       handleScroll(); // check initial state
       return () => currentElement.removeEventListener('scroll', handleScroll);
     }
-  }, [messages]);
+  }, [messages, state.conversacion_Actual]);
   
   const handleEditContactChange = (event) => {
     const { name, value } = event.target;
@@ -617,7 +609,7 @@ function ChatWindow() {
         setIsLoadingMore(false);
       }
     }
-  }, [offset, isLoadingMore, loadMessages, setMessages, currentConversation, messages]);
+  }, [offset, isLoadingMore, loadMessages, setMessages, currentConversation, messages, state.conversacion_Actual]);
 
   useEffect(() => {
     const currentElement = messagesEndRef.current;
@@ -1070,7 +1062,7 @@ function ChatWindow() {
               })}
             </React.Fragment>
           ))}
-            {(!isScrolledToEnd) && (
+            {!isScrolledToEnd && (
                 <div className="floating-svg" onClick={handleViewNewMsj}>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

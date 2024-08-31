@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import './CollapsibleSidebar.css';
 import { List, ChatLeftDots, People, Person, Funnel, FileBarGraph, Search, Megaphone, CurrencyDollar, Gear, Building, BoxArrowLeft } from 'react-bootstrap-icons';
 import axios from 'axios';
 import { useMediaQuery } from 'react-responsive';
+import { AppContext } from './context';
+import { useConversations } from './ConversationsContext';
 
 const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
+  const {setConversacionActual} = useContext(AppContext);
+  const {
+    setCurrentConversation,
+  } = useConversations();
+
   const [userData, setUserData] = useState({});
   const [companyData, setCompanyData] = useState({});
   const [roleName, setRoleName] = useState('');
@@ -17,6 +24,8 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
     if (!isCollapsed) {
       onToggle();
     }
+    setConversacionActual({ position_scroll: false});
+    setCurrentConversation(null)
   };
 
   useEffect(() => {
