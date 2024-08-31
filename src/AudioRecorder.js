@@ -5,8 +5,8 @@ import axios from 'axios';
 import './App.css';
 import Swal from 'sweetalert2';
 import Recorder from 'recorder-js';
-import { createFFmpeg } from '@ffmpeg/ffmpeg';
-
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import {  toBlobURL } from '@ffmpeg/util';
 export const AudioRecorder = ({ onSend }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -15,7 +15,7 @@ export const AudioRecorder = ({ onSend }) => {
   const [audioBlob, setAudioBlob] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const recorderRef = useRef(null);
-  const ffmpeg = useRef(createFFmpeg({ log: true }));
+  const ffmpegRef = useRef(new FFmpeg({ log: true }));
 
   const startRecording = async () => {
     try {
@@ -50,19 +50,27 @@ export const AudioRecorder = ({ onSend }) => {
       setIsPaused(false);
   
       // Cargar y ejecutar ffmpeg.js para convertir el archivo
-      const ffmpegInstance = ffmpeg.current;
-      if (!ffmpegInstance.isLoaded()) {
-        await ffmpegInstance.load();
+      const ffmpeg = ffmpegRef.current;
+      console.log(ffmpeg.loaded)
+      if (!ffmpeg.loaded) {
+         console.log(ffmpeg)
+          const baseURL = "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm";
+         const response = await ffmpeg.load({
+            coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+            wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+            workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript"),
+          });
+          console.log(response)
       }
   
       // Escribir el archivo WAV en el sistema de archivos virtual de ffmpeg
-      ffmpegInstance.FS('writeFile', 'input.wav', new Uint8Array(await blob.arrayBuffer()));
+      await ffmpeg.writeFile('input.wav', new Uint8Array(await blob.arrayBuffer()));
   
       // Ejecutar la conversión a OGG con Opus
-      await ffmpegInstance.run('-i', 'input.wav', '-c:a', 'libopus', 'output.ogg');
+      await ffmpeg.exec(['-i', 'input.wav', '-c:a', 'libopus', 'output.ogg']);
   
       // Leer el archivo convertido desde el sistema de archivos virtual de ffmpeg
-      const data = ffmpegInstance.FS('readFile', 'output.ogg');
+      const data = await ffmpeg.readFile('output.ogg');
       const convertedBlob = new Blob([data.buffer], { type: 'audio/ogg' });
   
       // Subir el archivo convertido al servidor
