@@ -64,7 +64,7 @@ const CreateCampaign = () => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [filteredBots, setFilteredBots] = useState([]);
-
+ 
   useEffect(() => {
       if (id_camp) {
           const campania = state.campañas.find(camp => camp.id == id_camp)
@@ -78,6 +78,7 @@ const CreateCampaign = () => {
            setTemplateSearchTerm(plantilla.nombre)
            setTemplateId(plantilla.id)
            setTemplates(state.plantillas)
+           setSelectedContacts(campania.contactos || [])
            setFilteredTemplates(state.plantillas)
            setScheduledLaunch(campania.scheduled_launch)
       }
@@ -221,14 +222,14 @@ const CreateCampaign = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
   
-        await axios.post(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/contacts`, {
+        await axios.put(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/contacts`, {
           contact_ids: selectedContacts
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
   
         if (selectedUsers.length > 0) {
-          await axios.post(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/responsibles`, {
+          await axios.put(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/responsibles`, {
             responsible_ids: selectedUsers
           }, {
             headers: { Authorization: `Bearer ${token}` }

@@ -5,6 +5,8 @@ import axios from 'axios';
 import './App.css';
 import Swal from 'sweetalert2';
 import Recorder from 'recorder-js';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
 export const AudioRecorder = ({ onSend }) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -14,7 +16,7 @@ export const AudioRecorder = ({ onSend }) => {
   const [audioBlob, setAudioBlob] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const recorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
+  const ffmpegRef = useRef(new FFmpeg({ log: true }));
 
   const startRecording = async () => {
     try {
@@ -30,7 +32,7 @@ export const AudioRecorder = ({ onSend }) => {
       recorderRef.current.start();
       setIsRecording(true);
     } catch (error) {
-      console.log(error);
+      console.error('Error al intentar grabar audio:', error);
       Swal.fire({
         title: "Error",
         text: `Error al intentar grabar audio. Error: ${error}`,
@@ -47,10 +49,31 @@ export const AudioRecorder = ({ onSend }) => {
       setAudioBlob(blob);
       setIsRecording(false);
       setIsPaused(false);
-
-      // Subir el archivo al servidor
+  
+      // Cargar y ejecutar ffmpeg.js para convertir el archivo
+      const ffmpeg = ffmpegRef.current;
+      if (!ffmpeg.loaded) {
+        const baseURL = "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm";
+        await ffmpeg.load({
+          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+          workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript"),
+        });
+      }
+  
+      // Escribir el archivo WAV en el sistema de archivos virtual de ffmpeg
+      await ffmpeg.writeFile('input.wav', new Uint8Array(await blob.arrayBuffer()));
+  
+      // Ejecutar la conversión a OGG con Opus
+      await ffmpeg.exec(['-i', 'input.wav', '-c:a', 'libopus', 'output.ogg']);
+  
+      // Leer el archivo convertido desde el sistema de archivos virtual de ffmpeg
+      const data = await ffmpeg.readFile('output.ogg');
+      const convertedBlob = new Blob([data.buffer], { type: 'audio/ogg' });
+  
+      // Subir el archivo convertido al servidor
       const formData = new FormData();
-      formData.append('audio', blob, 'recording.ogg');
+      formData.append('audio', convertedBlob, 'recording.ogg');
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-audio`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -58,6 +81,7 @@ export const AudioRecorder = ({ onSend }) => {
       });
       const backendUrl = response.data.audioUrl;
       setBackendAudioUrl(backendUrl);
+  
     } catch (error) {
       console.error('Error al detener la grabación:', error);
     }

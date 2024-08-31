@@ -120,30 +120,23 @@ function App() {
 
       try {
         const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/contactsCampaign`, {
-          headers: { Authorization: `Bearer ${token}` }});
-
-          const contacts = response.data;  // Obtener la lista de contactos desde la respuesta
-          console.log("Estos son los contactos:", contacts);
-          console.log("Corroboramos que haya campañas", campañas);
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const contacts = response?.data
+        const updatedCampaigns = campañas.map(campaign => {
+          const associatedContactIds = contacts?.filter(contact => contact.campaign_id === campaign.id)?.map(contact => contact.contact_id)  || [];
+      
+          return {
+            ...campaign,
+            contactos: associatedContactIds 
+          };
+        });
         
-          // Crear una copia del array de campañas para evitar la mutación directa del estado
-          const updatedCampaigns = campañas.map(campaign => {
-            // Filtrar los contactos que coincidan con el ID de la campaña actual
-            const associatedContacts = contacts.filter(contact => contact.campaign_id === campaign.id);
-        
-            // Retornar la campaña actualizada con el array de contactos asociados
-            return {
-              ...campaign,
-              contactos: associatedContacts  // Agregar el array de contactos a la campaña
-            };
-          });
-        
-          // Actualizar el estado con las campañas que ahora incluyen los contactos asociados
-          addCampaigns(updatedCampaigns);
-        
+        addCampaigns(updatedCampaigns);
+      
       } catch (error) {
         console.error('Error fetching contacts:', error);
-      }
+      }      
     };
    
     const fetchContacts = async () => {

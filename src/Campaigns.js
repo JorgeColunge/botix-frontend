@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Button, Table, Form, InputGroup, FormControl, DropdownButton, Dropdown } from 'react-bootstrap';
+import { Container, Row, Col, Table, Form, InputGroup, FormControl, DropdownButton, Dropdown } from 'react-bootstrap';
 import TemplatePreview from './TemplatePreview';
 import axios from 'axios';
 import { io } from 'socket.io-client';
@@ -25,6 +25,7 @@ import {
   CardHeader,
   CardTitle,
   ChartContainer,
+  Button,
   ChartTooltip,
   ChartTooltipContent,
 } from "./components"
@@ -257,8 +258,8 @@ export const Campaigns = () => {
     if (!campaign.scheduled_launch || !timeLeft) {
       // Si no hay fecha programada o el tiempo ha pasado, mostrar directamente el botón de "Lanzar"
       return (
-        <Button variant="primary" size="sm" onClick={() => handleLaunchCampaignClick(campaign.id)}>
-          <RocketFill /> Lanzar
+        <Button variant="outline"onClick={() => handleLaunchCampaignClick(campaign.id)}>
+          <RocketFill  className="mr-2 h-4 w-4"/> Lanzar
         </Button>
       );
     }
@@ -329,8 +330,8 @@ export const Campaigns = () => {
                         </td>
                         <td>{template.type}</td>
                         <td className="d-flex justify-content-between align-items-center">
-                          <Button className='d-flex align-items-center gap-1' variant="success" size="sm" onClick={() => handleUseTemplateClick(template)}>
-                            <ArrowUpSquare /> Usar
+                          <Button className="bg-green-500 hover:bg-green-600 text-white" variant="primary" onClick={() => handleUseTemplateClick(template)}>
+                            <ArrowUpSquare className="mr-2 h-4 w-4"/> Usar
                           </Button>
                           <DropdownButton id="dropdown-basic-button" className="custom-dropdown-toggle" title={<ThreeDotsVertical />} variant="ghost" size="sm">
                             <Dropdown.Item onClick={() => handleUseTemplateClick(template)}>
