@@ -744,13 +744,10 @@
   }
 }
 
-
 .content-expanded {
   margin-left: 250px; /* Ancho cuando la barra está expandida */
   transition: margin-left 0.3s;
 }
-
-
 
 .reply-preview {
   background: rgba(255, 255, 255, 0.8); /* Fondo blanco con transparencia */

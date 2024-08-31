@@ -28,6 +28,7 @@ function ChatWindow() {
   const [isRecording, setIsRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
+  const [isScrolledToEnd, setIsScrolledToEnd] = useState(false); 
   const [redirectMsj, setRedirectMsj] = useState({
     redirect_msj: false,
      press_redirect: false,
@@ -82,6 +83,31 @@ function ChatWindow() {
     };
   }, [socket, currentConversation, setMessages, setCurrentConversation, setCurrentMessage]);
 
+  const checkIfScrolledToEnd = () => {
+    if (messagesEndRef.current) {
+      const scrollTop = messagesEndRef.current.scrollTop;
+      const scrollHeight = messagesEndRef.current.scrollHeight;
+      const clientHeight = messagesEndRef.current.clientHeight;
+      setIsScrolledToEnd(scrollTop + clientHeight >= scrollHeight);
+    }
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (messagesEndRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = messagesEndRef.current;
+        setIsScrolledToEnd(scrollTop + clientHeight >= scrollHeight);
+      }
+    };
+  
+    const currentElement = messagesEndRef.current;
+    if (currentElement) {
+      currentElement.addEventListener('scroll', handleScroll);
+      handleScroll(); // check initial state
+      return () => currentElement.removeEventListener('scroll', handleScroll);
+    }
+  }, [messages]);
+  
   const handleEditContactChange = (event) => {
     const { name, value } = event.target;
     setEditContact(prev => ({ ...prev, [name]: value }));
@@ -1044,17 +1070,19 @@ function ChatWindow() {
               })}
             </React.Fragment>
           ))}
-        {redirectMsj.press_redirect == true && ( 
-          <div className="floating-svg" onClick={handleViewNewMsj}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="20"
-              width="17.5"
-              viewBox="0 0 448 512"
-              className='new-message'
-            >
-              <path fill="#ffffff" d="M246.6 470.6c-12.5 12.5-32.8 12.5-45.3 0l-160-160c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L224 402.7 361.4 265.4c12.5-12.5 32.8-12.5 45.3 0s12.5 32.8 0 45.3l-160 160zm160-352l-160 160c-12.5 12.5-32.8 12.5-45.3 0l-160-160c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L224 210.7 361.4 73.4c12.5-12.5 32.8-12.5 45.3 0s12.5 32.8 0 45.3z"/></svg>
-        </div>)}
+            {(!isScrolledToEnd) && (
+                <div className="floating-svg" onClick={handleViewNewMsj}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="20"
+                    width="17.5"
+                    viewBox="0 0 448 512"
+                    className='new-message'
+                  >
+                    <path fill="#ffffff" d="M246.6 470.6c-12.5 12.5-32.8 12.5-45.3 0l-160-160c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L224 402.7 361.4 265.4c12.5-12.5 32.8-12.5 45.3 0s12.5 32.8 0 45.3l-160 160zm160-352l-160 160c-12.5 12.5-32.8 12.5-45.3 0l-160-160c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L224 210.7 361.4 73.4c12.5-12.5 32.8-12.5 45.3 0s12.5 32.8 0 45.3z"/>
+                  </svg>
+                </div>
+              )}
         </div>
         {showModal && (
           <ModalComponent show={showModal} handleClose={handleCloseModal}>

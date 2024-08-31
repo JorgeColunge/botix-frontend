@@ -404,7 +404,7 @@ export const Campaigns = () => {
                             Lanzar
                           </Dropdown.Item>
                           <Dropdown.Divider />
-                          <Dropdown.Item onClick={() => handleDeleteCampaignClick(campaign.id)}>
+                          <Dropdown.Item className="text-danger" onClick={() => handleDeleteCampaignClick(campaign.id)}>
                             Eliminar
                           </Dropdown.Item>
                         </DropdownButton>
@@ -439,7 +439,7 @@ export const Campaigns = () => {
                       <div className="grid flex-1 auto-rows-min gap-0.5">
                         <div className="text-sm text-muted-foreground">Total enviadas</div>
                         <div className="flex items-baseline gap-1 text-xl font-bold tabular-nums leading-none">
-                          {`${selectedCampaign.interactions}`}/{`${selectedCampaign.conversions}`}
+                          {`${selectedCampaign.conversions}`}/{`${selectedCampaign.contactos.length}`}
                           <span className="text-sm font-normal text-muted-foreground">
                             Personas
                           </span>
@@ -463,20 +463,33 @@ export const Campaigns = () => {
                           </span>
                         </div>
                       </div>
+                      <div className="grid flex-1 auto-rows-min gap-0.5">
+                        <div className="text-sm text-muted-foreground">Respondidos</div>
+                        <div className="flex items-baseline gap-1 text-xl font-bold tabular-nums leading-none">
+                        {`${selectedCampaign.interactions}`}
+                          <span className="text-sm font-normal text-muted-foreground">
+                          Mensajes
+                          </span>
+                        </div>
+                      </div>
                     </div>
                     <ChartContainer
                       config={{
+                        inter: {
+                          label: "Respondidos",
+                          color: "hsl(var(--chart-1))",
+                        },
                         move: {
                           label: "Totales",
-                          color: "hsl(var(--chart-1))",
+                          color: "hsl(var(--chart-2))",
                         },
                         exercise: {
                           label: "Recibidas",
-                          color: "hsl(var(--chart-2))",
+                          color: "hsl(var(--chart-3))",
                         },
                         stand: {
                           label: "Leídas",
-                          color: "hsl(var(--chart-3))",
+                          color: "hsl(var(--chart-4))",
                         },
                       }}
                       className="mx-auto aspect-square w-full max-w-[80%]"
@@ -492,25 +505,31 @@ export const Campaigns = () => {
                           {
                             name: "Leidos",
                             activity: "stand",
-                            value: (selectedCampaign.delivered / selectedCampaign.interactions)* 100,
+                            value: (selectedCampaign.delivered / selectedCampaign.contactos.length)* 100,
                             fill: "var(--color-stand)",
                           },
                           {
                             name: "Recibidos",
                             activity: "exercise",
-                            value: (selectedCampaign.read / selectedCampaign.interactions) * 100,
+                            value: (selectedCampaign.read / selectedCampaign.conversions) * 100,
                             fill: "var(--color-exercise)",
                           },
                           {
                             name: "Enviados",
                             activity: "move",
-                            value: (selectedCampaign.interactions / selectedCampaign.conversions) * 100,
+                            value: (selectedCampaign.conversions / selectedCampaign.conversions) * 100,
                             fill: "var(--color-move)",
                           },
+                          {
+                            name: "Respondidos",
+                            activity: "inter",
+                            value: (selectedCampaign.interactions / selectedCampaign.conversions) * 100,
+                            fill: "var(--color-inter)",
+                          },
                         ]}
-                        innerRadius="20%"
+                        innerRadius="15%"                       
                         barSize={27}
-                        startAngle={90}
+                        startAngle={-120}
                         endAngle={450}
                       >
                         <PolarAngleAxis

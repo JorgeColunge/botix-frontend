@@ -5,7 +5,7 @@
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.2",
     "@ffmpeg/core": "^0.12.6",
-    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.10.0",
     "@ffmpeg/util": "^0.12.1",
     "@fortawesome/fontawesome-free": "^6.5.2",
     "@popperjs/core": "^2.11.8",
