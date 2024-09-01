@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Table, Form, InputGroup, FormControl, Row, Col, Nav, Spinner } from 'react-bootstrap';
-import { ArrowDownCircle, ArrowLeft, ArrowLeftCircle, ArrowRightCircle, ArrowUpCircle } from 'react-bootstrap-icons';
+import { ArrowDownCircle, ArrowLeft, ArrowLeftCircle, ArrowRightCircle, ArrowUpCircle, PencilSquare } from 'react-bootstrap-icons';
 import axios from 'axios';
 import CodeMirror, { color } from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
@@ -201,14 +201,31 @@ const nodeTypes = {
       >
         <span style={{ lineHeight: '1', fontSize: '16px', marginBottom: '4px' }}>+</span>
       </button>
+      {data.tipo && (<div style={{ position: 'absolute', top: '10px', left: '-40px', display: 'flex', flexDirection: 'column' }}>
+      <button
+        onClick={() => data.editarNodo(id, data.tipo, data)}
+        className="btn button-custom p-0 m-1"
+      >
+      <PencilSquare />
+      </button>
+      </div>)}
     </div>
+    
   ),
-  conditional: ({ data }) => (
+  conditional: ({ id, data }) => (
     <div style={{position: 'relative', padding: '10px', paddingTop: '25px', paddingBottom: '25px', border: '1px solid #b1b1b1', borderRadius: '15px', background: '#fff', boxShadow: '0px 0px 20px #7a7a7a' }}>
       <Handle type="target" position="top" />
       <div>{data.label}</div>
       <Handle type="source" position="bottom" id="a" style={{ left: '25%' }} />
       <Handle type="source" position="bottom" id="b" style={{ left: '75%' }} />
+      <div style={{ position: 'absolute', top: '10px', left: '-40px', display: 'flex', flexDirection: 'column' }}>
+      <button
+        onClick={() => data.editarNodo(id, data.tipo, data)}
+        className="btn button-custom p-0 m-1"
+      >
+      <PencilSquare />
+      </button>
+      </div>
     </div>
   ),
   switch: ({ id, data }) => (
@@ -235,6 +252,14 @@ const nodeTypes = {
       >
         <span style={{ lineHeight: '1', fontSize: '16px', marginBottom: '4px' }}>+</span>
       </button>
+      <div style={{ position: 'absolute', top: '10px', left: '-40px', display: 'flex', flexDirection: 'column' }}>
+      <button
+        onClick={() => data.editarNodo(id, data.tipo, data)}
+        className="btn button-custom p-0 m-1"
+      >
+      <PencilSquare />
+      </button>
+      </div>
     </div>
   ),
   caseNode: GroupNode,
@@ -359,6 +384,12 @@ const EditChatBotModal = ({ show, handleClose, bot }) => {
   const [showContextModal, setShowContextModal] = useState(false);
   const [messageCount, setMessageCount] = useState(5); // Default to 5 messages
   const [selectAllMessages, setSelectAllMessages] = useState(false);
+  const [currentEditingNodeId, setCurrentEditingNodeId] = useState(null);
+  const [editMode, setEditMode] = useState(false); // Nuevo estado para editar
+  const [selectedIntentionIndex, setSelectedIntentionIndex] = useState(null); // Índice de la intención seleccionada para edición
+  const [selectedStateIndex, setSelectedStateIndex] = useState(null); // Índice del estado seleccionado para edición
+
+
 
 
 const openToolModal = (nodeId, isInternal) => {
@@ -411,52 +442,170 @@ const closeToolModal = () => {
       const initialCode = bot.codigo || `${baseHeader}\n// Insert generated code here\n${baseFooter}`;
       const codeWithoutWrapper = initialCode.replace(baseHeader, '').replace(baseFooter, '');
       setCode(codeWithoutWrapper.trim());
-
+  
       if (bot.react_flow) {
-        const { nodes: initialNodesFromCode, edges: initialEdgesFromCode, variables: initialVariables, assistants: initialAssistants = [] } = JSON.parse(bot.react_flow);
-
+        const {
+          nodes: initialNodesFromCode,
+          edges: initialEdgesFromCode,
+          variables: initialVariables,
+          assistants: initialAssistants = [],
+        } = JSON.parse(bot.react_flow);
+  
         // Filtra duplicados basados en nombre y displayName
         const uniqueVariables = [
           { name: 'Seleccione variable', displayName: 'Seleccione variable' },
           { name: 'messageData.text', displayName: 'Mensaje de Texto' },
           { name: 'responsibleUserId', displayName: 'Responsable de la conversación' },
-          ...initialVariables
-        ].filter((v, index, self) =>
-          index === self.findIndex((t) => (
-            t.name === v.name && t.displayName === v.displayName
-          ))
+          ...initialVariables,
+        ].filter(
+          (v, index, self) =>
+            index === self.findIndex((t) => t.name === v.name && t.displayName === v.displayName)
         );
-
+  
         // Filtrar duplicados para asistentes
         const uniqueAssistants = [
           { name: 'Seleccione asistente', displayName: 'Seleccione asistente' },
-          ...initialAssistants
-        ].filter((a, index, self) =>
-          index === self.findIndex((t) => (
-            t.name === a.name && t.displayName === a.displayName && t.model === a.model && t.personality === a.personality
-          ))
+          ...initialAssistants,
+        ].filter(
+          (a, index, self) =>
+            index === self.findIndex(
+              (t) =>
+                t.name === a.name &&
+                t.displayName === a.displayName &&
+                t.model === a.model &&
+                t.personality === a.personality
+            )
         );
-
-        // Añadir métodos onAddClick y onAddExternalClick a cada nodo, independientemente del tipo
-        const nodesWithFunctions = initialNodesFromCode.map((node) => ({
-          ...node,
-          data: {
-            ...node.data,
-            onAddClick: (id) => openToolModal(id, true),
-            onAddExternalClick: (id) => openToolModal(id, false),
-            setNodes,
-          },
-        }));
-
+  
+        // Restaurar funciones en nodos después de deserializar
+        const restoreNodeFunctions = (nodes) =>
+          nodes.map((node) => ({
+            ...node,
+            data: {
+              ...node.data,
+              onAddClick: (id) => openToolModal(id, true),
+              onAddExternalClick: (id) => openToolModal(id, false),
+              setNodes, // Volver a asignar setNodes
+              editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes), // Volver a asignar editarNodo con setNodes
+            },
+          }));
+  
+        const nodesWithFunctions = restoreNodeFunctions(initialNodesFromCode);
+  
         setNodes(nodesWithFunctions);
         setEdges(initialEdgesFromCode);
         setVariables(uniqueVariables);
         setAssistants(uniqueAssistants);
       }
     }
-  }, [bot]);
+  }, [bot, setNodes]); // Asegúrate de que setNodes y editarNodo sean dependencias
+  
+
+  const editarNodo = useCallback((id, tipo, datos, setNodes) => {
+    console.log('Editar Nodo');
+    console.log(`ID del nodo a editar: ${id}`);
+    
+    setNodes((prevNodes) => {
+        const nodoActual = prevNodes.find(node => node.id === id);
+        console.log('Nodo encontrado:', nodoActual);
+        
+        if (!nodoActual) {
+            console.warn('Nodo no encontrado');
+            return prevNodes; // Retorna el estado actual sin cambios
+        }
+
+        // Verifica si los datos del nodo contienen la información esperada
+        const { assistantName, gptModel, personality, intentions } = nodoActual.data;
+
+        switch (tipo) {
+            case 'gptAssistant':
+                if (assistantName && gptModel && personality) {
+                    setAssistantName(assistantName);
+                    setGptModel(gptModel);
+                    setPersonality(personality);
+                    setShowGptAssistantModal(true);
+                    setCurrentEditingNodeId(id);
+                } else {
+                    console.warn('Datos del asistente faltantes en el nodo:', nodoActual);
+                }
+                break;
+
+            case 'queryGpt':
+                setSelectedAssistant(nodoActual.data.selectedAssistant || '');
+                setQueryName(nodoActual.data.queryName || '');
+                setQueryPrompt(nodoActual.data.queryPrompt || '');
+                setShowGptQueryModal(true);
+                setCurrentEditingNodeId(id);
+                break;
+            
+            case 'sendText':
+                setResponseTextName(nodoActual.data.responseTextName || ''); 
+                setResponseText(nodoActual.data.responseText || ''); 
+                setShowResponseTextModal(true);
+                setCurrentEditingNodeId(id);
+                break;
+
+            case 'intention':
+                const currentIntentions = nodoActual.data.intentions || [];  // Asegura que 'intentions' siempre es un array
+                console.log('Intentions:', currentIntentions);
+                
+                setCurrentIntention(currentIntentions.length > 0 ? currentIntentions[0] : { name: '', states: [] }); // Ajusta el estado de la intención actual con un valor predeterminado
+                setEditMode(true);
+                setShowIntentionModal(true);
+                setCurrentEditingNodeId(id);
+                break;
+
+            case 'generateContext':
+                const { selectAllMessages, messageCount } = nodoActual.data;
+                setSelectAllMessages(selectAllMessages || false);
+                setMessageCount(messageCount || 1);
+                setShowContextModal(true);
+                setCurrentEditingNodeId(id);
+                break;
+
+            case 'externalRequest':
+                setExternalServiceName(nodoActual.data.externalServiceName || '');
+                setExternalServiceUrl(nodoActual.data.externalServiceUrl || '');
+                setExternalCredentials(nodoActual.data.externalCredentials || [{ key: '', value: '' }]);
+                setCredentialsLocation(nodoActual.data.credentialsLocation || 'headers');
+                setShowExternalRequestModal(true);
+                setCurrentEditingNodeId(id);
+                break;
+
+            case 'fillRequest':
+                setRequestType(nodoActual.data.requestType || '');
+                setRequestStatus(nodoActual.data.requestStatus || '');
+                setNuevoStatus(nodoActual.data.nuevoStatus || '');
+                setRequestData(nodoActual.data.requestData || [{ key: '', value: '' }]);
+                setValidationConditions(nodoActual.data.validationConditions || [{ key: '', value: '' }]);
+                setValidateExistence(nodoActual.data.validateExistence || false);
+                setShowRequestModal(true);
+                setCurrentEditingNodeId(id);
+                break;
+
+            case 'conditional':
+                setConditions(nodoActual.data.conditions || [{ variable: '', operator: '==', value: '', logicalOperator: '' }]);
+                setShowModal(true);
+                setCurrentEditingNodeId(id);
+                break;
+
+            case 'switch':
+                setSelectedVariable(nodoActual.data.variable || '');  // Recupera la variable seleccionada
+                setShowSwitchModal(true);
+                setCurrentEditingNodeId(id);
+                break;
+
+            default:
+                console.warn(`Tipo de nodo no soportado para edición: ${tipo}`);
+        }
+
+        return prevNodes; // Devuelve los nodos sin cambios explícitos en esta función
+    });
+}, []);
 
 
+  
+  
 
     const handleAddState = () => {
       if (currentState.state && currentState.description) {
@@ -481,6 +630,32 @@ const handleSaveIntentionModal = () => {
   generateCodeForIntentions();
 };
 
+const handleEditIntention = (index) => {
+  const intentionToEdit = intentions[index];
+  setCurrentIntention(intentionToEdit);
+  setSelectedIntentionIndex(index);
+  setEditMode(true); // Cambiar a modo de edición
+  setShowIntentionModal(true); // Mostrar el modal para edición
+};
+
+const handleDeleteIntention = (index) => {
+  const updatedIntentions = intentions.filter((_, i) => i !== index);
+  setIntentions(updatedIntentions);
+};
+
+const handleEditState = (index) => {
+  const stateToEdit = currentIntention.states[index];
+  setCurrentState(stateToEdit);
+  setSelectedStateIndex(index);
+  setEditMode(true); // Cambiar a modo de edición
+};
+
+const handleDeleteState = (index) => {
+  const updatedStates = currentIntention.states.filter((_, i) => i !== index);
+  setCurrentIntention({ ...currentIntention, states: updatedStates });
+};
+
+
 const generateCodeForIntentions = async () => {
   let codeArray = [];
 
@@ -488,11 +663,11 @@ const generateCodeForIntentions = async () => {
   codeArray.push("intentions = [\n");
 
   intentions.forEach(intention => {
-    codeArray.push(`  {\n    name: "${intention.name}",\n    states: [\n`);
-    intention.states.forEach(state => {
-      codeArray.push(`      { state: "${state.state}", description: "${state.description}" },\n`);
-    });
-    codeArray.push("    ]\n  },\n");
+      codeArray.push(`  {\n    name: "${intention.name}",\n    states: [\n`);
+      intention.states.forEach(state => {
+          codeArray.push(`      { state: "${state.state}", description: "${state.description}" },\n`);
+      });
+      codeArray.push("    ]\n  },\n");
   });
 
   codeArray.push("];\n");
@@ -500,107 +675,107 @@ const generateCodeForIntentions = async () => {
   // Generar código para la lógica de evaluación de intenciones usando GPT en partes
   codeArray.push(`
   async function evalIntentionGPT(prompt) {
-  apiKey = process.env.OPENAI_API_KEY;
-  url = "https://api.openai.com/v1/chat/completions";
-  headers = {
-    'Authorization': \`Bearer \${apiKey}\`,
-    'Content-Type': 'application/json'
-  };
-  payload = {
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: \`Compruebas la intención que tiene un cliente con el mensaje que envía. Tienes una lista de intenciones y estados con su descripción. Respondes a las consultas únicamente con la intención y el estado en esta estructura intención,estado, sin paréntesis, espacios adicionales, o cualquier otro carácter. Solo puedes devolver intenciones y estados que existan en las listas proporcionadas, quiero que la respuesta sea exactamente como en la lista que recibes de estados e intenciones, no inventes nombres, ponle exactamente el nombre que se encuentra en la lista. Si no hay coincidencia, responde "null".\` },
-      { role: "user", content: prompt }
-    ]
-  };
-  try {
-    responseGpt = await axios.post(url, payload, { headers });
-    gptResponse = responseGpt.data.choices[0].message.content.trim();
-    console.log(\`Respuesta de GPT: \${gptResponse}\`); // Log para depuración
-    return gptResponse;
-  } catch (error) {
-    console.error("Error al obtener respuesta de GPT:", error);
-    return "Error al obtener la respuesta";
-  }
-}
-
-async function evaluateIntentions(conversationState, messageText) {
-  return new Promise(async (resolve, reject) => {
-    let prompt, result;
-
-    console.log(\`Evaluando intenciones para el estado: \${conversationState} y mensaje: "\${messageText}"\`);
-    console.log("Intenciones y estados enviados a GPT:", JSON.stringify(intentions, null, 2));
-
-    // Primera consulta: Evaluar estado actual dentro de su intención
-    const currentState = intentions.flatMap(i => i.states).find(s => s.state === conversationState);
-    if (currentState) {
-      prompt = \`El estado actual es "\${conversationState}" y el mensaje del cliente es "\${messageText}". Evalúa si el mensaje coincide con esta descripción: "\${currentState.description}". Devuelve solo los valores de intención y estado en el formato intención,estado sin espacios adicionales, paréntesis, o cualquier otro carácter. Si no hay coincidencia, responde "null". Los únicos valores válidos para intención son: \${intentions.map(i => i.name).join(", ")}. Los únicos valores válidos para estado son: \${intentions.flatMap(i => i.states).map(s => s.state).join(", ")}.\`;
-      result = await evalIntentionGPT(prompt);
-      console.log(\`Resultado de la primera consulta: \${result}\`);
-    }
-
-    // Si el resultado es nulo o inválido, proceder a la segunda consulta
-    if (!result || result === "null") {
-      const currentIntention = intentions.find(i => i.states.some(s => s.state === conversationState));
-      if (currentIntention) {
-        prompt = \`El mensaje del cliente es "\${messageText}". Evalúa si coincide con alguna de estas descripciones: \${currentIntention.states.map(s => \`"\${s.description}"\`).join(", ")}. Devuelve solo los valores de intención y estado en el formato intención,estado sin espacios adicionales, paréntesis, o cualquier otro carácter. Si no hay coincidencia, responde "null". Los únicos valores válidos para intención son: \${currentIntention.name}. Los únicos valores válidos para estado son: \${currentIntention.states.map(s => s.state).join(", ")}.\`;
-        result = await evalIntentionGPT(prompt);
-        console.log(\`Resultado de la segunda consulta: \${result}\`);
+      apiKey = process.env.OPENAI_API_KEY;
+      url = "https://api.openai.com/v1/chat/completions";
+      headers = {
+          'Authorization': \`Bearer \${apiKey}\`,
+          'Content-Type': 'application/json'
+      };
+      payload = {
+          model: "gpt-4o",
+          messages: [
+              { role: "system", content: \`Compruebas la intención que tiene un cliente con el mensaje que envía. Tienes una lista de intenciones y estados con su descripción. Respondes a las consultas únicamente con la intención y el estado en esta estructura intención,estado, sin paréntesis, espacios adicionales, o cualquier otro carácter. Solo puedes devolver intenciones y estados que existan en las listas proporcionadas, quiero que la respuesta sea exactamente como en la lista que recibes de estados e intenciones, no inventes nombres, ponle exactamente el nombre que se encuentra en la lista. Si no hay coincidencia, responde "null".\` },
+              { role: "user", content: prompt }
+          ]
+      };
+      try {
+          responseGpt = await axios.post(url, payload, { headers });
+          gptResponse = responseGpt.data.choices[0].message.content.trim();
+          console.log(\`Respuesta de GPT: \${gptResponse}\`); // Log para depuración
+          return gptResponse;
+      } catch (error) {
+          console.error("Error al obtener respuesta de GPT:", error);
+          return "Error al obtener la respuesta";
       }
-    }
+  }
 
-    // Si todavía no coincide, proceder a la tercera consulta
-    if (!result || result === "null") {
-      prompt = \`El mensaje del cliente es "\${messageText}". Evalúa si coincide con alguna de estas intenciones y estados:\n\`;
-      intentions.forEach(intention => {
-        prompt += \`Intención: \${intention.name}\n\`;
-        intention.states.forEach(state => {
-          prompt += \`  - Estado: \${state.state}, Descripción: \${state.description}\n\`;
-        });
+  async function evaluateIntentions(conversationState, messageText) {
+      return new Promise(async (resolve, reject) => {
+          let prompt, result;
+
+          console.log(\`Evaluando intenciones para el estado: \${conversationState} y mensaje: "\${messageText}"\`);
+          console.log("Intenciones y estados enviados a GPT:", JSON.stringify(intentions, null, 2));
+
+          // Primera consulta: Evaluar estado actual dentro de su intención
+          const currentState = intentions.flatMap(i => i.states).find(s => s.state === conversationState);
+          if (currentState) {
+              prompt = \`El estado actual es "\${conversationState}" y el mensaje del cliente es "\${messageText}". Evalúa si el mensaje coincide con esta descripción: "\${currentState.description}". Devuelve solo los valores de intención y estado en el formato intención,estado sin espacios adicionales, paréntesis, o cualquier otro carácter. Si no hay coincidencia, responde "null". Los únicos valores válidos para intención son: \${intentions.map(i => i.name).join(", ")}. Los únicos valores válidos para estado son: \${intentions.flatMap(i => i.states).map(s => s.state).join(", ")}.\`;
+              result = await evalIntentionGPT(prompt);
+              console.log(\`Resultado de la primera consulta: \${result}\`);
+          }
+
+          // Si el resultado es nulo o inválido, proceder a la segunda consulta
+          if (!result || result === "null") {
+              const currentIntention = intentions.find(i => i.states.some(s => s.state === conversationState));
+              if (currentIntention) {
+                  prompt = \`El mensaje del cliente es "\${messageText}". Evalúa si coincide con alguna de estas descripciones: \${currentIntention.states.map(s => \`"\${s.description}"\`).join(", ")}. Devuelve solo los valores de intención y estado en el formato intención,estado sin espacios adicionales, paréntesis, o cualquier otro carácter. Si no hay coincidencia, responde "null". Los únicos valores válidos para intención son: \${currentIntention.name}. Los únicos valores válidos para estado son: \${currentIntention.states.map(s => s.state).join(", ")}.\`;
+                  result = await evalIntentionGPT(prompt);
+                  console.log(\`Resultado de la segunda consulta: \${result}\`);
+              }
+          }
+
+          // Si todavía no coincide, proceder a la tercera consulta
+          if (!result || result === "null") {
+              prompt = \`El mensaje del cliente es "\${messageText}". Evalúa si coincide con alguna de estas intenciones y estados:\n\`;
+              intentions.forEach(intention => {
+                  prompt += \`Intención: \${intention.name}\n\`;
+                  intention.states.forEach(state => {
+                      prompt += \`  - Estado: \${state.state}, Descripción: \${state.description}\n\`;
+                  });
+              });
+              prompt += \`Devuelve solo los valores de intención y estado en el formato intención,estado sin espacios adicionales, paréntesis, o cualquier otro carácter. Si no hay coincidencia, responde "null". Los únicos valores válidos para intención son: \${intentions.map(i => i.name).join(", ")}. Los únicos valores válidos para estado son: \${intentions.flatMap(i => i.states).map(s => s.state).join(", ")}.\`;
+              result = await evalIntentionGPT(prompt);
+              console.log(\`Resultado de la tercera consulta: \${result}\`);
+          }
+
+          // Manejar el resultado final
+          handleResult(result);
+          resolve();
       });
-      prompt += \`Devuelve solo los valores de intención y estado en el formato intención,estado sin espacios adicionales, paréntesis, o cualquier otro carácter. Si no hay coincidencia, responde "null". Los únicos valores válidos para intención son: \${intentions.map(i => i.name).join(", ")}. Los únicos valores válidos para estado son: \${intentions.flatMap(i => i.states).map(s => s.state).join(", ")}.\`;
-      result = await evalIntentionGPT(prompt);
-      console.log(\`Resultado de la tercera consulta: \${result}\`);
-    }
-
-    // Manejar el resultado final
-    handleResult(result);
-    resolve();
-  });
-}
-
-function handleResult(result) {
-  if (!result || result === "null" || !result.includes(",")) {
-    console.log("No se encontró ninguna intención o estado relevante o el formato es incorrecto.");
-    return;
   }
 
-  const [Intent, newConversationState] = result.split(",").map(s => s.trim());
+  function handleResult(result) {
+      if (!result || result === "null" || !result.includes(",")) {
+          console.log("No se encontró ninguna intención o estado relevante o el formato es incorrecto.");
+          return;
+      }
 
-  if (!Intent || !newConversationState) {
-    console.log("El formato del resultado no es válido.");
-    return;
+      const [Intent, newConversationState] = result.split(",").map(s => s.trim());
+
+      if (!Intent || !newConversationState) {
+          console.log("El formato del resultado no es válido.");
+          return;
+      }
+
+      // Validar intención y estado contra los valores válidos
+      const validIntentions = intentions.map(i => i.name);
+      const validStates = intentions.flatMap(i => i.states).map(s => s.state);
+
+      if (!validIntentions.includes(Intent) || !validStates.includes(newConversationState)) {
+          console.log("Intención o estado inválido devuelto por GPT.");
+          console.log(\`Intención devuelta: \${Intent}, Estado devuelto: \${newConversationState}\`);
+          return;
+      }
+
+      const validStateForIntention = intentions.find(i => i.name === Intent).states.some(s => s.state === newConversationState);
+      if (!validStateForIntention) {
+          console.log("El estado devuelto no pertenece a la intención devuelta.");
+          return;
+      }
+
+      conversationState = newConversationState;
+      console.log(\`Nueva intención: \${Intent}, Nuevo estado: \${conversationState}\`);
   }
-
-  // Validar intención y estado contra los valores válidos
-  const validIntentions = intentions.map(i => i.name);
-  const validStates = intentions.flatMap(i => i.states).map(s => s.state);
-
-  if (!validIntentions.includes(Intent) || !validStates.includes(newConversationState)) {
-    console.log("Intención o estado inválido devuelto por GPT.");
-    console.log(\`Intención devuelta: \${Intent}, Estado devuelto: \${newConversationState}\`);
-    return;
-  }
-
-  const validStateForIntention = intentions.find(i => i.name === Intent).states.some(s => s.state === newConversationState);
-  if (!validStateForIntention) {
-    console.log("El estado devuelto no pertenece a la intención devuelta.");
-    return;
-  }
-
-  conversationState = newConversationState;
-  console.log(\`Nueva intención: \${Intent}, Nuevo estado: \${conversationState}\`);
-}
 
   let messageText = messageData.text;
 
@@ -609,61 +784,88 @@ function handleResult(result) {
 
   console.log(\`Estado inicial para el switch: \${conversationState}\`);
 
-`);
+  `);
 
-  // Añadir el nuevo nodo con el código generado
-  const newNode = {
-    id: `${nodes.length + 1}`,
-    type: 'custom',
-    position: { x: Math.random() * 250, y: Math.random() * 250 },
-    data: {
-      label: `Intenciones`,
-      code: codeArray,
-      onAddClick: (id) => openToolModal(id, true),
-      onAddExternalClick: (id) => openToolModal(id, false)
-    },
-    parentId: isInternal ? currentNodeId : null,
-  };
+  let updatedNodes, updatedEdges;
 
-  // Creación de la nueva arista (edge)
-  let newEdge;
-  if (isInternal) {
-    newEdge = {
-      id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-      source: currentParentId || `${nodes.length}`,
-      target: `${nodes.length + 1}`,
-      animated: true,
-      style: { stroke: '#d033b9' },
-      zIndex: 10,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: '#d033b9',
-      },
-    };
+  if (currentEditingNodeId) {
+      // Si estamos editando un nodo existente
+      updatedNodes = nodes.map(node => {
+          if (node.id === currentEditingNodeId) {
+              return {
+                  ...node,
+                  data: {
+                      ...node.data,
+                      label: `Intenciones`,
+                      code: codeArray,
+                      intentions: intentions || [],
+                      tipo: 'intention',
+                  },
+              };
+          }
+          return node;
+      });
+      updatedEdges = edges; // Mantén las aristas actuales
   } else {
-    newEdge = {
-      id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-      source: currentParentId || `${nodes.length}`,
-      target: `${nodes.length + 1}`,
-      animated: true,
-      sourceHandle: 'b',
-      style: { stroke: '#d033b9' },
-      zIndex: 10,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: '#d033b9',
-      },
-    };
+      // Si estamos creando un nuevo nodo
+      const newNode = {
+          id: `${nodes.length + 1}`,
+          type: 'custom',
+          position: { x: Math.random() * 250, y: Math.random() * 250 },
+          data: {
+              label: `Intenciones`,
+              code: codeArray,
+              intentions: intentions || [], // Asegúrate de que intentions siempre esté definida
+              tipo: 'intention', // Añade el tipo para identificación
+              onAddClick: (id) => openToolModal(id, true),
+              onAddExternalClick: (id) => openToolModal(id, false),
+              editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+          },
+          parentId: isInternal ? currentNodeId : null,
+      };
+
+      // Creación de la nueva arista (edge)
+      let newEdge;
+      if (isInternal) {
+          newEdge = {
+              id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+              source: currentParentId || `${nodes.length}`,
+              target: `${nodes.length + 1}`,
+              animated: true,
+              style: { stroke: '#d033b9' },
+              zIndex: 10,
+              markerEnd: {
+                  type: MarkerType.ArrowClosed,
+                  color: '#d033b9',
+              },
+          };
+      } else {
+          newEdge = {
+              id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+              source: currentParentId || `${nodes.length}`,
+              target: `${nodes.length + 1}`,
+              animated: true,
+              sourceHandle: 'b',
+              style: { stroke: '#d033b9' },
+              zIndex: 10,
+              markerEnd: {
+                  type: MarkerType.ArrowClosed,
+                  color: '#d033b9',
+              },
+          };
+      }
+
+      updatedNodes = [...nodes, newNode];
+      updatedEdges = [...edges, newEdge];
   }
 
-  const updatedNodes = [...nodes, newNode];
-  const updatedEdges = [...edges, newEdge];
   setNodes(updatedNodes);
   setEdges(updatedEdges);
 
   // Imprimir el código generado para verificación
   console.log(codeArray.join(''));
 };
+
 
 
 
@@ -764,36 +966,36 @@ function handleResult(result) {
       const credentialsCode = externalCredentials
         .map(cred => `const ${cred.key} = "${cred.value}";`)
         .join('\n');
-
+    
       let externalRequestCode = `
-    async function ${functionName}(requestId) {
-      console.log("Enviando solicitud a ${externalServiceName}");
-      try {
-        requestQueryExternal = 'SELECT * FROM requests WHERE request_id = $1';
-        requestResultExternal = await pool.query(requestQueryExternal, [requestId]);
-        requestDataExternal = requestResultExternal.rows[0];
+      async function ${functionName}(requestId) {
+        console.log("Enviando solicitud a ${externalServiceName}");
+        try {
+          requestQueryExternal = 'SELECT * FROM requests WHERE request_id = $1';
+          requestResultExternal = await pool.query(requestQueryExternal, [requestId]);
+          requestDataExternal = requestResultExternal.rows[0];
       `;
-
+    
       if (credentialsLocation === 'headers') {
         externalRequestCode += `
-        headersRequest = {
-          ${externalCredentials.map(cred => `"${cred.key}": "${cred.value}"`).join(',\n')}
-        };
-
-        responseExternal = await axios.post('${externalServiceUrl}', requestData, {
-          headers: headersRequest
-        });
+          headersRequest = {
+            ${externalCredentials.map(cred => `"${cred.key}": "${cred.value}"`).join(',\n')}
+          };
+    
+          responseExternal = await axios.post('${externalServiceUrl}', requestData, {
+            headers: headersRequest
+          });
         `;
       } else if (credentialsLocation === 'body') {
         externalRequestCode += `
-        credentialsRequest = {
-          ${externalCredentials.map(cred => `${cred.key}: "${cred.value}"`).join(',\n')}
-        };
-
-        responseExternal = await axios.post('${externalServiceUrl}', {...requestData, ...credentialsRequest});
+          credentialsRequest = {
+            ${externalCredentials.map(cred => `${cred.key}: "${cred.value}"`).join(',\n')}
+          };
+    
+          responseExternal = await axios.post('${externalServiceUrl}', {...requestData, ...credentialsRequest});
         `;
       }
-
+    
       externalRequestCode += `
         if (responseExternal.status === 200) {
           updateStatusQuery = 'UPDATE requests SET status = $1 WHERE request_id = $2';
@@ -804,52 +1006,91 @@ function handleResult(result) {
       }
     }
     `;
-
-      const newNode = {
-        id: `${nodes.length + 1}`,
-        type: 'custom',
-        position: { x: Math.random() * 250, y: Math.random() * 250 },
-        data: { label: `Crear Solicitud Externa: ${externalServiceName}`, code: [externalRequestCode], onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false) },
-        parentId: isInternal ? currentNodeId : null,
-    };
-    let newEdge
-    if(isInternal){
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
-    }else{
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        sourceHandle: 'b',
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
-    }
-
-      const updatedNodes = [...nodes, newNode];
-      const updatedEdges = [...edges, newEdge];
-
-      // Guardar el nombre del servicio en un arreglo de solicitudes externas
-      setExternalRequests((reqs) => [...reqs, { name: externalServiceName, url: externalServiceUrl }]);
-
+    
+      let updatedNodes, updatedEdges;
+    
+      if (currentEditingNodeId) {
+        // Si estamos editando un nodo existente
+        updatedNodes = nodes.map(node => {
+          if (node.id === currentEditingNodeId) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                label: `Crear Solicitud Externa: ${externalServiceName}`,
+                code: [externalRequestCode],
+                externalServiceName,
+                externalServiceUrl,
+                externalCredentials,
+                credentialsLocation,
+                tipo: 'externalRequest',
+              },
+            };
+          }
+          return node;
+        });
+        updatedEdges = edges; // Mantén las aristas actuales
+      } else {
+        // Si estamos creando un nuevo nodo
+        const newNode = {
+          id: `${nodes.length + 1}`,
+          type: 'custom',
+          position: { x: Math.random() * 250, y: Math.random() * 250 },
+          data: {
+            label: `Crear Solicitud Externa: ${externalServiceName}`,
+            code: [externalRequestCode],
+            externalServiceName,
+            externalServiceUrl,
+            externalCredentials,
+            credentialsLocation,
+            tipo: 'externalRequest', // Añade el tipo para identificación
+            onAddClick: (id) => openToolModal(id, true),
+            onAddExternalClick: (id) => openToolModal(id, false),
+            editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+          },
+          parentId: isInternal ? currentNodeId : null,
+        };
+    
+        let newEdge;
+        if (isInternal) {
+          newEdge = {
+            id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+            source: currentParentId || `${nodes.length}`,
+            target: `${nodes.length + 1}`,
+            animated: true,
+            style: { stroke: '#d033b9' },
+            zIndex: 10,
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: '#d033b9',
+            },
+          };
+        } else {
+          newEdge = {
+            id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+            source: currentParentId || `${nodes.length}`,
+            target: `${nodes.length + 1}`,
+            animated: true,
+            sourceHandle: 'b',
+            style: { stroke: '#d033b9' },
+            zIndex: 10,
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: '#d033b9',
+            },
+          };
+        }
+    
+        updatedNodes = [...nodes, newNode];
+        updatedEdges = [...edges, newEdge];
+      }
+    
       setNodes(updatedNodes);
       setEdges(updatedEdges);
+    
+      // Guardar el nombre del servicio en un arreglo de solicitudes externas
+      setExternalRequests((reqs) => [...reqs, { name: externalServiceName, url: externalServiceUrl }]);
+    
       generateCodeFromNodes(updatedNodes, updatedEdges);
       setShowExternalRequestModal(false);
       setExternalServiceName('');
@@ -857,6 +1098,7 @@ function handleResult(result) {
       setExternalCredentials([{ key: '', value: '' }]);
       setCredentialsLocation('headers'); // Reset to default
     };
+    
 
     const handleAddRequestComponent = () => {
       if (!selectedService) return;
@@ -1071,256 +1313,88 @@ function handleResult(result) {
     setShowContextModal(true);
     setMessageCount(5); // Resetea la cantidad de mensajes a 5 por defecto
     setSelectAllMessages(false); // Resetea el checkbox
+    setShowToolModal(false);
   };
 
   // Función para manejar el guardado del modal de contexto
-const handleContextModalSave = () => {
-  const numberOfMessages = selectAllMessages ? 'ALL' : messageCount;
-
-  // Modificar la consulta SQL para incluir el origen del mensaje
-  const newNode = {
-    id: `${nodes.length + 1}`,
-    type: 'custom',
-    position: { x: Math.random() * 250, y: Math.random() * 250 },
-    data: {
-      label: `Generar Contexto: ${selectAllMessages ? 'Todos los mensajes' : messageCount + ' mensajes'}`,
-      code: [
-        `const getLastMessagesQuery = \`
-(SELECT 'cliente' AS origin, message_text AS text, received_at AS created_at FROM messages WHERE sender_id = $1 AND conversation_fk = $2 ORDER BY received_at DESC LIMIT ${numberOfMessages})
-UNION ALL
-(SELECT 'yo' AS origin, reply_text AS text, created_at FROM replies WHERE sender_id = $1 AND conversation_fk = $2 ORDER BY created_at DESC LIMIT ${numberOfMessages})
-ORDER BY created_at ASC\`;
-
-const messagesRes = await pool.query(getLastMessagesQuery, [senderId, conversationId]);
-const lastMessages = messagesRes.rows.map(row => \`\${row.origin}: \${row.text}\`); // Agregar el origen al mensaje
-console.log('Contexto generado:', lastMessages.join(' '));`
-      ],
-      onAddClick: (id) => openToolModal(id, true),
-      onAddExternalClick: (id) => openToolModal(id, false)
-    },
-    parentId: null, // Ajusta según sea necesario
-  };
-
-  // Crear el edge si es necesario
-  const newEdge = {
-    id: `e${nodes.length}-${nodes.length + 1}`,
-    source: `${nodes.length}`,
-    target: `${nodes.length + 1}`,
-    animated: true,
-    style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-    zIndex: 10, // Ajusta el zIndex si es necesario
-    markerEnd: {
-      type: MarkerType.ArrowClosed, // Flecha al final de la línea
-      color: '#d033b9', // Ajusta el color de la flecha aquí
-    },
-  };
-
-  const updatedNodes = [...nodes, newNode];
-  const updatedEdges = [...edges, newEdge];
-
-  setNodes(updatedNodes);
-  setEdges(updatedEdges);
-  setVariables((vars) => [...vars, { name: "lastMessages", displayName: "Mensajes con contexto", nodeId: newNode.id }]);
-  setShowContextModal(false);
-};
-
-  /*const addConversationStateNode = () => {
-    const newNode = {
-      id: `${nodes.length + 1}`,
-      type: 'custom',
-      position: { x: Math.random() * 250, y: Math.random() * 250 },
-      data: {
-        label: 'Obtener el estado de la conversación',
-        code: [
-          `// Obtener el estado de la conversación`,
-          `const conversationStateQuery = 'SELECT state FROM conversations WHERE conversation_id = $1';`,
-          `const conversationStateResult = await pool.query(conversationStateQuery, [conversationId]);`,
-          `let conversationState = conversationStateResult.rows[0]?.state;\n\n`
-        ],
-        onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false)
-      },
-      parentId: isInternal ? currentNodeId : null,
-    };
-    let newEdge
-    if(isInternal){
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
-    }else{
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        sourceHandle: 'b',
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
-    }
-    const updatedNodes = [...nodes, newNode];
-    const updatedEdges = [...edges, newEdge];
-
-    // Filtra duplicados
-    const newVariable = { name: 'conversationState', displayName: 'Estado de la Conversación', nodeId: newNode.id };
-    const uniqueVariables = [...variables, newVariable].filter((v, index, self) =>
-      index === self.findIndex((t) => (
-        t.name === v.name && t.displayName === v.displayName
-      ))
-    );
-
-    setNodes(updatedNodes);
-    setEdges(updatedEdges);
-    setVariables(uniqueVariables);
-    generateCodeFromNodes(updatedNodes, updatedEdges);
-  };*/
-
-  /*const addResponsibleNode = () => {
-    const newNode = {
-      id: `${nodes.length + 1}`,
-      type: 'custom',
-      position: { x: Math.random() * 250, y: Math.random() * 250 },
-      data: {
-        label: 'Obtener responsable',
-        code: [
-          `const responsibleRes = await pool.query('SELECT id_usuario FROM conversations WHERE conversation_id = $1', [conversationId]);`,
-          `const responsibleUserId = responsibleRes.rows[0].id_usuario;`
-        ],
-        onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false)
-      },
-      parentId: isInternal ? currentNodeId : null,
-    };
-    let newEdge
-    if(isInternal){
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
-    }else{
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        sourceHandle: 'b',
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
-    }
-    const updatedNodes = [...nodes, newNode];
-    const updatedEdges = [...edges, newEdge];
-
-    // Filtra duplicados
-    const newVariable = { name: 'responsibleUserId', displayName: 'ID del Responsable', nodeId: newNode.id };
-    const uniqueVariables = [...variables, newVariable].filter((v, index, self) =>
-      index === self.findIndex((t) => (
-        t.name === v.name && t.displayName === v.displayName
-      ))
-    );
-
-    setNodes(updatedNodes);
-    setEdges(updatedEdges);
-    setVariables(uniqueVariables);
-    generateCodeFromNodes(updatedNodes, updatedEdges);
-  };*/
-
-  /*const addContactInfoNode = () => {
-    const newNode = {
-      id: `${nodes.length + 1}`,
-      type: 'custom',
-      position: { x: Math.random() * 250, y: Math.random() * 250 },
-      data: {
-        label: 'Obtener información del contacto',
-        code: [`const contactInfo = await getContactInfo(senderId, integrationDetails.company_id);`],
-        onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false)
-      },
-      parentId: isInternal ? currentNodeId : null,
-    };
-    let newEdge
-    if(isInternal){
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
-    }else{
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        sourceHandle: 'b',
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
-    }
-    const updatedNodes = [...nodes, newNode];
-    const updatedEdges = [...edges, newEdge];
-
-    // Filtra duplicados
-    const newVariables = [
-      { name: 'contactInfo', displayName: 'Información del contacto', nodeId: newNode.id },
-      { name: 'contactInfo.first_name', displayName: 'Nombre del contacto', nodeId: newNode.id },
-      { name: 'contactInfo.last_name', displayName: 'Apellido del contacto', nodeId: newNode.id },
-      { name: 'contactInfo.phone_number', displayName: 'Número del contacto', nodeId: newNode.id },
-      { name: 'contactInfo.organization', displayName: 'Organización', nodeId: newNode.id },
-      { name: 'contactInfo.label', displayName: 'Etiqueta', nodeId: newNode.id },
-      { name: 'contactInfo.profile_url', displayName: 'URL del perfil', nodeId: newNode.id },
-      { name: 'contactInfo.edad_approx', displayName: 'Edad aproximada', nodeId: newNode.id },
-      { name: 'contactInfo.fecha_nacimiento', displayName: 'Fecha de nacimiento', nodeId: newNode.id },
-      { name: 'contactInfo.nacionalidad', displayName: 'Nacionalidad', nodeId: newNode.id },
-      { name: 'contactInfo.ciudad_residencia', displayName: 'Ciudad de residencia', nodeId: newNode.id },
-      { name: 'contactInfo.direccion_completa', displayName: 'Dirección completa', nodeId: newNode.id },
-      { name: 'contactInfo.email', displayName: 'Email', nodeId: newNode.id }
+  const handleContextModalSave = () => {
+    const numberOfMessages = selectAllMessages ? 'ALL' : messageCount;
+    const codeArray = [
+      `const getLastMessagesQuery = \`
+  (SELECT 'cliente' AS origin, message_text AS text, received_at AS created_at FROM messages WHERE sender_id = $1 AND conversation_fk = $2 ORDER BY received_at DESC LIMIT ${numberOfMessages})
+  UNION ALL
+  (SELECT 'yo' AS origin, reply_text AS text, created_at FROM replies WHERE sender_id = $1 AND conversation_fk = $2 ORDER BY created_at DESC LIMIT ${numberOfMessages})
+  ORDER BY created_at ASC\`;
+  
+  const messagesRes = await pool.query(getLastMessagesQuery, [senderId, conversationId]);
+  const lastMessages = messagesRes.rows.map(row => \`\${row.origin}: \${row.text}\`); // Agregar el origen al mensaje
+  console.log('Contexto generado:', lastMessages.join(' '));`
     ];
-
-    const uniqueVariables = [...variables, ...newVariables].filter((v, index, self) =>
-      index === self.findIndex((t) => (
-        t.name === v.name && t.displayName === v.displayName
-      ))
-    );
-
+  
+    let updatedNodes, updatedEdges;
+  
+    if (currentEditingNodeId) {
+      // Si estamos editando un nodo existente
+      updatedNodes = nodes.map(node => {
+        if (node.id === currentEditingNodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label: `Generar Contexto: ${selectAllMessages ? 'Todos los mensajes' : messageCount + ' mensajes'}`,
+              code: codeArray,
+              selectAllMessages,
+              messageCount,
+              tipo: 'generateContext',
+            },
+          };
+        }
+        return node;
+      });
+      updatedEdges = edges; // Mantén las aristas actuales
+    } else {
+      // Si estamos creando un nuevo nodo
+      const newNode = {
+        id: `${nodes.length + 1}`,
+        type: 'custom',
+        position: { x: Math.random() * 250, y: Math.random() * 250 },
+        data: {
+          label: `Generar Contexto: ${selectAllMessages ? 'Todos los mensajes' : messageCount + ' mensajes'}`,
+          code: codeArray,
+          selectAllMessages,
+          messageCount,
+          tipo: 'generateContext', // Añade el tipo para identificación
+          onAddClick: (id) => openToolModal(id, true),
+          onAddExternalClick: (id) => openToolModal(id, false),
+          editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+        },
+        parentId: null, // Ajusta según sea necesario
+      };
+  
+      // Crear el edge si es necesario
+      const newEdge = {
+        id: `e${nodes.length}-${nodes.length + 1}`,
+        source: `${nodes.length}`,
+        target: `${nodes.length + 1}`,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+  
+      updatedNodes = [...nodes, newNode];
+      updatedEdges = [...edges, newEdge];
+    }
+  
     setNodes(updatedNodes);
     setEdges(updatedEdges);
-    setVariables(uniqueVariables);
-    generateCodeFromNodes(updatedNodes, updatedEdges);
-  };*/
-
+    setVariables((vars) => [...vars, { name: "lastMessages", displayName: "Mensajes con contexto", nodeId: currentEditingNodeId || `${nodes.length + 1}` }]);
+    setShowContextModal(false);
+  };
+  
 
   const handleConcatVariablesSave = () => {
     const variablesStr = concatVariables
@@ -1439,17 +1513,14 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         return obj;
     }, {});
 
-    // Genera las condiciones de validación basadas en `request_data`
     const validationConditionsArray = validationConditions
         .filter(condition => condition.key && condition.value)
         .map(condition => `(request_data->>'${condition.key}') = '${condition.value}'`);
 
-    // Genera la cadena de condiciones de validación
     const validationConditionString = validationConditionsArray.length > 0
         ? ` AND ${validationConditionsArray.join(' AND ')}`
         : '';
 
-    // Genera el código para la inserción/actualización de la solicitud
     let code = `requestType = "${requestType}";\n`;
     code += `requestStatus = "${requestStatus}";\n`;
     code += `nuevoStatus = "${nuevoStatus}";\n`;
@@ -1484,11 +1555,10 @@ console.log('Contexto generado:', lastMessages.join(' '));`
             VALUES ($1, $2, $3, $4, $5)
             RETURNING request_id;
           \`;
-          await pool.query(insertQuery, [integrationDetails.company_id, requestType, JSON.stringify(requestData), conversationId, nuevoStatus]);
+          await pool.query(insertRequestQuery, [integrationDetails.company_id, requestType, JSON.stringify(requestData), conversationId, nuevoStatus]);
         }
         `;
     } else {
-        // En lugar de intentar insertar, aquí solo se hace un update asumiendo que la solicitud ya existe
         code += `
         updateRequestQuery = \`
           UPDATE requests
@@ -1505,49 +1575,88 @@ console.log('Contexto generado:', lastMessages.join(' '));`
         `;
     }
 
-    const newNode = {
-        id: `${nodes.length + 1}`,
-        type: 'custom',
-        position: { x: Math.random() * 250, y: Math.random() * 250 },
-        data: {
-            label: `Llenar Solicitud: ${requestType}`,
-            code: [code],
-            onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false)
-        },
-        parentId: isInternal ? currentNodeId : null,
-    };
-    let newEdge
-    if(isInternal){
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
-    }else{
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        sourceHandle: 'b',
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
+    let updatedNodes, updatedEdges;
+
+    if (currentEditingNodeId) {
+        // Si estamos editando un nodo existente
+        updatedNodes = nodes.map(node => {
+            if (node.id === currentEditingNodeId) {
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        label: `Llenar Solicitud: ${requestType}`,
+                        code: [code],
+                        requestType,
+                        requestStatus,
+                        nuevoStatus,
+                        requestData,
+                        validationConditions,
+                        validateExistence,
+                        tipo: 'fillRequest', // Añade el tipo para identificación
+                    },
+                };
+            }
+            return node;
+        });
+        updatedEdges = edges; // Mantén las aristas actuales
+    } else {
+        // Si estamos creando un nuevo nodo
+        const newNode = {
+            id: `${nodes.length + 1}`,
+            type: 'custom',
+            position: { x: Math.random() * 250, y: Math.random() * 250 },
+            data: {
+                label: `Llenar Solicitud: ${requestType}`,
+                code: [code],
+                requestType,
+                requestStatus,
+                nuevoStatus,
+                requestData,
+                validationConditions,
+                validateExistence,
+                tipo: 'fillRequest', // Añade el tipo para identificación
+                onAddClick: (id) => openToolModal(id, true),
+                onAddExternalClick: (id) => openToolModal(id, false),
+                editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+            },
+            parentId: isInternal ? currentNodeId : null,
+        };
+
+        let newEdge;
+        if (isInternal) {
+            newEdge = {
+                id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+                source: currentParentId || `${nodes.length}`,
+                target: `${nodes.length + 1}`,
+                animated: true,
+                style: { stroke: '#d033b9' },
+                zIndex: 10,
+                markerEnd: {
+                    type: MarkerType.ArrowClosed,
+                    color: '#d033b9',
+                },
+            };
+        } else {
+            newEdge = {
+                id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+                source: currentParentId || `${nodes.length}`,
+                target: `${nodes.length + 1}`,
+                animated: true,
+                sourceHandle: 'b',
+                style: { stroke: '#d033b9' },
+                zIndex: 10,
+                markerEnd: {
+                    type: MarkerType.ArrowClosed,
+                    color: '#d033b9',
+                },
+            };
+        }
+
+        updatedNodes = [...nodes, newNode];
+        updatedEdges = [...edges, newEdge];
     }
 
-    const updatedNodes = [...nodes, newNode];
-    const updatedEdges = [...edges, newEdge];
     setNodes(updatedNodes);
     setEdges(updatedEdges);
     generateCodeFromNodes(updatedNodes, updatedEdges);
@@ -1559,6 +1668,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     setRequestData([{ key: '', value: '' }]);
     setValidationConditions([{ key: '', value: '' }]);  // Resetear las condiciones de validación
 };
+
 
 
   const handleResponseImageModalSave = async () => {
@@ -1937,6 +2047,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
 
   const addConditionalNode = () => {
     setShowModal(true);
+    setShowToolModal(false);
   };
 
   const addConcatVariablesNode = () => {
@@ -1945,6 +2056,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
 
   const addSwitchNode = () => {
     setShowSwitchModal(true);
+    setShowToolModal(false);
   };
 
   const addCaseNode = () => {
@@ -1963,6 +2075,7 @@ console.log('Contexto generado:', lastMessages.join(' '));`
     setShowResponseTextModal(true);
     setResponseText(''); // Asegúrate de reiniciar el texto de respuesta
     setSelectedVariables([]); // Asegúrate de reiniciar las variables seleccionadas
+    setShowToolModal(false);
   };
 
   const addUpdateContactNode = () => {
@@ -2007,96 +2120,158 @@ console.log('Contexto generado:', lastMessages.join(' '));`
   };
 
   const handleGptAssistantModalSave = () => {
-    if (assistants.some(assistant => assistant.name === assistantName)) {
-      alert('Ya existe un asistente con ese nombre. Por favor, elige otro nombre.');
-      return;
-    }
+  
+    // Identifica si estás editando un nodo existente o creando uno nuevo
+    if (currentEditingNodeId) {
+      console.log("estas editandolo");
+      const  tipo = 'gptAssistant';
+      // Si estás editando un nodo existente
+      const updatedNodes = nodes.map(node => {
+        if (node.id === currentEditingNodeId) {
+          // Actualiza la información del nodo existente
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label: `Asistente GPT: ${assistantName}`,
+              assistantName,
+              gptModel,
+              personality,
+              tipo,  
+              code: [
+                `async function ${assistantName}(prompt) {`,
+                `  apiKey = process.env.OPENAI_API_KEY;`,
+                `  const url = "https://api.openai.com/v1/chat/completions";`,
+                `  headers = {`,
+                `    'Authorization': \`Bearer \${apiKey}\`,`,
+                `    'Content-Type': 'application/json'`,
+                `  };`,
+                `  payload = {`,
+                `    model: "${gptModel}",`,
+                `    messages: [`,
+                `      { role: "system", content: "${personality}" },`,
+                `      { role: "user", content: prompt }`,
+                `    ]`,
+                `  };`,
+                `  try {`,
+                `    responseGpt = await axios.post(url, payload, { headers });`,
+                `    return responseGpt.data.choices[0].message.content.trim();`,
+                `  } catch (error) {`,
+                `    console.error("Error al obtener respuesta de GPT:", error);`,
+                `    return "Error al obtener la respuesta";`,
+                `  }`,
+                `}`,
+              ],
+            },
+          };
+        }
+        return node;
+      });
+  
+      // Actualiza el estado con los nodos editados
+      setNodes(updatedNodes);
+      generateCodeFromNodes(updatedNodes, edges);
+    } else {
+      console.log("estas creandolo");
+      // Verifica si ya existe un asistente con el mismo nombre
+      if (assistants.some(assistant => assistant.name === assistantName)) {
+        alert('Ya existe un asistente con ese nombre. Por favor, elige otro nombre.');
+        return;
+      }
 
-    if (assistants.some(assistant => assistant.name === assistantName)) {
-      alert('Ya existe un asistente con ese nombre. Por favor, elige otro nombre.');
-      return;
-    }
-
-    const newAssistant = { name: assistantName, displayName: assistantName, model: gptModel, personality };
-
-    const newNode = {
-      id: `${nodes.length + 1}`,
-      type: 'custom',
-      position: { x: Math.random() * 250, y: Math.random() * 250 },
-      data: {
-        label: `Asistente GPT: ${assistantName}`,
-        code: [
-          `async function ${assistantName}(prompt) {`,
-          `  apiKey = process.env.OPENAI_API_KEY;`,
-          `  const url = "https://api.openai.com/v1/chat/completions";`,
-          `  headers = {`,
-          `    'Authorization': \`Bearer \${apiKey}\`,`,
-          `    'Content-Type': 'application/json'`,
-          `  };`,
-          `  payload = {`,
-          `    model: "${gptModel}",`,
-          `    messages: [`,
-          `      { role: "system", content: "${personality}" },`,
-          `      { role: "user", content: prompt }`,
-          `    ]`,
-          `  };`,
-          `  try {`,
-          `    responseGpt = await axios.post(url, payload, { headers });`,
-          `    return responseGpt.data.choices[0].message.content.trim();`,
-          `  } catch (error) {`,
-          `    console.error("Error al obtener respuesta de GPT:", error);`,
-          `    return "Error al obtener la respuesta";`,
-          `  }`,
-          `}`,
-        ],
-        onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false)
-      },
-      parentId: isInternal ? currentNodeId : null,
-    };
-    let newEdge
-    if(isInternal){
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
+      // Si estás creando un nuevo nodo
+      const newAssistant = { name: assistantName, displayName: assistantName, model: gptModel, personality };
+      const  tipo = 'gptAssistant';
+  
+      const newNode = {
+        id: `${nodes.length + 1}`,
+        type: 'custom',
+        position: { x: Math.random() * 250, y: Math.random() * 250 },
+        data: {
+          label: `Asistente GPT: ${assistantName}`,
+          assistantName,
+          gptModel,
+          personality,
+          tipo, 
+          code: [
+            `async function ${assistantName}(prompt) {`,
+            `  apiKey = process.env.OPENAI_API_KEY;`,
+            `  const url = "https://api.openai.com/v1/chat/completions";`,
+            `  headers = {`,
+            `    'Authorization': \`Bearer \${apiKey}\`,`,
+            `    'Content-Type': 'application/json'`,
+            `  };`,
+            `  payload = {`,
+            `    model: "${gptModel}",`,
+            `    messages: [`,
+            `      { role: "system", content: "${personality}" },`,
+            `      { role: "user", content: prompt }`,
+            `    ]`,
+            `  };`,
+            `  try {`,
+            `    responseGpt = await axios.post(url, payload, { headers });`,
+            `    return responseGpt.data.choices[0].message.content.trim();`,
+            `  } catch (error) {`,
+            `    console.error("Error al obtener respuesta de GPT:", error);`,
+            `    return "Error al obtener la respuesta";`,
+            `  }`,
+            `}`,
+          ],
+          
+          onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false),  editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
         },
+        parentId: isInternal ? currentNodeId : null,
       };
-    }else{
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        sourceHandle: 'b',
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
+  
+      let newEdge;
+      if (isInternal) {
+        newEdge = {
+          id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+          source: currentParentId || `${nodes.length}`,
+          target: `${nodes.length + 1}`,
+          animated: true,
+          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+          zIndex: 10, // Ajusta el zIndex si es necesario
+          markerEnd: {
+            type: MarkerType.ArrowClosed, // Flecha al final de la línea
+            color: '#d033b9', // Ajusta el color de la flecha aquí
+          },
+        };
+      } else {
+        newEdge = {
+          id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+          source: currentParentId || `${nodes.length}`,
+          target: `${nodes.length + 1}`,
+          animated: true,
+          sourceHandle: 'b',
+          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+          zIndex: 10, // Ajusta el zIndex si es necesario
+          markerEnd: {
+            type: MarkerType.ArrowClosed, // Flecha al final de la línea
+            color: '#d033b9', // Ajusta el color de la flecha aquí
+          },
+        };
+      }
+  
+      const updatedNodes = [...nodes, newNode];
+      console.log(updatedNodes);
+      const updatedEdges = [...edges, newEdge];
+      setNodes((prevNodes) => [...prevNodes, newNode]);
+      setEdges((prevEdges) => [...prevEdges, newEdge]);
+      generateCodeFromNodes(updatedNodes, updatedEdges);
+  
+      // Insertar el nuevo asistente en la lista de asistentes
+      setAssistants([...assistants, newAssistant]);
     }
-
-    const updatedNodes = [...nodes, newNode];
-    const updatedEdges = [...edges, newEdge];
-    setNodes(updatedNodes);
-    setEdges(updatedEdges);
-    generateCodeFromNodes(updatedNodes, updatedEdges);
-
-    // Insertar el nuevo asistente en la lista de asistentes
-    setAssistants([...assistants, newAssistant]);
-
+  
+    // Resetear el modal y los estados
+    setCurrentEditingNodeId(null); // Resetea el ID de edición actual
     setShowGptAssistantModal(false);
     setAssistantName('');
     setGptModel('');
     setPersonality('');
   };
+  
 
   const addChangeResponsibleNode = () => {
     fetchResponsibles();
@@ -2493,90 +2668,130 @@ console.log('Contexto generado:', lastMessages.join(' '));`
   const handleSwitchModalSave = () => {
     const variable = variables.find(v => v.name === selectedVariable);
     const variableName = variable ? variable.name : selectedVariable;
-    const newNode = {
-      id: `${nodes.length + 1}`,
-      type: 'switch',
-      position: { x: 250, y: 55 + 75 * nodes.length },
-      data: { label: `Switch (${variableName})`, code: [`switch (${variableName}) {`], onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false), addCaseNode: (id) => addCaseNode(id) },
-      parentId: isInternal ? currentNodeId : null,
-    };
 
-    const defaultGroup = {
-      id: `${newNode.id}-default`,
-      type: 'groupNode',
-      position: { x: newNode.position.x + 100, y: newNode.position.y + 100 },
-      data: { label: 'default', onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false), setNodes },
-      parentId: newNode.id,
-      style: { width: 300, height: 200 },
-    };
+    let updatedNodes, updatedEdges, newNodeId;
 
-    let newEdges
-    if(isInternal){
-      newEdges = [
-        {
-          id: `e${currentParentId || nodes.length}-${newNode.id}`,
-          source: currentParentId || `${nodes.length}`,
-          target: newNode.id,
-          animated: true,
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        },
-        {
-          id: `e${newNode.id}-${defaultGroup.id}`,
-          source: newNode.id,
-          sourceHandle: 'default',
-          target: defaultGroup.id,
-          animated: true,
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        },
-      ];
-    }else{
-      newEdges = [
-        {
-          id: `e${currentParentId || nodes.length}-${newNode.id}`,
-          source: currentParentId || `${nodes.length}`,
-          target: newNode.id,
-          animated: true,
-          sourceHandle: 'b',
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        },
-        {
-          id: `e${newNode.id}-${defaultGroup.id}`,
-          source: newNode.id,
-          sourceHandle: 'default',
-          target: defaultGroup.id,
-          animated: true,
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        },
-      ];
+    if (currentEditingNodeId) {
+        // Si estamos editando un nodo existente
+        updatedNodes = nodes.map(node => {
+            if (node.id === currentEditingNodeId) {
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        label: `Switch (${variableName})`,
+                        code: [`switch (${variableName}) {`],
+                        variable: variableName,
+                        tipo: 'switch',  // Añadir tipo para identificación
+                    },
+                };
+            }
+            return node;
+        });
+        updatedEdges = edges;  // Mantén las aristas actuales
+        newNodeId = currentEditingNodeId; // Usar el ID del nodo que se está editando
+    } else {
+        // Si estamos creando un nuevo nodo
+        const newNode = {
+            id: `${nodes.length + 1}`,
+            type: 'switch',
+            position: { x: 250, y: 55 + 75 * nodes.length },
+            data: {
+                label: `Switch (${variableName})`,
+                code: [`switch (${variableName}) {`],
+                variable: variableName,  // Guardar variable para edición
+                tipo: 'switch',  // Añadir tipo para identificación
+                onAddClick: (id) => openToolModal(id, true),
+                onAddExternalClick: (id) => openToolModal(id, false),
+                addCaseNode: (id) => addCaseNode(id),
+                editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+            },
+            parentId: isInternal ? currentNodeId : null,
+        };
+
+        const defaultGroup = {
+            id: `${newNode.id}-default`,
+            type: 'groupNode',
+            position: { x: newNode.position.x + 100, y: newNode.position.y + 100 },
+            data: { label: 'default', onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false), setNodes },
+            parentId: newNode.id,
+            style: { width: 300, height: 200 },
+        };
+
+        let newEdges;
+        if (isInternal) {
+            newEdges = [
+                {
+                    id: `e${currentParentId || nodes.length}-${newNode.id}`,
+                    source: currentParentId || `${nodes.length}`,
+                    target: newNode.id,
+                    animated: true,
+                    style: { stroke: '#d033b9' },
+                    zIndex: 10,
+                    markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                        color: '#d033b9',
+                    },
+                },
+                {
+                    id: `e${newNode.id}-${defaultGroup.id}`,
+                    source: newNode.id,
+                    sourceHandle: 'default',
+                    target: defaultGroup.id,
+                    animated: true,
+                    style: { stroke: '#d033b9' },
+                    zIndex: 10,
+                    markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                        color: '#d033b9',
+                    },
+                },
+            ];
+        } else {
+            newEdges = [
+                {
+                    id: `e${currentParentId || nodes.length}-${newNode.id}`,
+                    source: currentParentId || `${nodes.length}`,
+                    target: newNode.id,
+                    animated: true,
+                    sourceHandle: 'b',
+                    style: { stroke: '#d033b9' },
+                    zIndex: 10,
+                    markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                        color: '#d033b9',
+                    },
+                },
+                {
+                    id: `e${newNode.id}-${defaultGroup.id}`,
+                    source: newNode.id,
+                    sourceHandle: 'default',
+                    target: defaultGroup.id,
+                    animated: true,
+                    style: { stroke: '#d033b9' },
+                    zIndex: 10,
+                    markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                        color: '#d033b9',
+                    },
+                },
+            ];
+        }
+
+        updatedNodes = [...nodes, newNode, defaultGroup];
+        updatedEdges = [...edges, ...newEdges];
+        newNodeId = newNode.id; // Asigna el ID del nuevo nodo creado
     }
 
-    setNodes((nds) => nds.concat(newNode, defaultGroup));
-    setEdges((eds) => eds.concat(newEdges));
+    setNodes(updatedNodes);
+    setEdges(updatedEdges);
     setShowSwitchModal(false);
     setSelectedVariable('');
-    setCurrentSwitchNode(newNode.id);
-    generateCodeFromNodes(nodes.concat(newNode, defaultGroup), edges.concat(newEdges));
-  };
+    setCurrentSwitchNode(newNodeId); // Usar newNodeId para definir el nodo actual
+    generateCodeFromNodes(updatedNodes, updatedEdges);
+};
+
+
 
   const handleCaseModalSave = () => {
     const variable = variables.find(v => v.name === selectedVariable);
@@ -2686,253 +2901,373 @@ console.log('Contexto generado:', lastMessages.join(' '));`
 
   const handleResponseTextModalSave = () => {
     const finalResponseText = `\`${responseText.replace(/\${([^}]+)}/g, '${$1}')}\``;
-
-    const newNode = {
-      id: `${nodes.length + 1}`,
-      type: 'custom',
-      position: { x: Math.random() * 250, y: Math.random() * 250 },
-      data: {
-        label: `Enviar Texto: ${responseTextName}`,
-        code: [
-          `responseText = ${finalResponseText};`,
-          `await sendTextMessage(io, { body: { phone: senderId, messageText: responseText, conversationId } }, {});`,
-        ],
-        onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false)
-      },
-      parentId: isInternal ? currentNodeId : null,
-    };
-    let newEdge
-    if(isInternal){
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
+  
+    if (currentEditingNodeId) {
+      console.log("Editando enviar texto");
+  
+      const tipo = 'sendText';
+  
+      const updatedNodes = nodes.map(node => {
+        if (node.id === currentEditingNodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label: `Enviar Texto: ${responseTextName}`,
+              responseTextName,
+              responseText,
+              tipo, // Añade el tipo para identificación
+              code: [
+                `responseText = ${finalResponseText};`,
+                `await sendTextMessage(io, { body: { phone: senderId, messageText: responseText, conversationId } }, {});`,
+              ],
+            },
+          };
+        }
+        return node;
+      });
+  
+      setNodes(updatedNodes);
+      generateCodeFromNodes(updatedNodes, edges);
+    } else {
+      console.log("Creando nuevo enviar texto");
+  
+      const tipo = 'sendText';
+  
+      const newNode = {
+        id: `${nodes.length + 1}`,
+        type: 'custom',
+        position: { x: Math.random() * 250, y: Math.random() * 250 },
+        data: {
+          label: `Enviar Texto: ${responseTextName}`,
+          responseTextName,
+          responseText,
+          tipo, // Añade el tipo para identificación
+          code: [
+            `responseText = ${finalResponseText};`,
+            `await sendTextMessage(io, { body: { phone: senderId, messageText: responseText, conversationId } }, {});`,
+          ],
+          onAddClick: (id) => openToolModal(id, true),
+          onAddExternalClick: (id) => openToolModal(id, false),
+          editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
         },
+        parentId: isInternal ? currentNodeId : null,
       };
-    }else{
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        sourceHandle: 'b',
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
+  
+      let newEdge;
+      if (isInternal) {
+        newEdge = {
+          id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+          source: currentParentId || `${nodes.length}`,
+          target: `${nodes.length + 1}`,
+          animated: true,
+          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+          zIndex: 10, // Ajusta el zIndex si es necesario
+          markerEnd: {
+            type: MarkerType.ArrowClosed, // Flecha al final de la línea
+            color: '#d033b9', // Ajusta el color de la flecha aquí
+          },
+        };
+      } else {
+        newEdge = {
+          id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+          source: currentParentId || `${nodes.length}`,
+          target: `${nodes.length + 1}`,
+          animated: true,
+          sourceHandle: 'b',
+          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+          zIndex: 10, // Ajusta el zIndex si es necesario
+          markerEnd: {
+            type: MarkerType.ArrowClosed, // Flecha al final de la línea
+            color: '#d033b9', // Ajusta el color de la flecha aquí
+          },
+        };
+      }
+  
+      const updatedNodes = [...nodes, newNode];
+      const updatedEdges = [...edges, newEdge];
+      setNodes(updatedNodes);
+      setEdges(updatedEdges);
+      setVariables((vars) => [...vars, { name: 'responseText', displayName: responseTextName, nodeId: newNode.id }]);
+      generateCodeFromNodes(updatedNodes, updatedEdges);
     }
-
-    const updatedNodes = [...nodes, newNode];
-    const updatedEdges = [...edges, newEdge];
-    setNodes(updatedNodes);
-    setEdges(updatedEdges);
-    setVariables((vars) => [...vars, { name: 'responseText', displayName: responseTextName, nodeId: newNode.id }]);
-    generateCodeFromNodes(updatedNodes, updatedEdges);
+  
     setShowResponseTextModal(false);
     setResponseText('');
     setResponseTextName('');
     setSelectedVariables([]);
+    setCurrentEditingNodeId(null); // Resetea el ID de edición actual
   };
+  
 
   const handleModalSave = () => {
     const conditionStr = conditions
-      .map((condition, index) => {
-        const { variable, operator, value, logicalOperator } = condition;
-        const prefix = index === 0 ? '' : ` ${logicalOperator} `;
-        if (operator === '!') {
-          return `${prefix}!${variable}`;
+        .map((condition, index) => {
+            const { variable, operator, value, logicalOperator } = condition;
+            const prefix = index === 0 ? '' : ` ${logicalOperator} `;
+            if (operator === '!') {
+                return `${prefix}!${variable}`;
+            }
+            return `${prefix}${variable} ${operator} '${value}'`;
+        })
+        .join('');
+
+    let updatedNodes, updatedEdges;
+
+    if (currentEditingNodeId) {
+        // Si estamos editando un nodo existente
+        updatedNodes = nodes.map(node => {
+            if (node.id === currentEditingNodeId) {
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        label: `Si ${conditionStr}`,
+                        code: [`if (${conditionStr})`, `{`, `} else {`],
+                        conditions, // Guardar las condiciones para editar
+                        tipo: 'conditional', // Añade el tipo para identificación
+                    },
+                };
+            }
+            return node;
+        });
+        updatedEdges = edges; // Mantén las aristas actuales
+    } else {
+        // Si estamos creando un nuevo nodo
+        const newNode = {
+            id: `${nodes.length + 1}`,
+            type: 'conditional',
+            position: { x: 250, y: 55 + 75 * nodes.length },
+            data: {
+                label: `Si ${conditionStr}`,
+                code: [`if (${conditionStr})`, `{`, `} else {`],
+                conditions, // Guardar las condiciones para editar
+                tipo: 'conditional', // Añade el tipo para identificación
+                onAddClick: (id) => openToolModal(id, true),
+                onAddExternalClick: (id) => openToolModal(id, false),
+                editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+            },
+            parentId: isInternal ? currentNodeId : null,
+        };
+
+        const ifGroup = {
+            id: `${newNode.id}-if`,
+            type: 'groupNode',
+            position: { x: newNode.position.x - 616, y: newNode.position.y - 20 },
+            data: { label: 'Si', onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false), setNodes },
+            parentId: newNode.id,
+        };
+
+        const elseGroup = {
+            id: `${newNode.id}-else`,
+            type: 'groupNode',
+            position: { x: newNode.position.x + 0, y: newNode.position.y - 20 },
+            data: { label: 'No', onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false), setNodes },
+            parentId: newNode.id,
+        };
+
+        let newEdges;
+        if (isInternal) {
+            newEdges = [
+                {
+                    id: `e${currentParentId || nodes.length}-${newNode.id}`,
+                    source: currentParentId || `${nodes.length}`,
+                    target: newNode.id,
+                    animated: true,
+                    style: { stroke: '#d033b9' },
+                    zIndex: 10,
+                    markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                        color: '#d033b9',
+                    },
+                },
+                {
+                    id: `e${newNode.id}-${ifGroup.id}`,
+                    source: newNode.id,
+                    sourceHandle: 'a',
+                    target: ifGroup.id,
+                    animated: true,
+                    style: { stroke: '#d033b9' },
+                    zIndex: 10,
+                    markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                        color: '#d033b9',
+                    },
+                },
+                {
+                    id: `e${newNode.id}-${elseGroup.id}`,
+                    source: newNode.id,
+                    sourceHandle: 'b',
+                    target: elseGroup.id,
+                    animated: true,
+                    style: { stroke: '#d033b9' },
+                    zIndex: 10,
+                    markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                        color: '#d033b9',
+                    },
+                },
+            ];
+        } else {
+            newEdges = [
+                {
+                    id: `e${currentParentId || nodes.length}-${newNode.id}`,
+                    source: currentParentId || `${nodes.length}`,
+                    target: newNode.id,
+                    animated: true,
+                    sourceHandle: 'b',
+                    style: { stroke: '#d033b9' },
+                    zIndex: 10,
+                    markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                        color: '#d033b9',
+                    },
+                },
+                {
+                    id: `e${newNode.id}-${ifGroup.id}`,
+                    source: newNode.id,
+                    sourceHandle: 'a',
+                    target: ifGroup.id,
+                    animated: true,
+                    style: { stroke: '#d033b9' },
+                    zIndex: 10,
+                    markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                        color: '#d033b9',
+                    },
+                },
+                {
+                    id: `e${newNode.id}-${elseGroup.id}`,
+                    source: newNode.id,
+                    sourceHandle: 'b',
+                    target: elseGroup.id,
+                    animated: true,
+                    style: { stroke: '#d033b9' },
+                    zIndex: 10,
+                    markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                        color: '#d033b9',
+                    },
+                },
+            ];
         }
-        return `${prefix}${variable} ${operator} '${value}'`;
-      })
-      .join('');
 
-    const newNode = {
-      id: `${nodes.length + 1}`,
-      type: 'conditional',
-      position: { x: 250, y: 55 + 75 * nodes.length },
-      data: { label: `Si ${conditionStr}`, code: [`if (${conditionStr})`, `{`, `} else {`], onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false) },
-      parentId: isInternal ? currentNodeId : null,
-    };
-
-    const ifGroup = {
-      id: `${newNode.id}-if`,
-      type: 'groupNode',
-      position: { x: newNode.position.x - 616, y: newNode.position.y - 20 },
-      data: { label: 'Si', onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false), setNodes },
-      parentId: newNode.id,
-    };
-
-    const elseGroup = {
-      id: `${newNode.id}-else`,
-      type: 'groupNode',
-      position: { x: newNode.position.x + 0, y: newNode.position.y - 20 },
-      data: { label: 'No',onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false), setNodes},
-      parentId: newNode.id,
-    };
-
-    let newEdges
-    if(isInternal){
-      newEdges = [
-        {
-          id: `e${currentParentId || nodes.length}-${newNode.id}`,
-          source: currentParentId || `${nodes.length}`,
-          target: newNode.id,
-          animated: true,
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        },
-        {
-          id: `e${newNode.id}-${ifGroup.id}`,
-          source: newNode.id,
-          sourceHandle: 'a',
-          target: ifGroup.id,
-          animated: true,
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        },
-        {
-          id: `e${newNode.id}-${elseGroup.id}`,
-          source: newNode.id,
-          sourceHandle: 'b',
-          target: elseGroup.id,
-          animated: true,
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        },
-      ];
-    }else{
-      newEdges = [
-        {
-          id: `e${currentParentId || nodes.length}-${newNode.id}`,
-          source: currentParentId || `${nodes.length}`,
-          target: newNode.id,
-          animated: true,
-          sourceHandle: 'b',
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        },
-        {
-          id: `e${newNode.id}-${ifGroup.id}`,
-          source: newNode.id,
-          sourceHandle: 'a',
-          target: ifGroup.id,
-          animated: true,
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        },
-        {
-          id: `e${newNode.id}-${elseGroup.id}`,
-          source: newNode.id,
-          sourceHandle: 'b',
-          target: elseGroup.id,
-          animated: true,
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        },
-      ];
+        updatedNodes = [...nodes, newNode, ifGroup, elseGroup];
+        updatedEdges = [...edges, ...newEdges];
     }
 
-    setNodes((nds) => nds.concat(newNode, ifGroup, elseGroup));
-    setEdges((eds) => eds.concat(newEdges));
+    setNodes(updatedNodes);
+    setEdges(updatedEdges);
+    generateCodeFromNodes(updatedNodes, updatedEdges);
     setShowModal(false);
     setSelectedVariable('');
     setSelectedOperator('==');
     setComparisonValue('');
     setConditions([{ variable: '', operator: '==', value: '', logicalOperator: '' }]);
-    generateCodeFromNodes(nodes.concat(newNode, ifGroup, elseGroup), edges.concat(newEdges));
-  };
+};
+
 
   const handleGptQueryModalSave = () => {
     const finalPrompt = `\`${queryPrompt.replace(/\${([^}]+)}/g, '${$1}')}\``;
 
-    const newNode = {
-      id: `${nodes.length + 1}`,
-      type: 'custom',
-      position: { x: Math.random() * 250, y: Math.random() * 250 },
-      data: {
-        label: `Consultar GPT: ${queryName}`,
-        code: [
-          `const ${queryName} = await ${selectedAssistant}(${finalPrompt});`,
-        ],
-        onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false)
-      },
-      parentId: isInternal ? currentNodeId : null,
-    };
-    let newEdge
-    if(isInternal){
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
-    }else{
-      newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        sourceHandle: 'b',
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
+    if (currentEditingNodeId) {
+        console.log("Editando consulta GPT");
+
+        const tipo = 'queryGpt';
+
+        const updatedNodes = nodes.map(node => {
+            if (node.id === currentEditingNodeId) {
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        label: `Consultar GPT: ${queryName}`,
+                        selectedAssistant,
+                        queryName,
+                        queryPrompt,
+                        tipo, // Añade el tipo para identificación
+                        code: [
+                            `const ${queryName} = await ${selectedAssistant}(${finalPrompt});`,
+                        ],
+                    },
+                };
+            }
+            return node;
+        });
+
+        setNodes(updatedNodes);
+        generateCodeFromNodes(updatedNodes, edges);
+    } else {
+        console.log("Creando nueva consulta GPT");
+
+        const tipo = 'queryGpt';
+
+        const newNode = {
+            id: `${nodes.length + 1}`,
+            type: 'custom',
+            position: { x: Math.random() * 250, y: Math.random() * 250 },
+            data: {
+                label: `Consultar GPT: ${queryName}`,
+                selectedAssistant,
+                queryName,
+                queryPrompt,
+                tipo, // Añade el tipo para identificación
+                code: [
+                    `const ${queryName} = await ${selectedAssistant}(${finalPrompt});`,
+                ],
+                onAddClick: (id) => openToolModal(id, true), 
+                onAddExternalClick: (id) => openToolModal(id, false),  
+                editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+            },
+            parentId: isInternal ? currentNodeId : null,
+        };
+
+        let newEdge;
+        if (isInternal) {
+            newEdge = {
+                id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+                source: currentParentId || `${nodes.length}`,
+                target: `${nodes.length + 1}`,
+                animated: true,
+                style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+                zIndex: 10, // Ajusta el zIndex si es necesario
+                markerEnd: {
+                    type: MarkerType.ArrowClosed, // Flecha al final de la línea
+                    color: '#d033b9', // Ajusta el color de la flecha aquí
+                },
+            };
+        } else {
+            newEdge = {
+                id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
+                source: currentParentId || `${nodes.length}`,
+                target: `${nodes.length + 1}`,
+                animated: true,
+                sourceHandle: 'b',
+                style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+                zIndex: 10, // Ajusta el zIndex si es necesario
+                markerEnd: {
+                    type: MarkerType.ArrowClosed, // Flecha al final de la línea
+                    color: '#d033b9', // Ajusta el color de la flecha aquí
+                },
+            };
+        }
+
+        const updatedNodes = [...nodes, newNode];
+        const updatedEdges = [...edges, newEdge];
+        setNodes(updatedNodes);
+        setEdges(updatedEdges);
+        setVariables((vars) => [...vars, { name: queryName, displayName: queryName, nodeId: newNode.id }]);
+        generateCodeFromNodes(updatedNodes, updatedEdges);
     }
 
-    const updatedNodes = [...nodes, newNode];
-    const updatedEdges = [...edges, newEdge];
-    setNodes(updatedNodes);
-    setEdges(updatedEdges);
-    setVariables((vars) => [...vars, { name: queryName, displayName: queryName, nodeId: newNode.id }]);
-    generateCodeFromNodes(updatedNodes, updatedEdges);
     setShowGptQueryModal(false);
     setSelectedAssistant('');
     setQueryName('');
     setQueryPrompt('');
     setSelectedVariables([]);
-  };
+    setCurrentEditingNodeId(null);
+};
+
 
   const handleSplitVariableModalSave = () => {
     const resultNamesStr = splitResultNames.join(', ');
@@ -4526,80 +4861,87 @@ const generateNodeCode = (node, indent = '') => {
   </Modal>
 
   <Modal show={showIntentionModal} onHide={() => setShowIntentionModal(false)}>
-            <Modal.Header closeButton>
-                <Modal.Title>Crear Intención</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <Form.Group>
-                    <Form.Label>Nombre de la Intención</Form.Label>
-                    <Form.Control
-                        type="text"
-                        value={currentIntention.name}
-                        onChange={(e) => setCurrentIntention({ ...currentIntention, name: e.target.value })}
-                        placeholder="Nombre de la intención"
-                    />
-                </Form.Group>
-                <hr />
-                <h5>Agregar Estado y Descripción</h5>
-                <Form.Group>
-                    <Form.Label>Estado</Form.Label>
-                    <Form.Control
-                        type="text"
-                        value={currentState.state}
-                        onChange={(e) => setCurrentState({ ...currentState, state: e.target.value })}
-                        placeholder="Estado"
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Descripción</Form.Label>
-                    <Form.Control
-                        type="text"
-                        value={currentState.description}
-                        onChange={(e) => setCurrentState({ ...currentState, description: e.target.value })}
-                        placeholder="Descripción"
-                    />
-                </Form.Group>
-                <Button variant="secondary" onClick={handleAddState}>
-                    Agregar Estado y Descripción
-                </Button>
-                <hr />
-                <h6>Estados actuales:</h6>
-                <ul>
-                    {currentIntention.states.map((stateItem, index) => (
-                        <li key={index}>
-                            {stateItem.state}: {stateItem.description}
-                        </li>
-                    ))}
-                </ul>
-                <hr />
-                <Button variant="primary" onClick={handleAddIntention}>
-                    Agregar Intención
-                </Button>
-                <h6>Intenciones actuales:</h6>
-                <ul>
-                    {intentions.map((intention, index) => (
-                        <li key={index}>
-                            {intention.name}:
-                            <ul>
-                                {intention.states.map((stateItem, sIndex) => (
-                                    <li key={sIndex}>
-                                        {stateItem.state}: {stateItem.description}
-                                    </li>
-                                ))}
-                            </ul>
-                        </li>
-                    ))}
-                </ul>
-            </Modal.Body>
-            <Modal.Footer>
-                <Button variant="secondary" onClick={() => setShowIntentionModal(false)}>
-                    Cancelar
-                </Button>
-                <Button variant="primary" onClick={handleSaveIntentionModal}>
-                    Guardar Intenciones
-                </Button>
-            </Modal.Footer>
-        </Modal>
+    <Modal.Header closeButton>
+        <Modal.Title>{editMode ? 'Editar Intención' : 'Crear Intención'}</Modal.Title>
+    </Modal.Header>
+    <Modal.Body>
+        {/* Formulario para nombre de la intención */}
+        <Form.Group>
+            <Form.Label>Nombre de la Intención</Form.Label>
+            <Form.Control
+                type="text"
+                value={currentIntention.name}
+                onChange={(e) => setCurrentIntention({ ...currentIntention, name: e.target.value })}
+                placeholder="Nombre de la intención"
+            />
+        </Form.Group>
+        <hr />
+        <h5>Agregar o Editar Estado y Descripción</h5>
+        {/* Formulario para estado y descripción */}
+        <Form.Group>
+            <Form.Label>Estado</Form.Label>
+            <Form.Control
+                type="text"
+                value={currentState.state}
+                onChange={(e) => setCurrentState({ ...currentState, state: e.target.value })}
+                placeholder="Estado"
+            />
+        </Form.Group>
+        <Form.Group>
+            <Form.Label>Descripción</Form.Label>
+            <Form.Control
+                type="text"
+                value={currentState.description}
+                onChange={(e) => setCurrentState({ ...currentState, description: e.target.value })}
+                placeholder="Descripción"
+            />
+        </Form.Group>
+        <Button variant="secondary" onClick={handleAddState}>
+            {selectedStateIndex !== null ? 'Guardar Cambios en Estado' : 'Agregar Estado y Descripción'}
+        </Button>
+        <hr />
+        <h6>Estados actuales:</h6>
+        <ul>
+            {currentIntention.states.map((stateItem, index) => (
+                <li key={index}>
+                    {stateItem.state}: {stateItem.description}
+                    <Button variant="link" onClick={() => {handleEditState(index);handleDeleteState(index)}}>Editar</Button>
+                    <Button variant="link" onClick={() => handleDeleteState(index)}>Eliminar</Button>
+                </li>
+            ))}
+        </ul>
+        <hr />
+        <Button variant="primary" onClick={handleAddIntention}>
+            {selectedIntentionIndex !== null ? 'Guardar Cambios en Intención' : 'Agregar Intención'}
+        </Button>
+        <h6>Intenciones actuales:</h6>
+        <ul>
+            {intentions.map((intention, index) => (
+                <li key={index}>
+                    {intention.name}:
+                    <ul>
+                        {intention.states.map((stateItem, sIndex) => (
+                            <li key={sIndex}>
+                                {stateItem.state}: {stateItem.description}
+                            </li>
+                        ))}
+                    </ul>
+                    <Button variant="link" onClick={() => {handleEditIntention(index);handleDeleteIntention(index)}}>Editar</Button>
+                    <Button variant="link" onClick={() => handleDeleteIntention(index)}>Eliminar</Button>
+                </li>
+            ))}
+        </ul>
+    </Modal.Body>
+    <Modal.Footer>
+        <Button variant="secondary" onClick={() => setShowIntentionModal(false)}>
+            Cancelar
+        </Button>
+        <Button variant="primary" onClick={handleSaveIntentionModal}>
+            Guardar Intenciones
+        </Button>
+    </Modal.Footer>
+</Modal>
+
 
         <Modal show={showContextModal} onHide={() => setShowContextModal(false)}>
         <Modal.Header closeButton>
@@ -4637,54 +4979,74 @@ const generateNodeCode = (node, indent = '') => {
         </Modal.Footer>
       </Modal>
 
-        <Modal show={showToolModal} onHide={closeToolModal}>
-  <Modal.Header closeButton>
-    <Modal.Title>Seleccionar Herramienta</Modal.Title>
-  </Modal.Header>
-  <Modal.Body>
-    <div className="toolbar">
-      <button onClick={() => addConsoleLogNode(currentNodeId)}>Imprimir en consola</button>
-      <button onClick={handleOpenContextModal}>Generar Contexto</button>
-      <button onClick={() => addConditionalNode(currentNodeId)}>Condicional</button>
-      <button onClick={() => addSwitchNode(currentNodeId)}>Switch</button>
-      <button onClick={() => addSendTextNode(currentNodeId)}>Enviar Texto</button>
-      <button onClick={() => setShowResponseImageModal(true)}>Enviar Imagen</button>
-      <button onClick={() => setShowResponseVideoModal(true)}>Enviar Video</button>
-      <button onClick={() => setShowResponseAudioModal(true)}>Enviar Audio</button>
-      <button onClick={() => setShowResponseLocationModal(true)}>Enviar Ubicación</button>
-      <button onClick={() => setShowResponseDocumentModal(true)}>Enviar Documento</button>
-      <button onClick={openTemplateModal}>Enviar Plantilla</button>
-      <button onClick={() => addUpdateStateNode(currentNodeId)}>Actualizar Estado</button>
-      <button onClick={() => addConcatVariablesNode(currentNodeId)}>Concatenar Variables</button>
-      <button onClick={() => addGptAssistantNode(currentNodeId)}>Asistente GPT</button>
-      <button onClick={() => addGptQueryNode(currentNodeId)}>Consultar GPT</button>
-      <button onClick={() => addSplitVariableNode(currentNodeId)}>Dividir Variable</button>
-      <button onClick={() => addUpdateContactNameNode(currentNodeId)}>Actualizar nombre contacto</button>
-      <button onClick={() => {setShowUpdateContactModal(true);}}>Actualizar contacto</button>
-      <button onClick={() => addChangeResponsibleNode(currentNodeId)}>Cambiar responsable</button>
-      <button onClick={() => setShowRequestModal(true)}>Llenar Solicitud</button>
-      <button onClick={() => addExternalRequestNode(currentNodeId)}>Crear Solicitud Externa</button>
-      <Button
-        variant="primary"
-        onClick={() => setShowSendRequestModal(true)}
-        disabled={externalRequests.length === 0}
-      >
-        Agregar Solicitud Externa
-      </Button>
-      <Button variant="primary" onClick={() => setShowExternalDataModal(true)}>
-        Agregar Dato Externo
-      </Button>
-      <Button variant="primary" onClick={() => setShowIntentionModal(true)}>
-        Crear Intenciones
-      </Button>
-    </div>
-  </Modal.Body>
-  <Modal.Footer>
-    <Button variant="secondary" onClick={closeToolModal}>
-      Cancelar
-    </Button>
-  </Modal.Footer>
-</Modal>
+      <Modal show={showToolModal} onHide={closeToolModal} dialogClassName="custom-modal">
+      <Modal.Header closeButton>
+        <Modal.Title>Seleccionar Herramienta</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <div className="toolbar-grid-scroll">
+          {/* Primera columna */}
+          <div className="toolbar-column">
+            <button className="tool-button" onClick={() => {addConsoleLogNode(currentNodeId);setShowToolModal(false);}}>Imprimir en consola</button>
+            <button className="tool-button" onClick={() => {handleOpenContextModal(true);setShowToolModal(false);}}>Generar Contexto</button>
+            <button className="tool-button" onClick={() => {addExternalRequestNode(currentNodeId);setShowToolModal(false);}}>Crear Solicitud Externa</button>
+            <button className="tool-button" onClick={() => {setShowSendRequestModal(true);setShowToolModal(false);}} disabled={externalRequests.length === 0}>Agregar Solicitud Externa</button>
+            <button className="tool-button" onClick={() => {setShowRequestModal(true);setShowToolModal(false);}}>Llenar Solicitud</button>
+            <button
+              className="tool-button"
+              onClick={() => {
+                setShowIntentionModal(true);
+                setShowToolModal(false);
+              }}
+              disabled={intentions.length > 0} // Deshabilitar si ya hay una intención
+            >
+              Crear Intenciones
+            </button>
+            <button className="tool-button" onClick={() => {setShowExternalDataModal(true);setShowToolModal(false);}}>Agregar Dato Externo</button>
+          </div>
+
+          {/* Segunda columna */}
+          <div className="toolbar-column">
+            <button className="tool-button" onClick={() => {addConditionalNode(currentNodeId);setShowToolModal(false);}}>Condicional</button>
+            <button className="tool-button" onClick={() => {addSwitchNode(currentNodeId);setShowToolModal(false);}}>Switch</button>
+            <button className="tool-button" onClick={() => {addUpdateStateNode(currentNodeId);setShowToolModal(false);}}>Actualizar Estado</button>
+            <button className="tool-button" onClick={() => {addConcatVariablesNode(currentNodeId);setShowToolModal(false);}}>Concatenar Variables</button>
+            <button className="tool-button" onClick={() => {addSplitVariableNode(currentNodeId);setShowToolModal(false);}}>Dividir Variable</button>
+          </div>
+
+          {/* Tercera columna */}
+          <div className="toolbar-column">
+            <button className="tool-button" onClick={() => {addSendTextNode(currentNodeId);setShowToolModal(false);}}>Enviar Texto</button>
+            <button className="tool-button" onClick={() => {setShowResponseImageModal(true);setShowToolModal(false);}}>Enviar Imagen</button>
+            <button className="tool-button" onClick={() => {setShowResponseVideoModal(true);setShowToolModal(false);}}>Enviar Video</button>
+            <button className="tool-button" onClick={() => {setShowResponseAudioModal(true);setShowToolModal(false);}}>Enviar Audio</button>
+            <button className="tool-button" onClick={() => {setShowResponseLocationModal(true);setShowToolModal(false);}}>Enviar Ubicación</button>
+            <button className="tool-button" onClick={() => {setShowResponseDocumentModal(true);setShowToolModal(false);}}>Enviar Documento</button>
+            <button className="tool-button" onClick={() => {openTemplateModal(true);setShowToolModal(false);}}>Enviar Plantilla</button>
+          </div>
+
+          {/* Cuarta columna */}
+          <div className="toolbar-column">
+            <button className="tool-button" onClick={() => {addUpdateContactNameNode(currentNodeId);setShowToolModal(false);}}>Actualizar nombre contacto</button>
+            <button className="tool-button" onClick={() => {setShowUpdateContactModal(true);setShowToolModal(false);}}>Actualizar contacto</button>
+            <button className="tool-button" onClick={() => {addChangeResponsibleNode(currentNodeId);setShowToolModal(false);}}>Cambiar responsable</button>
+          </div>
+
+          {/* Quinta columna */}
+          <div className="toolbar-column">
+            <button className="tool-button" onClick={() => {addGptAssistantNode(currentNodeId);setShowToolModal(false);}}>Asistente GPT</button>
+            <button className="tool-button" onClick={() => {addGptQueryNode(currentNodeId);setShowToolModal(false);}}>Consultar GPT</button>
+          </div>
+        </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={closeToolModal}>
+          Cancelar
+        </Button>
+      </Modal.Footer>
+    </Modal>
+
+
 
 
     </Modal>
