@@ -235,7 +235,7 @@ export const Campaigns = () => {
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      const updatedTimeLefts = state.campañas.reduce((acc, campaign) => {
+      const updatedTimeLefts = state?.campañas?.reduce((acc, campaign) => {
         acc[campaign.id] = calculateTimeLeft(campaign.scheduled_launch);
         return acc;
       }, {});
@@ -375,8 +375,8 @@ export const Campaigns = () => {
                 </tr>
               </thead>
               <tbody>
-                {state.campañas.length > 0 ? (
-                  state.campañas.map(campaign => (
+                {state?.campañas?.length > 0 ? (
+                  state?.campañas?.map(campaign => (
                     <tr key={campaign.id}>
                       <td>{campaign.name}</td>
                       <td>{campaign.objective}</td>

@@ -209,6 +209,7 @@ const CreateCampaign = () => {
    
     if (id_camp) {
       try {
+        // Actualizar la campaña
         const response = await axios.put(`${process.env.REACT_APP_API_URL}/api/campaigns/${id_camp}`, {
           name,
           objective,
@@ -221,13 +222,15 @@ const CreateCampaign = () => {
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
-  
-        await axios.put(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/contacts`, {
+    
+        // Actualizar los contactos
+        const contactos = await axios.put(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/contacts`, {
           contact_ids: selectedContacts
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
-  
+    
+        // Actualizar los responsables si hay seleccionados
         if (selectedUsers.length > 0) {
           await axios.put(`${process.env.REACT_APP_API_URL}/api/campaigns/${response.data.id}/responsibles`, {
             responsible_ids: selectedUsers
@@ -235,12 +238,25 @@ const CreateCampaign = () => {
             headers: { Authorization: `Bearer ${token}` }
           });
         }
-  
-        console.log('Campaign created:', response.data);
+       
+        const template_name = state.plantillas.find(plant => plant.id == response.data.template_id).nombre
+        console.log('Campaign updated:', response.data);
+        // Actualizar la campaña en el array existente
+        const updatedCampaigns = state.campañas.map(campaña =>
+          campaña.id === response.data.id
+            ? { ...response.data, contactos: contactos.data, template_name }
+            : campaña
+        );
+
+        console.log("Campañas actualizadas:", updatedCampaigns);
+
+        // Establecer el estado con el array actualizado
+        setCampaigns(updatedCampaigns);
+    
         navigate('/campaigns');
       } catch (error) {
-        console.error('Error creating campaign:', error);
-      }
+        console.error('Error updating campaign:', error);
+      }    
     } else {  
       try {
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/campaigns`, {
