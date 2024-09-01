@@ -79,8 +79,8 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
           <div className="user-details">
             <h5>{userData.nombre} {userData.apellido}</h5>
             <p>{roleName}</p>
-             <Button variant="link" className="text-white w-100">
-               {companyData.name}  <Building color="white" size={15} title="Company Info" onClick={() => onSelectOption('company')} />
+             <Button variant="link" className="text-white w-100" onClick={() => onSelectOption('company')}>
+               {companyData.name}  <Building color="white" size={15} title="Company Info" />
               </Button> 
           </div>
         )}
