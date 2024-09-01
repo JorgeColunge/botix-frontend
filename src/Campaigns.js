@@ -256,9 +256,9 @@ export const Campaigns = () => {
     const timeLeft = timeLefts[campaign.id];
 
     if (!campaign.scheduled_launch || !timeLeft) {
-      // Si no hay fecha programada o el tiempo ha pasado, mostrar directamente el botón de "Lanzar"
+      
       return (
-        <Button variant="outline"onClick={() => handleLaunchCampaignClick(campaign.id)}>
+        <Button variant="outline" className="w-100  hover:bg-sky-400" onClick={() => handleLaunchCampaignClick(campaign.id)}>
           <RocketFill  className="mr-2 h-4 w-4"/> Lanzar
         </Button>
       );
@@ -290,7 +290,7 @@ export const Campaigns = () => {
             <h2>Plantillas</h2>
           </Col>
           <Col md={4} className="text-end">
-            <Button onClick={handleCreateTemplateClick} className="btn-create-template">Crear Plantilla</Button>
+            <Button onClick={handleCreateTemplateClick} className="bg-blue-500 hover:bg-blue-600 text-white w-100" variant="secondary">Crear Plantilla</Button>
           </Col>
         </Row>
         <Row className="justify-content-center">
@@ -366,7 +366,7 @@ export const Campaigns = () => {
             <h2>Campañas de WhatsApp</h2>
           </Col>
           <Col className="text-end">
-            <Button onClick={handleCreateCampaignClick} className="btn-create-campaign">Crear Campaña</Button>
+            <Button onClick={handleCreateCampaignClick} className="bg-blue-500 hover:bg-blue-600 text-white w-100" variant="primary">Crear Campaña</Button>
           </Col>
         </Row>
         <Row>
