@@ -10,7 +10,6 @@ import Swal from 'sweetalert2';
 import { AppContext } from './context';
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -20,14 +19,8 @@ import {
   AlertDialogTrigger,
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-  ChartContainer,
+ ChartContainer,
   Button,
-  ChartTooltip,
-  ChartTooltipContent,
 } from "./components"
 
 import {

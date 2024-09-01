@@ -5,6 +5,8 @@ import axios from 'axios';
 import { useMediaQuery } from 'react-responsive';
 import { AppContext } from './context';
 import { useConversations } from './ConversationsContext';
+import {Button,
+} from "./components"
 
 const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
   const {setConversacionActual} = useContext(AppContext);
@@ -77,7 +79,9 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
           <div className="user-details">
             <h5>{userData.nombre} {userData.apellido}</h5>
             <p>{roleName}</p>
-            <p>{companyData.name} <Building color="white" size={14} title="Company Info" onClick={() => onSelectOption('company')} /></p>
+             <Button variant="link" className="text-white w-100">
+               {companyData.name}  <Building color="white" size={15} title="Company Info" onClick={() => onSelectOption('company')} />
+              </Button> 
           </div>
         )}
       </div>
