@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Modal, Button, Form, Card, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Modal, Form, Card, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import {Button, Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "./components"
 import { Person, PencilSquare, GeoAlt, Building, Telephone, Envelope, Robot, Puzzle, Globe, People, PlusCircle, Diagram2, Shuffle, Briefcase, Diagram3, Eye, Whatsapp, Instagram, Facebook, Telegram, StarFill, Clipboard } from 'react-bootstrap-icons';
 import './CompanyInfo.css';
 import CreateUserModal from './createUserModal';
@@ -332,7 +334,7 @@ const CompanyInfo = () => {
     e.preventDefault();
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/register-bot`, {
-        id_usuario: Math.floor(Math.random() * 1000000), // Generar un ID de usuario único
+        id_usuario: Math.floor(Math.random() * 1000000), 
         nombre: botData.primaryName,
         apellido: botData.secondaryName,
         email: botData.email,
@@ -364,8 +366,8 @@ const CompanyInfo = () => {
         <img src={`${process.env.REACT_APP_API_URL}${companyData.logo}`} alt="Company Logo" className="company-logo" />
         <div className="company-details">
           {(canEditCompany || admin) && (
-            <Button variant="primary" className="edit-button" onClick={handleEditClick}>
-              <PencilSquare /> Editar Información
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 " onClick={handleEditClick}>
+              <PencilSquare className="mr-2 h-6 w-6"/> Editar Información
             </Button>
           )}
           <h2>{companyData.name}</h2>
@@ -386,13 +388,13 @@ const CompanyInfo = () => {
           <h5>Usuarios</h5>
           <p>{regularUsers.length} / {license.users}</p>
           {(canCreateUsers || admin) && regularUsers.length < license.users && (
-            <Button variant="primary" onClick={handleCreateUserClick}>
-              <PlusCircle /> Crear Usuario
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 " onClick={handleCreateUserClick}>
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Usuario
             </Button>
           )}
           {(canCreateUsers || admin) && regularUsers.length >= license.users && (
-            <Button variant="secondary">
-              <PlusCircle /> Crear Usuario
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 ">
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Usuario
             </Button>
           )}
         </Col>
@@ -402,13 +404,13 @@ const CompanyInfo = () => {
           <h5>Contactos</h5>
           <p>{contactsCount} / {license.contacts}</p>
           {(canCreateUsers || admin) && contactsCount < license.contacts && (
-            <Button variant="primary" onClick={handleCreateContactClick}>
-              <PlusCircle /> Crear Contacto(s)
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 " onClick={handleCreateContactClick}>
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Contacto(s)
             </Button>
           )}
           {(canCreateUsers || admin) && contactsCount >= license.contacts && (
-            <Button variant="secondary">
-              <PlusCircle /> Crear Contacto(s)
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 ">
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Contacto(s)
             </Button>
           )}
         </Col>
@@ -418,8 +420,8 @@ const CompanyInfo = () => {
           <h5>Empresas</h5>
           <p>{organizationsCount}</p>
           {(canCreateUsers || admin) && (
-            <Button variant="primary" onClick={handleCreateOrganizationClick}>
-              <PlusCircle /> Crear Empresa
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 "onClick={handleCreateOrganizationClick}>
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Empresa
             </Button>
           )}
         </Col>
@@ -429,13 +431,13 @@ const CompanyInfo = () => {
           <h5>Bots de Chat</h5>
           <p>{botsChat.length} / {license.bot_messages}</p>
           {(canCreateUsers || admin) && botsChat.length < license.bot_messages && (
-            <Button variant="primary" onClick={() => handleCreateBotClick('Bot de Chat')}>
-              <PlusCircle /> Crear Bot
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 " onClick={() => handleCreateBotClick('Bot de Chat')}>
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Bot
             </Button>
           )}
           {(canCreateUsers || admin) && botsChat.length >= license.bot_messages && (
-            <Button variant="secondary">
-              <PlusCircle /> Crear Bot
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 ">
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Bot
             </Button>
           )}
         </Col>
@@ -445,13 +447,13 @@ const CompanyInfo = () => {
           <h5>Bots de Chat IA</h5>
           <p>{botsChatAI.length} / {license.ai_messages}</p>
           {(canCreateUsers || admin) && botsChatAI.length < license.ai_messages && (
-            <Button variant="primary" onClick={() => handleCreateBotClick('Bot de Chat IA')}>
-              <PlusCircle /> Crear Bot
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 " onClick={() => handleCreateBotClick('Bot de Chat IA')}>
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Bot
             </Button>
           )}
           {(canCreateUsers || admin) && botsChatAI.length >= license.ai_messages && (
-            <Button variant="secondary">
-              <PlusCircle /> Crear Bot
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 ">
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Bot
             </Button>
           )}
         </Col>
@@ -461,13 +463,13 @@ const CompanyInfo = () => {
           <h5>Bots de Gestión</h5>
           <p>{botsUsers.length} / {license.ai_analysis}</p>
           {(canCreateUsers || admin) && botsUsers.length < license.ai_analysis && (
-            <Button variant="primary" onClick={() => handleCreateBotClick('Bot de Gestión')}>
-              <PlusCircle /> Crear Bot
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 " onClick={() => handleCreateBotClick('Bot de Gestión')}>
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Bot
             </Button>
           )}
           {(canCreateUsers || admin) && botsUsers.length >= license.ai_analysis && (
-            <Button variant="secondary">
-              <PlusCircle /> Crear Bot
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 ">
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Bot
             </Button>
           )}
         </Col>
@@ -482,8 +484,8 @@ const CompanyInfo = () => {
             ))}
           </ul>
           {(canCreateUsers || admin) && (
-            <Button variant="primary" onClick={handleCreateRoleClick}>
-              <PlusCircle /> Crear Rol
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 " onClick={handleCreateRoleClick}>
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Rol
             </Button>
           )}
         </Col>
@@ -493,14 +495,14 @@ const CompanyInfo = () => {
           <h5>Departamentos</h5>
           <ul className="list-unstyled">
             {departments.map(department => (
-              <li key={department.id}>
-                {department.name} <Eye style={{ cursor: 'pointer' }} onClick={() => handleViewPhasesClick(department)} />
-              </li>
+              <Button variant="ghost" key={department.id}>
+                 <Eye className="mr-2 h-6 w-6" style={{ cursor: 'pointer' }} onClick={() => handleViewPhasesClick(department)} />  {department.name} 
+              </Button>
             ))}
           </ul>
           {(canCreateUsers || admin) && (
-            <Button variant="primary" onClick={handleCreateDepartmentClick}>
-              <PlusCircle /> Crear Departamento
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 "  onClick={handleCreateDepartmentClick}>
+              <PlusCircle className="mr-2 h-6 w-6" /> Crear Departamento
             </Button>
           )}
         </Col>
@@ -515,13 +517,13 @@ const CompanyInfo = () => {
             ))}
           </ul>
           {(canCreateUsers || admin) && automations.length < license.automations && (
-            <Button variant="primary" onClick={handleCreateUserClick}>
-              <PlusCircle /> Crear Automatizaciones
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 " onClick={handleCreateUserClick}>
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Automatizaciones
             </Button>
           )}
           {(canCreateUsers || admin) && automations.length >= license.automations && (
-            <Button variant="secondary">
-              <PlusCircle /> Crear Automatizaciones
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 ">
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Automatizaciones
             </Button>
           )}
         </Col>
@@ -530,26 +532,35 @@ const CompanyInfo = () => {
           <br></br>
           <h5>Integraciones</h5>
           <p>{integrations.length} / {license.integrations}</p>
-          <ul className="list-unstyled">
-            {integrations.map(integration => (
-              <li key={integration.id}>
-                {integration.type === 'whatsapp' && <Whatsapp />} 
-                {integration.type === 'instagram' && <Instagram />} 
-                {integration.type === 'facebook' && <Facebook />} 
-                {integration.type === 'telegram' && <Telegram />} 
-                {integration.type === 'web' && <Globe /> } 
-                {integration.name}
-              </li>
-            ))}
-          </ul>
+          <Command className="rounded-lg">
+            <CommandList>
+              {integrations.length === 0 ? (
+                <CommandEmpty>No integrations found.</CommandEmpty>
+              ) : (
+                <CommandGroup heading="Integraciones">
+                  {integrations.map(integration => (
+                    <CommandItem key={integration.id}>
+                      {integration.type === 'whatsapp' && <Whatsapp className="mr-2 h-4 w-4" />} 
+                      {integration.type === 'instagram' && <Instagram className="mr-2 h-4 w-4" />} 
+                      {integration.type === 'facebook' && <Facebook className="mr-2 h-4 w-4" />} 
+                      {integration.type === 'telegram' && <Telegram className="mr-2 h-4 w-4" />} 
+                      {integration.type === 'web' && <Globe className="mr-2 h-4 w-4" />} 
+                      <span>{integration.name}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+
           {(canCreateUsers || admin) && integrations.length < license.integrations && (
-            <Button variant="primary" onClick={handleCreateIntegrationClick}>
-              <PlusCircle /> Crear Integración
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 " onClick={handleCreateIntegrationClick}>
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Integración
             </Button>
           )}
           {(canCreateUsers || admin) && integrations.length >= license.integrations && (
-            <Button variant="secondary">
-              <PlusCircle /> Crear Integración
+            <Button variant="outline" className="bg-violet-500 hover:bg-violet-600 text-white w-100 ">
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Integración
             </Button>
           )}
         </Col>
@@ -674,22 +685,60 @@ const CompanyInfo = () => {
                 <Card.Body className="text-center">
                   <Card.Title>{user.nombre} {user.apellido}</Card.Title>
                   <Card.Text>
-                    <p><a href={`tel:${user.telefono}`}><Telephone /></a> {user.telefono}</p>
-                    <p><a href={`mailto:${user.email}`}><Envelope /></a> {user.email}</p>
+                  <Command className="rounded-lg">
+                  <CommandList>
+                    <CommandGroup heading="Contact Methods">
+                      <CommandItem 
+                        onSelect={() => window.location.href = `tel:${user.telefono}`} 
+                        className="text-lg" // Cambia el tamaño de la fuente
+                      >
+                        <Telephone className="mr-2 h-4 w-4" /> 
+                        <span className="text-lg"> {/* Cambia el tamaño de la fuente del texto */}
+                          {user.telefono}
+                        </span>
+                      </CommandItem>
+
+                      <CommandItem 
+                        onSelect={() => window.location.href = `mailto:${user.email}`} 
+                        className="text-lg" // Cambia el tamaño de la fuente
+                      >
+                        <Envelope className="mr-2 h-4 w-4" /> 
+                        <span className="text-lg"> {/* Cambia el tamaño de la fuente del texto */}
+                          {user.email}
+                        </span>
+                      </CommandItem>
+                    </CommandGroup>
+                  </CommandList>
+                    </Command>
                   </Card.Text>
-                  <Button variant="primary" className="w-100 mb-2" onClick={() => handleEditUserClick(user)}>
-                    Enviar mensaje
-                  </Button>
-                  {(canEditUsers || admin) && (
-                    <Button variant="dark" className="w-100 mb-2" onClick={() => handleEditUserClick(user)}>
-                      Editar
+                  <div className="flex space-x-2">
+                    
+                    <Button 
+                      variant="outline" 
+                      className="hover:bg-blue-400 text-black w-1/3" 
+                      onClick={() => handleEditUserClick(user)}
+                    >
+                      Enviar mensaje
                     </Button>
-                  )}
-                  {(canDeleteUsers || admin) && (
-                    <Button variant="outline-danger" className="w-100" onClick={() => handleDeleteUser(user.id_usuario)}>
-                      Eliminar
-                    </Button>
-                  )}
+                    {(canEditUsers || admin) && (
+                      <Button 
+                        variant="outline" 
+                        className="hover:bg-yellow-400 text-black w-1/3" 
+                        onClick={() => handleEditUserClick(user)}
+                      >
+                        Editar
+                      </Button>
+                    )}
+                    {(canDeleteUsers || admin) && (
+                      <Button 
+                        variant="outline" 
+                        className="hover:bg-red-500 text-black w-1/3" 
+                        onClick={() => handleDeleteUser(user.id_usuario)}
+                      >
+                        Eliminar
+                      </Button>
+                    )}
+                  </div>
                 </Card.Body>
               </Card>
             </Col>
@@ -720,19 +769,30 @@ const CompanyInfo = () => {
                 </div>
                 <Card.Body className="text-center">
                   <Card.Title>{user.nombre} {user.apellido}</Card.Title>
-                  <Button variant="primary" className="w-100 mb-2" onClick={() => handleViewBotClick(user)}>
-                    Ver
-                  </Button>
-                  {(canEditUsers || admin) && (
-                    <Button variant="dark" className="w-100 mb-2" onClick={() => handleEditBotClick(user)}>
-                      Editar Bot
+                  <div className="flex space-x-4">
+                    <Button  
+                      variant="outline" 
+                      className="hover:bg-blue-400 text-black w-1/3" 
+                      onClick={() => handleViewBotClick(user)}>
+                      Ver
                     </Button>
-                  )}
-                  {(canDeleteUsers || admin) && (
-                    <Button variant="outline-danger" className="w-100" onClick={() => handleDeleteUser(user.id_usuario)}>
-                      Eliminar Bot
-                    </Button>
-                  )}
+                    {(canEditUsers || admin) && (
+                      <Button  
+                       variant="outline" 
+                       className="hover:bg-yellow-400 text-black w-1/3"  
+                       onClick={() => handleEditBotClick(user)}>
+                        Editar Bot
+                      </Button>
+                    )}
+                    {(canDeleteUsers || admin) && (
+                      <Button  
+                       variant="outline" 
+                       className="hover:bg-red-500 text-black w-1/3" 
+                       onClick={() => handleDeleteUser(user.id_usuario)}>
+                        Eliminar Bot
+                      </Button>
+                    )}
+                  </div>
                 </Card.Body>
               </Card>
             </Col>
@@ -763,19 +823,24 @@ const CompanyInfo = () => {
                 </div>
                 <Card.Body className="text-center">
                   <Card.Title>{user.nombre} {user.apellido}</Card.Title>
-                  <Button variant="primary" className="w-100 mb-2" onClick={() => handleViewBotClick(user)}>
-                    Ver
-                  </Button>
-                  {(canEditUsers || admin) && (
-                    <Button variant="dark" className="w-100 mb-2" onClick={() => handleEditUserClick(user)}>
-                      Editar Bot
+                  <div className="flex space-x-4">
+                    <Button variant="outline" 
+                        className="hover:bg-blue-400 text-black w-1/3" onClick={() => handleViewBotClick(user)}>
+                      Ver
                     </Button>
-                  )}
-                  {(canDeleteUsers || admin) && (
-                    <Button variant="outline-danger" className="w-100" onClick={() => handleDeleteUser(user.id_usuario)}>
-                      Eliminar Bot
-                    </Button>
-                  )}
+                    {(canEditUsers || admin) && (
+                      <Button variant="outline" 
+                      className="hover:bg-yellow-400 text-black w-1/3" onClick={() => handleEditUserClick(user)}>
+                        Editar Bot
+                      </Button>
+                    )}
+                    {(canDeleteUsers || admin) && (
+                      <Button variant="outline" 
+                      className="hover:bg-red-500 text-black w-1/3" onClick={() => handleDeleteUser(user.id_usuario)}>
+                        Eliminar Bot
+                      </Button>
+                    )}
+                  </div>
                 </Card.Body>
               </Card>
             </Col>
@@ -806,19 +871,24 @@ const CompanyInfo = () => {
                 </div>
                 <Card.Body className="text-center">
                   <Card.Title>{user.nombre} {user.apellido}</Card.Title>
-                  <Button variant="primary" className="w-100 mb-2" onClick={() => handleViewBotClick(user)}>
-                    Ver
-                  </Button>
-                  {(canEditUsers || admin) && (
-                    <Button variant="dark" className="w-100 mb-2" onClick={() => handleEditUserClick(user)}>
-                      Editar Bot
+                  <div className="flex space-x-4">
+                    <Button variant="outline" 
+                      className="hover:bg-blue-400 text-black w-1/3" onClick={() => handleViewBotClick(user)}>
+                      Ver
                     </Button>
-                  )}
-                  {(canDeleteUsers || admin) && (
-                    <Button variant="outline-danger" className="w-100" onClick={() => handleDeleteUser(user.id_usuario)}>
-                      Eliminar Bot
-                    </Button>
-                  )}
+                    {(canEditUsers || admin) && (
+                      <Button variant="outline" 
+                      className="hover:bg-yellow-400 text-black w-1/3" onClick={() => handleEditUserClick(user)}>
+                        Editar Bot
+                      </Button>
+                    )}
+                    {(canDeleteUsers || admin) && (
+                      <Button variant="outline" 
+                      className="hover:bg-red-500 text-black w-1/3" onClick={() => handleDeleteUser(user.id_usuario)}>
+                        Eliminar Bot
+                      </Button>
+                    )}
+                  </div>
                 </Card.Body>
               </Card>
             </Col>
