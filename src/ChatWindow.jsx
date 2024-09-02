@@ -28,7 +28,7 @@ function ChatWindow() {
   const [isRecording, setIsRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
-  const [isScrolledToEnd, setIsScrolledToEnd] = useState(false); 
+  const [isScrolledToEnd, setIsScrolledToEnd] = useState(true); 
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [cursorPosition, setCursorPosition] = useState(null);
@@ -608,7 +608,6 @@ function ChatWindow() {
   useEffect(() => {
     const currentElement = messagesEndRef.current;
     if (currentElement) {
-      console.log("girar")
       currentElement.addEventListener('scroll', handleScroll);
       return () => currentElement.removeEventListener('scroll', handleScroll);
     }
