@@ -323,7 +323,7 @@ export const Campaigns = () => {
                         </td>
                         <td>{template.type}</td>
                         <td className="d-flex justify-content-between align-items-center">
-                          <Button className="bg-green-500 hover:bg-green-600 text-white" variant="primary" onClick={() => handleUseTemplateClick(template)}>
+                          <Button className="bg-violet-500 hover:bg-violet-600 text-white" variant="primary" onClick={() => handleUseTemplateClick(template)}>
                             <ArrowUpSquare className="mr-2 h-4 w-4"/> Usar
                           </Button>
                           <DropdownButton id="dropdown-basic-button" className="custom-dropdown-toggle" title={<ThreeDotsVertical />} variant="ghost" size="sm">

@@ -308,16 +308,19 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
   
       const userId = localStorage.getItem("user_id");
       const userCompanyId = localStorage.getItem("company_id");
-  
+
       // Validar si el mensaje pertenece a la empresa del usuario conectado
       if (String(newMessage.company_id) !== userCompanyId) {
         console.log('Mensaje recibido de otra empresa. Ignorando.');
         return;
       }else{
-  
+        const msj = { ...newMessage };
+        console.log("tomando datos de nuevo mensaje", msj);
+        console.log("timeStat", msj.timestamp);
       const isResponsibleOrAdmin = String(newMessage.responsibleUserId) === userId || userPrivileges.includes('Admin') || userPrivileges.includes('Show All Conversations');
   
-      if (isResponsibleOrAdmin) {
+      if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
+        console.log("corroborando otra vez", msj.timestamp)
         const isCurrentActive = currentConversation && currentConversation.conversation_id === newMessage.conversationId;
   
         if (isCurrentActive) {
@@ -325,7 +328,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
           setCurrentConversation(prev => ({
             ...prev,
             last_message: newMessage.text,
-            last_message_time:  newMessage.timestamp ? newMessage.timestamp : state.conversacion_Actual.last_message_time,
+            last_message_time:  msj.timestamp ? msj.timestamp : state.conversacion_Actual.last_message_time,
             unread_messages: newMessage.unread_messages,
             phase_id: prev.phase_id // Asegurar que phase_id se mantenga
           })
@@ -362,8 +365,9 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
             return convo;
           }));
         }
-  
+            
         setMessages(prevMessages => {
+          console.log("ocurre aqui....")
           const updatedMessages = { ...prevMessages };
           const messagesForConversation = updatedMessages[newMessage.conversationId] || [];
           updatedMessages[newMessage.conversationId] = [...messagesForConversation, newMessage];
@@ -386,7 +390,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
     return () => {
       socket.off('newMessage', newMessageHandler);
     };
-  }, [socket, currentConversation, setCurrentConversation, setConversations, setMessages, activeConversation, userHasInteracted, userPrivileges, state]);
+  }, [socket, currentConversation, activeConversation, userHasInteracted, userPrivileges, state]);
   
 
   const messageStatusUpdateHandler = ({ messageId, status }) => {
@@ -481,6 +485,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
 
           if (!isCancelledRef.current) {
             setConversations(sortedConversations);
+            console.log("agrendo datos de conver....")
             setMessages(messagesByConvoId);
           }
         }

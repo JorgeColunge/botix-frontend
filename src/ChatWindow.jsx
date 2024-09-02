@@ -29,19 +29,34 @@ function ChatWindow() {
   const [audioUrl, setAudioUrl] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
   const [isScrolledToEnd, setIsScrolledToEnd] = useState(false); 
-  const [redirectMsj, setRedirectMsj] = useState({
-    redirect_msj: false,
-     press_redirect: false,
-     on_redirect: false
-  });
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [cursorPosition, setCursorPosition] = useState(null);
   const {state, setConversacionActual} = useContext(AppContext)
-
   const isMobile = useMediaQuery({ maxWidth: 767 });
 
   const [currentMessage, setCurrentMessage] = useState(messages);
+
+  const handleScroll = useCallback(async (e) => {
+    const target = e.target;
+    if (target.scrollTop === 0 && messages[currentConversation.conversation_id].length) {
+      setIsLoadingMore(true);
+      const moreMessages = await loadMessages(currentConversation.conversation_id, offset + 50);
+      console.log('Loaded messages IDs:', moreMessages.map(m => m.id));
+      if (moreMessages.length) {
+        setMessages(prevMessages => ({
+          ...prevMessages,
+          [currentConversation.conversation_id]: [...moreMessages, ...prevMessages[currentConversation.conversation_id]]
+        }));
+        setOffset(prevOffset => prevOffset + 50);
+        setLastMessageId(new Date(moreMessages[0].timestamp).getTime());
+        console.log('Last message ID for scroll:', moreMessages[0].id);
+        setIsLoadingMore(false);
+      } else {
+        setIsLoadingMore(false);
+      }
+    }
+  }, [offset, isLoadingMore, loadMessages, setMessages, currentConversation, messages, state.conversacion_Actual]);
 
   useEffect(() => {
     setCurrentMessage(messages);
@@ -87,7 +102,7 @@ function ChatWindow() {
     const handleScroll = () => {
       if (messagesEndRef.current) {
         const { scrollTop, scrollHeight, clientHeight } = messagesEndRef.current;
-        setIsScrolledToEnd(scrollTop + clientHeight >= scrollHeight);
+        setIsScrolledToEnd(scrollTop + clientHeight + 1 >= scrollHeight);
       }
     };
   
@@ -590,30 +605,10 @@ function ChatWindow() {
     );
   }
 
-  const handleScroll = useCallback(async (e) => {
-    const target = e.target;
-    if (target.scrollTop === 0 && !isLoadingMore && messages[currentConversation.conversation_id].length) {
-      setIsLoadingMore(true);
-      const moreMessages = await loadMessages(currentConversation.conversation_id, offset + 50);
-      console.log('Loaded messages IDs:', moreMessages.map(m => m.id));
-      if (moreMessages.length) {
-        setMessages(prevMessages => ({
-          ...prevMessages,
-          [currentConversation.conversation_id]: [...moreMessages, ...prevMessages[currentConversation.conversation_id]]
-        }));
-        setOffset(prevOffset => prevOffset + 50);
-        setLastMessageId(new Date(moreMessages[0].timestamp).getTime());
-        console.log('Last message ID for scroll:', moreMessages[0].id);
-        setIsLoadingMore(false);
-      } else {
-        setIsLoadingMore(false);
-      }
-    }
-  }, [offset, isLoadingMore, loadMessages, setMessages, currentConversation, messages, state.conversacion_Actual]);
-
   useEffect(() => {
     const currentElement = messagesEndRef.current;
     if (currentElement) {
+      console.log("girar")
       currentElement.addEventListener('scroll', handleScroll);
       return () => currentElement.removeEventListener('scroll', handleScroll);
     }
@@ -626,11 +621,6 @@ function ChatWindow() {
       requestAnimationFrame(() => {
         const element = document.getElementById(`msg-${lastMessageId}`);
         setConversacionActual({...state.conversacion_Actual, position_scroll: true})
-        setRedirectMsj({
-          ...redirectMsj,
-          press_redirect: false,
-          redirect_msj: false,
-        })
         if (element) {
           const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
           if (scrollPosition !== undefined) {
@@ -641,7 +631,7 @@ function ChatWindow() {
         }
       });
     }
-  }, [lastMessageId, messages, redirectMsj.redirect_msj]);
+  }, [lastMessageId, messages]);
 
 
   useEffect(() => {
@@ -658,29 +648,10 @@ function ChatWindow() {
         if (initialMessages.length) {
           setLastMessageId(new Date(initialMessages[0].timestamp).getTime());
           console.log('Initial loaded conversation last message ID:', initialMessages[0].timestamp);
-          if (redirectMsj.on_redirect == true) {
-            setRedirectMsj({
-              ...redirectMsj,
-              press_redirect: true,
-            })
-          }
         }
       }
     }
   }, [currentConversation, messages]);
-  
-  useEffect(() => {
-
-    if (state.conversacion_Actual.conversation_id) {
-      
-      console.log("llamado")
-      setRedirectMsj({
-        ...redirectMsj,
-        on_redirect: true
-      })
-    }
-    
-  }, [state.conversacion_Actual.conversation_id])
   
   const groupMessagesByDate = useCallback((messages) => {
     const grouped = messages.reduce((groups, message) => {
@@ -834,13 +805,11 @@ function ChatWindow() {
   };
 
  const handleViewNewMsj = async() => {
-    await setConversacionActual({...state.conversacion_Actual, position_scroll: false})
-    setRedirectMsj({
-      ...redirectMsj,
-      redirect_msj: true
-    })
+  if (messagesEndRef.current) {
+    // Desplaza el elemento al final
+    messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
+  }
  }
-
   return (
     <>
       <div className="chat-window-container">
