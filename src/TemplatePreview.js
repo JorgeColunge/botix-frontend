@@ -16,9 +16,6 @@ const TemplatePreview = ({ template }) => {
     return replacedText;
   };
 
-  // Validar que template.buttons sea un array
-  const buttons = Array.isArray(template.buttons) ? template.buttons : [];
-
   return (
     <>
       <div className='text-center'>
@@ -45,9 +42,9 @@ const TemplatePreview = ({ template }) => {
               {replaceVariables(template.body_text, template.bodyVariables)}
             </div>
             {template.footer && <div className="footer small">{template.footer}</div>}
-            {buttons.length > 0 && (
+            {JSON.parse(template?.buttons)?.length > 0 && (
               <div className="buttons">
-                {buttons.slice(0, buttons.length > 3 ? 2 : 3).map((button, index) => (
+                {JSON.parse(template?.buttons)?.slice(0, JSON.parse(template?.buttons)?.length > 3 ? 2 : 3).map((button, index) => (
                   <React.Fragment key={index}>
                     <hr />
                     <Button variant="link" style={{textDecoration: 'none', padding: '0 10px', backgroundColor: 'transparent', color: '#46afec', fontWeight: 'bold'}}>
@@ -55,7 +52,7 @@ const TemplatePreview = ({ template }) => {
                     </Button>
                   </React.Fragment>
                 ))}
-                {buttons.length > 3 && (
+                {JSON.parse(template?.buttons)?.length > 3 && (
                   <React.Fragment>
                     <hr />
                     <Button variant="link" style={{textDecoration: 'none', padding: '0 10px', backgroundColor: 'transparent', color: '#46afec', fontWeight: 'bold'}}>

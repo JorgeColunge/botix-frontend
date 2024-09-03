@@ -687,23 +687,23 @@ const CompanyInfo = () => {
                   <Card.Text>
                   <Command className="rounded-lg">
                   <CommandList>
-                    <CommandGroup heading="Contact Methods">
+                    <CommandGroup heading="Medios de contacto">
                       <CommandItem 
                         onSelect={() => window.location.href = `tel:${user.telefono}`} 
-                        className="text-lg" // Cambia el tamaño de la fuente
+                        className="text-lg cursor-pointer" // Cambia el tamaño de la fuente
                       >
                         <Telephone className="mr-2 h-4 w-4" /> 
-                        <span className="text-lg"> {/* Cambia el tamaño de la fuente del texto */}
+                        <span className="text-lg cursor-pointer"> {/* Cambia el tamaño de la fuente del texto */}
                           {user.telefono}
                         </span>
                       </CommandItem>
 
                       <CommandItem 
                         onSelect={() => window.location.href = `mailto:${user.email}`} 
-                        className="text-lg" // Cambia el tamaño de la fuente
+                        className="text-lg cursor-pointer" // Cambia el tamaño de la fuente
                       >
                         <Envelope className="mr-2 h-4 w-4" /> 
-                        <span className="text-lg"> {/* Cambia el tamaño de la fuente del texto */}
+                        <span className="text-lg cursor-pointer"> {/* Cambia el tamaño de la fuente del texto */}
                           {user.email}
                         </span>
                       </CommandItem>

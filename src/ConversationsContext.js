@@ -315,8 +315,6 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
         return;
       }else{
         const msj = { ...newMessage };
-        console.log("tomando datos de nuevo mensaje", msj);
-        console.log("timeStat", msj.timestamp);
       const isResponsibleOrAdmin = String(newMessage.responsibleUserId) === userId || userPrivileges.includes('Admin') || userPrivileges.includes('Show All Conversations');
   
       if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
@@ -330,7 +328,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
             last_message: newMessage.text,
             last_message_time:  msj.timestamp ? msj.timestamp : state.conversacion_Actual.last_message_time,
             unread_messages: newMessage.unread_messages,
-            phase_id: prev.phase_id // Asegurar que phase_id se mantenga
+            phase_id: prev.phase_id
           })
         );
         }
@@ -367,7 +365,6 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
         }
             
         setMessages(prevMessages => {
-          console.log("ocurre aqui....")
           const updatedMessages = { ...prevMessages };
           const messagesForConversation = updatedMessages[newMessage.conversationId] || [];
           updatedMessages[newMessage.conversationId] = [...messagesForConversation, newMessage];
@@ -485,7 +482,6 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
 
           if (!isCancelledRef.current) {
             setConversations(sortedConversations);
-            console.log("agrendo datos de conver....")
             setMessages(messagesByConvoId);
           }
         }
