@@ -187,7 +187,7 @@ const CreateTemplate = () => {
                setLanguage(templete.language)
 
                 if (templete.header_type == 'IMAGE' || templete.header_type == 'VIDEO' || templete.header_type == 'DOCUMENT'){ setHeaderType('MEDIA');}
-                   else{setHeaderType('MEDIA')}
+                   else{setHeaderType(templete.header_type)}
                setHeaderText(templete.header_text)
                setBodyText(templete.body_text)
                setFooterText(templete.footer)
@@ -202,10 +202,10 @@ const CreateTemplate = () => {
               if (templete.header_text) {
                 setHeaderVariableAdded(true);
               }
-              const buttonsData = templete.buttonVariables.map((btn) => {
+              const buttonsData = JSON.parse(templete.buttons).map((btn) => {
                 let button = {};
               
-                switch (btn.variable) {
+                switch (btn.type) {
                   case 'QUICK_REPLY':
                     button = {
                       text: btn.name,
@@ -219,11 +219,12 @@ const CreateTemplate = () => {
               
                   case 'PHONE_NUMBER':
                     button = {
-                      text: btn.name,
-                      type: btn.variable,
+                      text: btn.text,
+                      type: btn.type,
                       url: '',
                       phoneCode: '',
                       urlExample: '',
+                      phoneNumber: btn.phone_number,
                       urlType: ''
                     };
                     break;
@@ -423,7 +424,7 @@ const CreateTemplate = () => {
       });
       console.log('Template created successfully:', response.data);
   
-      if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(mediaType.toUpperCase())) {
+      if (['IMAGE', 'VIDEO', 'DOCUMENT', 'TEXT'].includes(mediaType.toUpperCase())) {
         setResponseMessage('Plantilla almacenada con éxito. Ahora debe crear la misma plantilla con las mismas características en WhatsApp.');
       } else {
         setResponseMessage(`Estado de la Plantilla: ${response.data.status}`);
@@ -732,9 +733,9 @@ const CreateTemplate = () => {
 
   const urlButtonsCount = buttons.filter(button => button.type === 'URL').length;
   const phoneButtonsCount = buttons.filter(button => button.type === 'PHONE_NUMBER').length;
-
+ console.log(buttons)
   const addButton = (type) => {
-    console.log("tipo:", type)
+
     const urlButtons = buttons.filter(button => button.type === 'URL').length;
     const phoneButtons = buttons.filter(button => button.type === 'PHONE_NUMBER').length;
 
