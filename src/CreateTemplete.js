@@ -208,8 +208,8 @@ const CreateTemplate = () => {
                 switch (btn.type) {
                   case 'QUICK_REPLY':
                     button = {
-                      text: btn.name,
-                      type: btn.variable,
+                      text: btn.text,
+                      type: btn.type,
                       url: '',
                       phoneCode: '',
                       urlExample: '',
@@ -232,8 +232,8 @@ const CreateTemplate = () => {
                   case 'URL':
                     button = {
                       text: btn.name,
-                      type: btn.variable,
-                      url: '',
+                      type: btn.type,
+                      url: btn.url,
                       phoneCode: '',
                       urlExample: '',
                       urlType: ''
