@@ -1,56 +1,63 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useContext, useEffect, useCallback } from 'react';
 import { Button } from 'react-bootstrap';
-import { MicFill, StopFill, PauseFill, PlayFill, TrashFill, SendFill, ArrowClockwise } from 'react-bootstrap-icons';
+import { MicFill, StopFill, TrashFill, SendFill, ArrowClockwise } from 'react-bootstrap-icons';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import Recorder from 'recorder-js';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-
-const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+import { AppContext } from './context';
 
 export const AudioRecorder = ({ onSend }) => {
   const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [audioUrl, setAudioUrl] = useState(null);
+  const [audioUrl, setAudioUrl] = useState(localStorage.getItem('audioURL') || null);
   const [backendAudioUrl, setBackendAudioUrl] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const mediaRecorderRef = useRef(null);
 
-  const recorderRef = useRef(null);
-  const messageRef = useRef(null);
-  
-  const ffmpegRef = useRef(new FFmpeg({
-    log: true,
-    corePath: `${baseURL}/ffmpeg-core.js`,
-    wasmPath: `${baseURL}/ffmpeg-core.wasm`,
-    TOTAL_MEMORY: 256 * 1024 * 1024 // 256 MB
-  }));  
-
-  const loadFFmpeg = async () => {
-    if (!loaded) {
-      const ffmpeg = ffmpegRef.current;
-      ffmpeg.on('log', ({ message }) => {
-        console.log('FFmpeg log:', message);
-        if (messageRef.current) {
-          messageRef.current.innerHTML = message;
-        }
-      });
-      await ffmpeg.load();
-      setLoaded(true);
-    }
-  };
-
-  const startRecording = async () => {
+  const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 } });
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      recorderRef.current = new Recorder(audioContext);
-      await recorderRef.current.init(stream);
-      recorderRef.current.start();
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      const chunks = [];
+      
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        chunks.push(event.data);
+      };
+      
+      mediaRecorderRef.current.onstop = async () => {
+        const blob = new Blob(chunks, { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        setAudioBlob(blob);
+        setAudioUrl(url);
+        localStorage.setItem('audioURL', url);
 
+        // Enviar el blob al backend
+        try {
+          const formData = new FormData();
+          formData.append('audio', blob, 'recording.wav');
+          
+          setIsProcessing(true);
+          const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-audio`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+
+          const backendUrl = response.data.audioUrl;
+          setBackendAudioUrl(backendUrl);
+          setIsProcessing(false);
+        } catch (error) {
+          console.error('Error al procesar el audio:', error);
+          setIsProcessing(false);
+          Swal.fire({
+            title: "Error",
+            text: `Error al procesar el audio. Error: ${error.message}`,
+            icon: "error"
+          });
+        }
+      };
+
+      mediaRecorderRef.current.start();
       setIsRecording(true);
       setAudioUrl(null);
+      localStorage.setItem('audioURL', '');
       setBackendAudioUrl(null);
       setAudioBlob(null);
     } catch (error) {
@@ -61,57 +68,17 @@ export const AudioRecorder = ({ onSend }) => {
         icon: "error"
       });
     }
-  };
-
-  const stopRecording = async () => {
-    try {
-      setIsProcessing(true);
-      const { blob } = await recorderRef.current.stop();
-      const audioUrl = URL.createObjectURL(blob);
-      setAudioUrl(audioUrl);
-      setAudioBlob(blob);
+  }, []);
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
       setIsRecording(false);
-      setIsPaused(false);
-  
-      // Enviar el archivo WAV directamente al servidor
-      const formData = new FormData();
-      formData.append('audio', blob, 'recording.wav');
-      
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-audio`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-  
-      const backendUrl = response.data.audioUrl;
-      setBackendAudioUrl(backendUrl);
-      setIsProcessing(false);
-  
-    } catch (error) {
-      console.error('Error al detener la grabación:', error);
-      setIsProcessing(false);
-      Swal.fire({
-        title: "Error",
-        text: `Error al procesar el audio. Error: ${error.message}`,
-        icon: "error"
-      });
-    }
-  };
-  
-  const pauseRecording = () => {
-    if (recorderRef.current) {
-      recorderRef.current.pause();
-      setIsPaused(true);
-    }
-  };
-
-  const resumeRecording = () => {
-    if (recorderRef.current) {
-      recorderRef.current.resume();
-      setIsPaused(false);
     }
   };
 
   const deleteRecording = () => {
     setAudioUrl(null);
+    localStorage.setItem('audioURL', '');
     setBackendAudioUrl(null);
     setAudioBlob(null);
   };
@@ -133,15 +100,6 @@ export const AudioRecorder = ({ onSend }) => {
       {isRecording && (
         <>
           <span>Grabando...</span>
-          {isPaused ? (
-            <Button variant="light" onClick={resumeRecording}>
-              <PlayFill />
-            </Button>
-          ) : (
-            <Button variant="light" onClick={pauseRecording}>
-              <PauseFill />
-            </Button>
-          )}
           <Button variant="light" onClick={stopRecording}>
             <StopFill />
           </Button>
@@ -154,9 +112,8 @@ export const AudioRecorder = ({ onSend }) => {
             <TrashFill />
           </Button>
           <Button variant="light" onClick={handleSendAudio} disabled={!backendAudioUrl || isProcessing}>
-            {isProcessing ? <ArrowClockwise animation="border" size="sm" /> : <SendFill />}
+            {isProcessing ? <ArrowClockwise /> : <SendFill />}
           </Button>
-          <p ref={messageRef}></p>
         </div>
       )}
     </div>

@@ -168,7 +168,6 @@ function Sidebar() {
     setCurrentConversation(conversation);
     setConversacionActual({...conversation, position_scroll: false})
   };
-
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center p-3 shadow-sm">

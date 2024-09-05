@@ -375,13 +375,13 @@ function ChatWindow() {
   };
 
    const isLastMessageOlderThan24Hours  =  useCallback(() => {
+ 
       if (!currentConversation || !currentMessage[currentConversation.conversation_id] || currentMessage[currentConversation.conversation_id].length === 0) {
         return true; // Si no hay conversación o mensajes, consideramos que han pasado más de 24 horas.
       }
 
       const messages = currentMessage[currentConversation.conversation_id];
       const firstMessage = messages.find(msg => msg.type === "message");
-  
 
       if (!firstMessage) {
         return true;
@@ -389,9 +389,9 @@ function ChatWindow() {
   
       const messageDate = new Date(firstMessage.timestamp);
       const now = new Date();
-  
+
       return (now.getTime() - messageDate.getTime()) >= (24 * 60 * 60 * 1000); // 24 horas en milisegundos
-    }, [currentConversation, currentMessage]);
+    }, [currentConversation, currentMessage, messages, state.conversacion_Actual, lastMessageId]);
 
   
   const handleOpenTemplateModal = () => {

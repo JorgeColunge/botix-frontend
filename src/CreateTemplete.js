@@ -733,7 +733,6 @@ const CreateTemplate = () => {
 
   const urlButtonsCount = buttons.filter(button => button.type === 'URL').length;
   const phoneButtonsCount = buttons.filter(button => button.type === 'PHONE_NUMBER').length;
- console.log(buttons)
   const addButton = (type) => {
 
     const urlButtons = buttons.filter(button => button.type === 'URL').length;

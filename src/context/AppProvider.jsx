@@ -5,7 +5,8 @@ export const AppContext = createContext();
 export const AppProvider = ({ children }) => {
   const [state, setState] = useState({
     conversacion_Actual: {
-      position_scroll: false
+      position_scroll: false,
+      audioRecord: null
     },
     status: false,
     campañas: [],
