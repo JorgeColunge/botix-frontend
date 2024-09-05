@@ -38,7 +38,7 @@ const getPhases = async (departmentId, companyId, userPrivileges) => {
 };
 
 export const ConversationsProvider = ({ children, socket, userHasInteracted }) => {
-  const [conversations, setConversations] = useState([]);
+  const [conversations, setConversations] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [messages, setMessages] = useState({});
   const [loading, setLoading] = useState(false);
@@ -514,7 +514,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
   }, []);
    
   return (
-    conversations.length == 0 ? (
+    conversations == null ? (
         <div className="d-flex justify-content-center align-items-center vh-100">
           <div className="text-center">
             <Spinner animation="border" variant="success" role="status">
