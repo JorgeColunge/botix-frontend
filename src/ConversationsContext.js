@@ -514,7 +514,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
   }, []);
    
   return (
-    conversations == null ? (
+    conversations === null ? (
         <div className="d-flex justify-content-center align-items-center vh-100">
           <div className="text-center">
             <Spinner animation="border" variant="success" role="status">
