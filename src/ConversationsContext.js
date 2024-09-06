@@ -311,14 +311,12 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
 
       // Validar si el mensaje pertenece a la empresa del usuario conectado
       if (String(newMessage.company_id) !== userCompanyId) {
-        console.log('Mensaje recibido de otra empresa. Ignorando.');
         return;
       }else{
         const msj = { ...newMessage };
       const isResponsibleOrAdmin = String(newMessage.responsibleUserId) === userId || userPrivileges.includes('Admin') || userPrivileges.includes('Show All Conversations');
   
       if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
-        console.log("corroborando otra vez", msj.timestamp)
         const isCurrentActive = currentConversation && currentConversation.conversation_id === newMessage.conversationId;
   
         if (isCurrentActive) {
@@ -512,9 +510,9 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
 
     fetchUsers();
   }, []);
-   
+
   return (
-    conversations == null ? (
+    conversations === null ? (
         <div className="d-flex justify-content-center align-items-center vh-100">
           <div className="text-center">
             <Spinner animation="border" variant="success" role="status">
