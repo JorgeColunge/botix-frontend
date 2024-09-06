@@ -472,7 +472,7 @@ function ChatWindow() {
       console.log("Datos de currentSend:", currentSend);
     
       try {
-        setConversacionActual({...currentSend, position_scroll: false})
+        setConversacionActual({...currentSend, position_scroll: true})
         console.log("Intentando enviar mensaje...");
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-text`, {
           phone: currentSend.phone_number,
@@ -614,21 +614,40 @@ function ChatWindow() {
   }, [handleScroll]);
 
   useEffect(() => {
-
-    if (lastMessageId && messagesEndRef.current && isScrolledToEnd) {
-      console.log("los mensajes son: ", messages)
-      requestAnimationFrame(() => {
-        const element = document.getElementById(`msg-${lastMessageId}`);
-        setConversacionActual({...state.conversacion_Actual, position_scroll: true})
-        if (element) {
-          const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
-          if (scrollPosition !== undefined) {
-            messagesEndRef.current.scrollTop = scrollPosition;
-            console.log("position", scrollPosition)
-          }
-          console.log('Scrolling to message ID:', lastMessageId);
+    
+    if (state.conversacion_Actual.position_scroll === false) {
+      console.log("ingresa en el primer")
+        if (lastMessageId && messagesEndRef.current) {
+          requestAnimationFrame(() => {
+            const element = document.getElementById(`msg-${lastMessageId}`);
+            setConversacionActual({...state.conversacion_Actual, position_scroll: true})
+            if (element) {
+              const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
+              if (scrollPosition !== undefined) {
+                messagesEndRef.current.scrollTop = scrollPosition;
+                console.log("position", scrollPosition)
+              }
+              console.log('Scrolling to message ID:', lastMessageId);
+            }
+          });
         }
-      });
+    } else {
+      console.log("ingresa en el segundo")
+
+      if (lastMessageId && messagesEndRef.current && isScrolledToEnd) {
+        requestAnimationFrame(() => {
+          const element = document.getElementById(`msg-${lastMessageId}`);
+          setConversacionActual({...state.conversacion_Actual, position_scroll: true})
+          if (element) {
+            const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
+            if (scrollPosition !== undefined) {
+              messagesEndRef.current.scrollTop = scrollPosition;
+              console.log("position", scrollPosition)
+            }
+            console.log('Scrolling to message ID:', lastMessageId);
+          }
+        });
+      }
     }
   }, [lastMessageId, messages]);
 

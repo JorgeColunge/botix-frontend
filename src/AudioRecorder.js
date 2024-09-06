@@ -6,11 +6,11 @@ import Swal from 'sweetalert2';
 import { AppContext } from './context';
 
 export const AudioRecorder = ({ onSend }) => {
-  const [isRecording, setIsRecording] = useState(false);
+  const [isRecording, setIsRecording] = useState(localStorage.getItem('recordingAudio') || false);
   const [audioUrl, setAudioUrl] = useState(localStorage.getItem('audioURL') || null);
-  const [backendAudioUrl, setBackendAudioUrl] = useState(null);
+  const [backendAudioUrl, setBackendAudioUrl] = useState(localStorage.getItem('backendAudioURL') || null);
   const [audioBlob, setAudioBlob] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(localStorage.getItem('processingAudio') || false);
   const mediaRecorderRef = useRef(null);
 
   const startRecording = useCallback(async () => {
@@ -36,16 +36,21 @@ export const AudioRecorder = ({ onSend }) => {
           formData.append('audio', blob, 'recording.wav');
           
           setIsProcessing(true);
+          localStorage.setItem('processingAudio', true);
           const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-audio`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
 
           const backendUrl = response.data.audioUrl;
           setBackendAudioUrl(backendUrl);
+          localStorage.setItem('backendAudioURL', backendUrl);
           setIsProcessing(false);
+          localStorage.setItem('processingAudio', '');
+
         } catch (error) {
           console.error('Error al procesar el audio:', error);
           setIsProcessing(false);
+          localStorage.setItem('processingAudio', '');
           Swal.fire({
             title: "Error",
             text: `Error al procesar el audio. Error: ${error.message}`,
@@ -56,8 +61,10 @@ export const AudioRecorder = ({ onSend }) => {
 
       mediaRecorderRef.current.start();
       setIsRecording(true);
+      localStorage.setItem('recordingAudio', '');
       setAudioUrl(null);
       localStorage.setItem('audioURL', '');
+      localStorage.setItem('backendAudioURL', '');
       setBackendAudioUrl(null);
       setAudioBlob(null);
     } catch (error) {
@@ -73,12 +80,14 @@ export const AudioRecorder = ({ onSend }) => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      localStorage.setItem('recordingAudio', '');
     }
   };
 
   const deleteRecording = () => {
     setAudioUrl(null);
     localStorage.setItem('audioURL', '');
+    localStorage.setItem('backendAudioURL', '');
     setBackendAudioUrl(null);
     setAudioBlob(null);
   };
