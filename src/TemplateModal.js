@@ -13,6 +13,7 @@ const TemplateModal = ({ show, handleClose, conversation, contact }) => {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
+  console.log("Plantilla", selectedTemplate)
   useEffect(() => {
     const fetchTemplates = async () => {
       const companyId = localStorage.getItem('company_id');
@@ -136,6 +137,7 @@ const TemplateModal = ({ show, handleClose, conversation, contact }) => {
     );
   });
 
+  console.log("variables boton:", variableValues)
   return (
     <Modal show={show} onHide={handleClose} size="xl">
       <Modal.Header closeButton>
@@ -213,11 +215,20 @@ const TemplateModal = ({ show, handleClose, conversation, contact }) => {
                           {replaceVariables(selectedTemplate, 'body')}
                         </div>
                         {selectedTemplate.footer && <div className="footer small">{selectedTemplate.footer}</div>}
-                        {selectedTemplate.type_button !== 'none' && (
+                        {(selectedTemplate.type_button !== 'none' || selectedTemplate.buttonVariables.length !== 0) && (
                           <div className="buttons">
                             {selectedTemplate.type_button === 'QUICK_REPLY' && <button className="btn btn-success w-100 mt-2">{selectedTemplate.button_text}</button>}
                             {selectedTemplate.type_button === 'PHONE_NUMBER' && <button className="btn btn-success w-100 mt-2">{selectedTemplate.button_text}</button>}
                             {selectedTemplate.type_button === 'URL' && <button className="btn btn-success w-100 mt-2">{selectedTemplate.button_text}</button>}
+                            {
+                              selectedTemplate.buttonVariables.length !== 0 && (
+                                selectedTemplate.buttonVariables.map((btn, index) => (
+                                  <button key={index} className="btn btn-success w-100 mt-2">
+                                    {btn.name}
+                                  </button>
+                                ))
+                              )
+                            }
                           </div>
                         )}
                       </div>
