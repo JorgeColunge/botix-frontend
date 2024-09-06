@@ -5,7 +5,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { AppContext } from './context';
 
-export const AudioRecorder = ({ onSend }) => {
+export const AudioRecorder = ({ onSend, inactivo }) => {
   const [isRecording, setIsRecording] = useState(localStorage.getItem('recordingAudio') || false);
   const [audioUrl, setAudioUrl] = useState(localStorage.getItem('audioURL') || null);
   const [backendAudioUrl, setBackendAudioUrl] = useState(localStorage.getItem('backendAudioURL') || null);
@@ -102,7 +102,7 @@ export const AudioRecorder = ({ onSend }) => {
   return (
     <div className="audio-recorder">
       {!isRecording && !audioUrl && (
-        <Button variant="light" onClick={startRecording}>
+        <Button disabled={inactivo()} variant="light" onClick={startRecording}>
           <MicFill />
         </Button>
       )}

@@ -543,7 +543,7 @@ function ChatWindow() {
     return (
       <div className="reply-bar-container">
         {!isMobile && (
-          <Button variant="light" className="reply-button p-0 m-0" onClick={handleOpenTemplateModal}>
+          <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} className="reply-button p-0 m-0" onClick={handleOpenTemplateModal}>
             <i className="far fa-file-alt"></i> {/* Icono de la plantilla */}
           </Button>
         )}
@@ -552,7 +552,7 @@ function ChatWindow() {
 
         {showEmojiPicker && (
           <div style={styles.popper} {...attributes.popper}>
-            <EmojiPicker onEmojiClick={onEmojiClick} />
+            <EmojiPicker  disabled={isLastMessageOlderThan24Hours()} onEmojiClick={onEmojiClick} />
           </div>
         )}
   
@@ -572,23 +572,23 @@ function ChatWindow() {
         {fileMenuVisible && (
           <div ref={setPopperElement} style={styles.popper} {...attributes.popper}>
             <div className='d-flex flex-column'>
-              <Button variant="light" onClick={() => handleFileMenuClick('image/*')}>Cargar Imagen</Button>
-              <Button variant="light" onClick={() => handleFileMenuClick('video/*')}>Cargar Video</Button>
-              <Button variant="light" onClick={() => handleFileMenuClick('.pdf,.doc,.docx,.txt')}>Cargar Documento</Button>
+              <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('image/*')}>Cargar Imagen</Button>
+              <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('video/*')}>Cargar Video</Button>
+              <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('.pdf,.doc,.docx,.txt')}>Cargar Documento</Button>
               {isMobile && (
-                <Button variant="light" onClick={() => handleOpenTemplateModal()}>Cargar Plantillas</Button>
+                <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleOpenTemplateModal()}>Cargar Plantillas</Button>
               )}
             </div>
           </div>
         )}
-        <Button variant="light" className="reply-button" onClick={handleAttachClick}>
+        <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleAttachClick}>
           <i className="fas fa-paperclip"></i> {/* Icono del clip */}
         </Button>
-        <Button variant="light" className="reply-button" onClick={handleEmojiClick} ref={setReferenceElement}>
+        <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleEmojiClick} ref={setReferenceElement}>
           <i className="far fa-smile"></i> {/* Icono de la cara feliz */}
         </Button>
         
-        <AudioRecorder onSend={handleSendAudio} />
+        <AudioRecorder  inactivo={isLastMessageOlderThan24Hours} onSend={handleSendAudio} />
       </div>
     );
   }
