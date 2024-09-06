@@ -13,7 +13,6 @@ const TemplateModal = ({ show, handleClose, conversation, contact }) => {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
-  console.log("Plantilla", selectedTemplate)
   useEffect(() => {
     const fetchTemplates = async () => {
       const companyId = localStorage.getItem('company_id');
@@ -137,7 +136,6 @@ const TemplateModal = ({ show, handleClose, conversation, contact }) => {
     );
   });
 
-  console.log("variables boton:", variableValues)
   return (
     <Modal show={show} onHide={handleClose} size="xl">
       <Modal.Header closeButton>
