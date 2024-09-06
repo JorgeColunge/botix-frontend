@@ -54,8 +54,8 @@ const baseHeader = `(async function(
 const baseFooter = `})(sendTextMessage, sendImageMessage, sendVideoMessage, sendDocumentMessage, sendAudioMessage, sendTemplateMessage, sendTemplateToSingleContact, sendLocationMessage, io, senderId, messageData, conversationId, pool, axios, getContactInfo, updateContactName, createContact, updateContactCompany, updateConversationState, assignResponsibleUser, processMessage, getReverseGeocoding, getGeocoding, integrationDetails, externalData, clientTimezone, moment);`;
 
 const GroupNode = ({ id, data }) => {
-  const [height, setHeight] = useState(data.height || 200); // Estado para la altura del primer div
-  const [width, setWidth] = useState(data.width || 300); // Estado para el ancho del primer div
+  const [height, setHeight] = useState(data.height || 500); // Estado para la altura del primer div
+  const [width, setWidth] = useState(data.width || 600); // Estado para el ancho del primer div
 
   const updateNodeSize = (newWidth, newHeight) => {
     data.setNodes((nds) =>
@@ -485,6 +485,7 @@ const closeToolModal = () => {
               ...node.data,
               onAddClick: (id) => openToolModal(id, true),
               onAddExternalClick: (id) => openToolModal(id, false),
+              addCaseNode: (id) => addCaseNode(id),
               setNodes, // Volver a asignar setNodes
               editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes), // Volver a asignar editarNodo con setNodes
             },
@@ -3273,6 +3274,17 @@ const generateCodeForIntentions = async () => {
     const resultNamesStr = splitResultNames.join(', ');
     const splitCode = `const [${resultNamesStr}] = ${splitVariable}.split('${splitParameter}');`;
 
+    // Validación manual
+  if (!splitVariable) {
+    alert('Debe seleccionar una variable a dividir.');
+    return;
+  }
+
+  if (!splitParameter) {
+    alert('Debe ingresar un parámetro para dividir.');
+    return;
+  }
+
     const newNode = {
       id: `${nodes.length + 1}`,
       type: 'custom',
@@ -4050,7 +4062,13 @@ const generateNodeCode = (node, indent = '') => {
           <Form>
             <Form.Group controlId="formSplitVariable">
               <Form.Label>Variable a Dividir</Form.Label>
-              <Form.Control as="select" value={splitVariable} onChange={(e) => setSplitVariable(e.target.value)}>
+              <Form.Control 
+                as="select" 
+                value={splitVariable} 
+                onChange={(e) => setSplitVariable(e.target.value)} 
+                required
+              >
+                <option value="">Seleccione una opción</option> {/* Opción por defecto vacía */}
                 {variables.map((variable) => (
                   <option key={variable.name} value={variable.name}>{variable.displayName}</option>
                 ))}
@@ -4058,13 +4076,22 @@ const generateNodeCode = (node, indent = '') => {
             </Form.Group>
             <Form.Group controlId="formSplitParameter">
               <Form.Label>Parámetro para Dividir</Form.Label>
-              <Form.Control type="text" value={splitParameter} onChange={(e) => setSplitParameter(e.target.value)} />
+              <Form.Control 
+                type="text" 
+                value={splitParameter} 
+                onChange={(e) => setSplitParameter(e.target.value)} 
+                required
+              />
             </Form.Group>
             {splitResultNames.map((resultName, index) => (
               <div key={index} style={{ marginBottom: '10px' }}>
                 <Form.Group controlId={`formSplitResultName${index}`}>
                   <Form.Label>Nombre del Resultado {index + 1}</Form.Label>
-                  <Form.Control type="text" value={resultName} onChange={(e) => updateSplitResultName(index, e.target.value)} />
+                  <Form.Control 
+                    type="text" 
+                    value={resultName} 
+                    onChange={(e) => updateSplitResultName(index, e.target.value)} 
+                  />
                 </Form.Group>
                 {index > 1 && (
                   <Button variant="danger" onClick={() => removeSplitResultName(index)}>Eliminar</Button>
