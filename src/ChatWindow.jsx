@@ -102,7 +102,7 @@ function ChatWindow() {
     const handleScroll = () => {
       if (messagesEndRef.current) {
         const { scrollTop, scrollHeight, clientHeight } = messagesEndRef.current;
-        setIsScrolledToEnd(scrollTop + clientHeight + 1 >= scrollHeight);
+        setIsScrolledToEnd(scrollTop + clientHeight + 200 >= scrollHeight);
       }
     };
   
@@ -615,7 +615,7 @@ function ChatWindow() {
 
   useEffect(() => {
 
-    if (lastMessageId && messagesEndRef.current && state.conversacion_Actual.position_scroll == false) {
+    if (lastMessageId && messagesEndRef.current && isScrolledToEnd) {
       console.log("los mensajes son: ", messages)
       requestAnimationFrame(() => {
         const element = document.getElementById(`msg-${lastMessageId}`);

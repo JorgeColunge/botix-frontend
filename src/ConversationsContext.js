@@ -512,7 +512,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
 
     fetchUsers();
   }, []);
-  console.log(conversations) 
+
   return (
     conversations === null ? (
         <div className="d-flex justify-content-center align-items-center vh-100">
