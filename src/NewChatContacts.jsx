@@ -1,8 +1,8 @@
 import React, { useContext, useMemo, useState } from 'react'
 import { AppContext } from './context'
-import { Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components';
+import { Avatar, AvatarFallback, AvatarImage, Input, ScrollArea, SheetClose, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components';
 
-export const NewChatContacts = () => {
+export const NewChatContacts = ({selectContact}) => {
     const { state } = useContext(AppContext);
     const [search, setSearch] = useState('');
   
@@ -37,9 +37,9 @@ export const NewChatContacts = () => {
   
       return agrupados;
     }, [state.contactos, search]);
-  
+
     return (
-      <div>
+      <div className='p-0 me-2'>
         <Input 
           type="text"
           placeholder="Buscar por nombre o número"
@@ -49,7 +49,7 @@ export const NewChatContacts = () => {
         />
   
         {/* Contenedor con scroll */}
-        <div className="max-h-[85vh] overflow-y-auto pe-0 me-0">
+        <ScrollArea className="h-[85vh] w-[100%] rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -66,16 +66,24 @@ export const NewChatContacts = () => {
                     </TableCell>
                   </TableRow>
                   {filteredContacts[letter].map((contacto, index) => (
-                    <TableRow key={index} className='cursor-pointer'>
-                      <TableCell>{contacto.first_name} {contacto.last_name}</TableCell>
+                    <SheetClose className='d-flex gap-3 w-[100%]' asChild key={index}>
+                    <TableRow className="cursor-pointer w-[33em]" onClick={() => selectContact(contacto)}>
+                      <TableCell className='w-100'>
+                        <Avatar>
+                          <AvatarImage src={`${process.env.REACT_APP_API_URL}${contacto.profile_url}`} alt={`${contacto.last_name}`} />
+                          <AvatarFallback>{letter}</AvatarFallback>
+                        </Avatar>
+                        {contacto.first_name} {contacto.last_name}
+                      </TableCell>
                       <TableCell>{contacto.phone_number}</TableCell>
                     </TableRow>
+                  </SheetClose>
                   ))}
                 </React.Fragment>
               ))}
             </TableBody>
           </Table>
-        </div>
+        </ScrollArea>
       </div>
     );
   };

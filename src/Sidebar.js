@@ -170,6 +170,16 @@ function Sidebar() {
     setCurrentConversation(conversation);
     setConversacionActual({...conversation, position_scroll: false})
   };
+
+  const handleSelectContactChat = async (contacto) => {
+    const conver = conversations.find(conv => conv.phone_number == contacto.phone_number)
+
+    if (conver) {
+      await resetUnreadMessages(conver.conversation_id);
+      setCurrentConversation(conver);
+      setConversacionActual({...conver, position_scroll: false})
+    }
+  }
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center p-3 shadow-sm">
@@ -182,11 +192,11 @@ function Sidebar() {
             <SheetTrigger asChild>
               <Button variant="outline" size="icon"><PlusSquare className="h-4 w-4"/></Button>
             </SheetTrigger>
-            <SheetContent side='left' className="w-[30.6em] !max-w-none ms-[4em] pe-0">
+            <SheetContent side='left' className="w-[30.6em] !max-w-none ms-[4em] pe-0 ps-1">
               <SheetHeader>
                 <SheetTitle>Lista de contactos</SheetTitle>
               </SheetHeader>
-                  <NewChatContacts />
+                  <NewChatContacts selectContact={handleSelectContactChat} />
               <SheetFooter>
               </SheetFooter>
             </SheetContent>
