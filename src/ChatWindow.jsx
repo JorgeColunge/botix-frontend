@@ -543,7 +543,7 @@ function ChatWindow() {
     return (
       <div className="reply-bar-container">
         {!isMobile && (
-          <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} className="reply-button p-0 m-0" onClick={handleOpenTemplateModal}>
+          <Button variant="light" className="reply-button p-0 m-0" onClick={handleOpenTemplateModal}>
             <i className="far fa-file-alt"></i> {/* Icono de la plantilla */}
           </Button>
         )}

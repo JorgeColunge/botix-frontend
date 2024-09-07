@@ -197,12 +197,12 @@ function App() {
         console.error('Error fetching users:', error);
       }
     };
+
     fetchTemplates();
     fetchCampaigns();
     fetchContacts();
     fetchPhases();
     fetchUsers();
-
   }, []);
 
   const handleSidebarToggle = () => {
@@ -248,16 +248,6 @@ function App() {
                             {isMobile && (
                               state.conversacion_Actual.conversation_id ? (
                                 <>
-                                  {/* Botón para regresar al sidebar */}
-                                  {/* <Button
-                                    className="d-md-none"
-                                    onClick={() => {
-                                      setConversacionActual({ position_scroll: false}); // Resetea la conversación actual
-                                      navigate(-1); // Navega hacia atrás
-                                    }}
-                                  >
-                                    Atrás
-                                  </Button> */}
                                   <Col className="px-0 wallpaper_messages" style={{ flexBasis: '100%' }}>
                                     <ChatWindow socket={socket} />
                                   </Col>

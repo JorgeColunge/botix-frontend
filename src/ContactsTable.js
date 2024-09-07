@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { Table, Button, Modal, Form, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { Telephone, Envelope, PencilSquare, Trash, PlusCircle, Upload, Chat } from 'react-bootstrap-icons';
@@ -7,10 +7,12 @@ import { scaleQuantize } from 'd3-scale';
 import CreateContactModal from './CreateContactModal'; // Asegúrate de que la ruta sea correcta
 import UploadCSVModal from './UploadCSVModal'; // Asegúrate de que la ruta sea correcta
 import './ContactsTable.css'; // Import the CSS file
+import { AppContext } from './context';
 
 const geoUrl = '/ne_110m_admin_0_countries.json'; // Ruta al archivo GeoJSON en la carpeta public
 
 const ContactsTable = () => {
+  const {state} = useContext(AppContext)
   const [contacts, setContacts] = useState([]);
   const [filteredContacts, setFilteredContacts] = useState([]);
   const [showCreateContactModal, setShowCreateContactModal] = useState(false);
@@ -25,7 +27,16 @@ const ContactsTable = () => {
   });
   const companyId = localStorage.getItem('company_id');
 
-  useEffect(() => {
+  useEffect(() => { 
+
+    const fetchContactsData = async () => {
+      try {
+        setContacts(state.contactos || []);
+      } catch (error) {
+        console.error('Error fetching contacts data:', error);
+      }
+    };
+
     fetchContactsData();
   }, [companyId]);
 
@@ -33,18 +44,7 @@ const ContactsTable = () => {
     applyFiltersAndSearch();
   }, [search, filters, contacts]);
 
-  const fetchContactsData = async () => {
-    try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/contacts`, {
-        params: {
-          company_id: companyId,
-        },
-      });
-      setContacts(response.data);
-    } catch (error) {
-      console.error('Error fetching contacts data:', error);
-    }
-  };
+
 
   const applyFiltersAndSearch = () => {
     let tempContacts = [...contacts];

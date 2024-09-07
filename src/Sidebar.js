@@ -1,11 +1,13 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { ListGroup, Tooltip, OverlayTrigger, Dropdown, Button, InputGroup, FormControl, Form } from 'react-bootstrap';
+import { ListGroup, Tooltip, OverlayTrigger, Dropdown, InputGroup, FormControl, Form } from 'react-bootstrap';
 import { PlusSquare, Funnel, PersonCircle, BookmarkFill, List } from 'react-bootstrap-icons';
 import moment from 'moment';
 import { ConversationsProvider, useConversations } from './ConversationsContext';
 import axios from 'axios';
 import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';
+import { Button, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from './components';
+import { NewChatContacts } from './NewChatContacts';
 
 function Sidebar() {
   const {
@@ -175,41 +177,73 @@ function Sidebar() {
      { isMobile && <List color="black" size={30}  onClick={() => {setStatus(true); console.log("click")}}/>}
 
         <h5 className="mb-0">Chats</h5>
-        <div className="d-flex">
-          <Button variant="outline-secondary" size="sm" className="mr-2"><PlusSquare /></Button>
-          <Dropdown>
-            <Dropdown.Toggle variant="outline-secondary" size="sm" id="dropdown-basic"><Funnel /></Dropdown.Toggle>
-            <Dropdown.Menu>
-              <Dropdown.Header>Filtrar por fase</Dropdown.Header>
-              <Dropdown.Item onClick={() => setSelectedPhases([])}>Todas las fases</Dropdown.Item>
+        <div className="d-flex gap-3">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon"><PlusSquare className="h-4 w-4"/></Button>
+            </SheetTrigger>
+            <SheetContent side='left' className="w-[30.6em] !max-w-none ms-[4em] pe-0">
+              <SheetHeader>
+                <SheetTitle>Lista de contactos</SheetTitle>
+              </SheetHeader>
+                  <NewChatContacts />
+              <SheetFooter>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Funnel />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuLabel>Filtrar por fase</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={selectedPhases.length === 0}
+                onCheckedChange={() => setSelectedPhases([])}
+              >
+                Todas las fases
+              </DropdownMenuCheckboxItem>
               {Object.entries(phases).map(([key, phase]) => (
-                <Form.Check
+                <DropdownMenuCheckboxItem
                   key={key}
-                  label={phase.name}
-                  onChange={() => togglePhase(key)}
                   checked={selectedPhases.includes(key)}
-                />
+                  onCheckedChange={() => togglePhase(key)}
+                >
+                  {phase.name}
+                </DropdownMenuCheckboxItem>
               ))}
-              <Dropdown.Divider />
-              <Dropdown.Header>Filtrar por origen</Dropdown.Header>
-              <Dropdown.Item onClick={() => setSelectedOrigins([])}>Todos los orígenes</Dropdown.Item>
-              <Form.Check
-                label="Origen 1"
-                onChange={() => toggleOrigin('Origen 1')}
+
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Filtrar por origen</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={selectedOrigins.length === 0}
+                onCheckedChange={() => setSelectedOrigins([])}
+              >
+                Todos los orígenes
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
                 checked={selectedOrigins.includes('Origen 1')}
-              />
-              <Form.Check
-                label="Origen 2"
-                onChange={() => toggleOrigin('Origen 2')}
+                onCheckedChange={() => toggleOrigin('Origen 1')}
+              >
+                Origen 1
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
                 checked={selectedOrigins.includes('Origen 2')}
-              />
-              <Form.Check
-                label="Origen 3"
-                onChange={() => toggleOrigin('Origen 3')}
+                onCheckedChange={() => toggleOrigin('Origen 2')}
+              >
+                Origen 2
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
                 checked={selectedOrigins.includes('Origen 3')}
-              />
-            </Dropdown.Menu>
-          </Dropdown>
+                onCheckedChange={() => toggleOrigin('Origen 3')}
+              >
+                Origen 3
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       <InputGroup className="mb-3 p-3">
