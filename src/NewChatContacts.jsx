@@ -1,11 +1,13 @@
 import React, { useContext, useMemo, useState } from 'react'
 import { AppContext } from './context'
 import { Avatar, AvatarFallback, AvatarImage, Input, ScrollArea, SheetClose, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components';
+import { useMediaQuery } from 'react-responsive';
 
 export const NewChatContacts = ({selectContact}) => {
     const { state } = useContext(AppContext);
     const [search, setSearch] = useState('');
-  
+    const isMobile = useMediaQuery({ maxWidth: 767 });
+
     // Filtra y ordena los contactos por nombre o número, y agrupa por la primera letra.
     const filteredContacts = useMemo(() => {
       const contactosFiltrados = state.contactos
@@ -49,12 +51,11 @@ export const NewChatContacts = ({selectContact}) => {
         />
   
         {/* Contenedor con scroll */}
-        <ScrollArea className="h-[85vh] w-[100%] rounded-md border">
+        <ScrollArea className="h-[85vh] rounded-md border">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow >
                 <TableHead>Nombre</TableHead>
-                <TableHead>Número</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -66,16 +67,18 @@ export const NewChatContacts = ({selectContact}) => {
                     </TableCell>
                   </TableRow>
                   {filteredContacts[letter].map((contacto, index) => (
-                    <SheetClose className='d-flex gap-3 w-[100%]' asChild key={index}>
-                    <TableRow className="cursor-pointer w-[33em]" onClick={() => selectContact(contacto)}>
-                      <TableCell className='w-100'>
-                        <Avatar>
+                    <SheetClose className='d-flex gap-3 w-[100vw]' asChild key={index}>
+                    <TableRow className={isMobile ? `cursor-pointer w-[100vw]` : `cursor-pointer w-[33em]`} onClick={() => selectContact(contacto)}>
+                      <TableCell className='w-100 d-flex gap-2'>
+                        <Avatar className="w-[3.5em] h-[3.5em]">
                           <AvatarImage src={`${process.env.REACT_APP_API_URL}${contacto.profile_url}`} alt={`${contacto.last_name}`} />
                           <AvatarFallback>{letter}</AvatarFallback>
                         </Avatar>
-                        {contacto.first_name} {contacto.last_name}
+                        <span className='flex items-center'>
+                            {contacto.first_name} {contacto.last_name}
+                        </span>
                       </TableCell>
-                      <TableCell>{contacto.phone_number}</TableCell>
+                      <TableCell className="flex items-center">{contacto.phone_number}</TableCell>
                     </TableRow>
                   </SheetClose>
                   ))}

@@ -192,7 +192,7 @@ function Sidebar() {
             <SheetTrigger asChild>
               <Button variant="outline" size="icon"><PlusSquare className="h-4 w-4"/></Button>
             </SheetTrigger>
-            <SheetContent side='left' className="w-[30.6em] !max-w-none ms-[4em] pe-0 ps-1">
+            <SheetContent side='left' className={isMobile ? `w-[100%] !max-w-none pe-0 ps-1` : `w-[30.6em] !max-w-none ms-[4em] pe-0 ps-1`}>
               <SheetHeader>
                 <SheetTitle>Lista de contactos</SheetTitle>
               </SheetHeader>
