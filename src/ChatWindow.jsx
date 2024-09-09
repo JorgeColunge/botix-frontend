@@ -651,7 +651,6 @@ function ChatWindow() {
     }
   }, [lastMessageId, messages]);
 
-
   useEffect(() => {
     if (currentConversation && currentConversation.conversation_id) {
       if (!messages[currentConversation.conversation_id]) {

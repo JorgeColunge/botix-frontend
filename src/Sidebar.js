@@ -178,8 +178,12 @@ function Sidebar() {
       await resetUnreadMessages(conver.conversation_id);
       setCurrentConversation(conver);
       setConversacionActual({...conver, position_scroll: false})
+    }else{
+      setCurrentConversation(contacto);
+      setConversacionActual({...contacto, position_scroll: false})
     }
   }
+ 
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center p-3 shadow-sm">
