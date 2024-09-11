@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Modal, Button, Table, Form, InputGroup, FormControl, Row, Col, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import Mustache from 'mustache';
 import he from 'he'; // Importar la librería he para decodificación HTML
 import Swal from 'sweetalert2';
+import { AppContext } from './context';
 
 const TemplateModal = ({ show, handleClose, conversation, contact }) => {
+  const {state} = useContext(AppContext);
   const [templates, setTemplates] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -25,11 +27,7 @@ const TemplateModal = ({ show, handleClose, conversation, contact }) => {
 
       try {
         setLoading(true);
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/templates`, {
-          params: { company_id: companyId },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setTemplates(response.data);
+        setTemplates(state.plantillas);
       } catch (error) {
         console.error('Error fetching templates:', error);
       } finally {
