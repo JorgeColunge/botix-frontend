@@ -242,7 +242,7 @@ export const Campaigns = () => {
       setTimeLefts(updatedTimeLefts);
     }, 1000);
 
-    return () => clearInterval(intervalId); // Limpiar el temporizador al desmontar
+    return () => clearInterval(intervalId); 
   }, [state.campañas]);
 
   const renderLaunchButtonOrTimer = (campaign) => {

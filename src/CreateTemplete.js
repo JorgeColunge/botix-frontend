@@ -166,7 +166,7 @@ const CreateTemplate = () => {
   const [buttons, setButtons] = useState([]);
 
   const navigate = useNavigate();
-  const {state} = useContext(AppContext);
+  const {state, setTemplates} = useContext(AppContext);
   const {id_plantilla} = useParams();
 
   useEffect(() => {
@@ -422,10 +422,19 @@ const CreateTemplate = () => {
           Authorization: `Bearer ${token}`
         }
       });
-      console.log('Template created successfully:', response.data);
-  
+
+      const responseTemplate = await axios.get(`${process.env.REACT_APP_API_URL}/api/template/${id_plantilla}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      console.log('Template created successfully:', responseTemplate.data);
+      setTemplates(state.plantillas.map((template) => 
+        template.id == id_plantilla ? responseTemplate.data : template
+      ));
+
       if (['IMAGE', 'VIDEO', 'DOCUMENT', 'TEXT'].includes(mediaType.toUpperCase())) {
-        setResponseMessage('Plantilla almacenada con éxito. Ahora debe crear la misma plantilla con las mismas características en WhatsApp.');
+        setResponseMessage('Plantilla almacenada con éxito.');
       } else {
         setResponseMessage(`Estado de la Plantilla: ${response.data.status}`);
       }
@@ -436,7 +445,7 @@ const CreateTemplate = () => {
       resetForm();
     } catch (error) {
       console.error('Error creating template:', error);
-      setResponseMessage('Error al crear la plantilla. Por favor, inténtelo de nuevo.');
+      setResponseMessage('Error al editar la plantilla. Por favor, inténtelo de nuevo.');
       setLoading(false);
       setShowModal(true);
     }
@@ -447,11 +456,17 @@ const CreateTemplate = () => {
           Authorization: `Bearer ${token}`
         }
       });
+         console.log(response.data)    
+      const responseTemplate = await axios.get(`${process.env.REACT_APP_API_URL}/api/template/${response.data.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      console.log('Template created successfully:', responseTemplate.data);
 
-      console.log('Template created successfully:', response.data);
-  
+      setTemplates([...state.plantillas, responseTemplate.data])
       if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(mediaType.toUpperCase())) {
-        setResponseMessage('Plantilla almacenada con éxito. Ahora debe crear la misma plantilla con las mismas características en WhatsApp.');
+        setResponseMessage('Plantilla almacenada con éxito');
       } else {
         setResponseMessage(`Estado de la Plantilla: ${response.data.status}`);
       }
