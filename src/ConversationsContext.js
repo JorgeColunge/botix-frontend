@@ -308,8 +308,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
   
       const userId = localStorage.getItem("user_id");
       const userCompanyId = localStorage.getItem("company_id");
-      
-      console.log("info de msj", newMessage)
+
       // Validar si el mensaje pertenece a la empresa del usuario conectado
       if (String(newMessage.company_id) !== userCompanyId) {
         return;
@@ -340,7 +339,6 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
             const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/conversations/${newMessage.conversationId}`);
             const newConversation = response.data;
             if (newConversation) {
-              console.log("Datos de supuesto mensaje:", newConversation)
               setConversations(prevConversations => {
                 const updatedConversations = [...prevConversations, newConversation];
                 return Array.from(new Set(updatedConversations.map(convo => convo.conversation_id)))

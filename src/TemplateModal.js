@@ -3,6 +3,7 @@ import { Modal, Button, Table, Form, InputGroup, FormControl, Row, Col, Spinner 
 import axios from 'axios';
 import Mustache from 'mustache';
 import he from 'he'; // Importar la librería he para decodificación HTML
+import Swal from 'sweetalert2';
 
 const TemplateModal = ({ show, handleClose, conversation, contact }) => {
   const [templates, setTemplates] = useState([]);
@@ -97,15 +98,25 @@ const TemplateModal = ({ show, handleClose, conversation, contact }) => {
       });
   
       console.log('Plantilla enviada exitosamente');
+      await Swal.fire({
+        title: "Perfecto",
+        text: `Plantilla enviada.`,
+        icon: "success"
+      });
+
     } catch (error) {
       console.error('Error sending template:', error);
+      Swal.fire({
+        title: "Error",
+        text: `Error al enviar Plantilla.
+        Error: ${error}`,
+        icon: "error"
+      });
     } finally {
       setSending(false);
+      handleClose()
     }
   };
-  
-  
-  
 
   const handleVariableChange = (variableName, newValue) => {
     setVariableValues(prevValues => ({
