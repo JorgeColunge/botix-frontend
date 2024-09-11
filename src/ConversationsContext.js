@@ -308,7 +308,8 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
   
       const userId = localStorage.getItem("user_id");
       const userCompanyId = localStorage.getItem("company_id");
-
+      
+      console.log("info de msj", newMessage)
       // Validar si el mensaje pertenece a la empresa del usuario conectado
       if (String(newMessage.company_id) !== userCompanyId) {
         return;
@@ -317,12 +318,13 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
       const isResponsibleOrAdmin = String(newMessage.responsibleUserId) === userId || userPrivileges.includes('Admin') || userPrivileges.includes('Show All Conversations');
   
       if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
-        const isCurrentActive = currentConversation && currentConversation.conversation_id === newMessage.conversationId;
+        const isCurrentActive = currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId));
   
         if (isCurrentActive) {
           resetUnreadMessages(newMessage.conversationId);
           setCurrentConversation(prev => ({
             ...prev,
+            conversation_id: newMessage.conversationId,
             last_message: newMessage.text,
             last_message_time:  msj.timestamp ? msj.timestamp : state.conversacion_Actual.last_message_time,
             unread_messages: newMessage.unread_messages,
@@ -331,7 +333,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
         );
         }
 
-        const conversationExists = conversations.some(convo => convo.conversation_id === newMessage.conversationId);
+        const conversationExists = conversations.some(convo => (convo.conversation_id === newMessage.conversationId || convo.phone_number === newMessage.senderId));
   
         if (!conversationExists) {
           try {

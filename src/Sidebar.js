@@ -26,7 +26,7 @@ function Sidebar() {
 
   const isMobile = useMediaQuery({ maxWidth: 767 });
 
-  const {setConversacionActual, setStatus} = useContext(AppContext)
+  const {setConversacionActual, setStatus, state} = useContext(AppContext)
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
@@ -179,8 +179,15 @@ function Sidebar() {
       setCurrentConversation(conver);
       setConversacionActual({...conver, position_scroll: false})
     }else{
-      setCurrentConversation(contacto);
-      setConversacionActual({...contacto, position_scroll: false})
+      const usuario = state.usuarios.find(us => us.id_usuario == Number(localStorage.getItem('user_id')))
+      let cont = {
+        ...contacto,
+        id_usuario: usuario.id_usuario,
+        responsable_nombre: usuario.nombre,
+        responsable_apellido: usuario.apellido,
+      }
+      setCurrentConversation(cont);
+      setConversacionActual({...cont, position_scroll: false})
     }
   }
  

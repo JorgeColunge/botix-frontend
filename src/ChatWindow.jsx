@@ -84,7 +84,8 @@ function ChatWindow() {
         updatedMessages[newMessage.conversationId] = [...messagesForConversation, newMessage].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         return updatedMessages;
       });
-      if (currentConversation && currentConversation.conversation_id === newMessage.conversationId) {
+      if (currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId))) {
+        console.log("accion aqui")
         setCurrentConversation(prev => ({
           ...prev,
           last_message: newMessage.text,
@@ -616,7 +617,6 @@ function ChatWindow() {
   useEffect(() => {
     
     if (state.conversacion_Actual.position_scroll === false) {
-      console.log("ingresa en el primer")
         if (lastMessageId && messagesEndRef.current) {
           requestAnimationFrame(() => {
             const element = document.getElementById(`msg-${lastMessageId}`);
