@@ -84,8 +84,8 @@ function ChatWindow() {
         updatedMessages[newMessage.conversationId] = [...messagesForConversation, newMessage].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         return updatedMessages;
       });
+      setLastMessageId(new Date(newMessage[0].timestamp).getTime())
       if (currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId))) {
-        console.log("accion aqui")
         setCurrentConversation(prev => ({
           ...prev,
           last_message: newMessage.text,
@@ -400,6 +400,7 @@ function ChatWindow() {
   };
 
   function ReplyBar() {
+    // console.log("nuevo renderizado")
     const [referenceElement, setReferenceElement] = useState(null);
     const [popperElement, setPopperElement] = useState(null);
     const { styles, attributes } = usePopper(referenceElement, popperElement, {
@@ -471,10 +472,9 @@ function ChatWindow() {
       };
     
       console.log("Datos de currentSend:", currentSend);
-    
+      setLastMessageId(new Date(currentSend.last_message_time).getTime())
       try {
         setConversacionActual({...currentSend, position_scroll: true})
-        console.log("Intentando enviar mensaje...");
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-text`, {
           phone: currentSend.phone_number,
           messageText: textToSend,
@@ -638,10 +638,11 @@ function ChatWindow() {
         requestAnimationFrame(() => {
           const element = document.getElementById(`msg-${lastMessageId}`);
           setConversacionActual({...state.conversacion_Actual, position_scroll: true})
+          console.log("POsicion del msj:", element)
           if (element) {
             const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
             if (scrollPosition !== undefined) {
-              messagesEndRef.current.scrollTop = scrollPosition;
+              messagesEndRef.current.scrollTop = 200 + messagesEndRef.current.scrollHeight;
               console.log("position", scrollPosition)
             }
             console.log('Scrolling to message ID:', lastMessageId);
