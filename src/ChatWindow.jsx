@@ -382,12 +382,23 @@ function ChatWindow() {
       }
 
       const messages = currentMessage[currentConversation.conversation_id];
-      const firstMessage = messages.find(msg => msg.type === "message");
+      const firstMessage = messages.find(msg => {
+        const isMessageType = msg.type === "message";
+        
+        // Obtener la fecha actual y el timestamp del mensaje
+        const currentTime = new Date();
+        const messageTime = new Date(msg.timestamp); // Asegúrate de que el timestamp sea un formato de fecha válido
+    
+        // Calcular la diferencia en horas entre la fecha actual y la del mensaje
+        const timeDifferenceInHours = (currentTime - messageTime) / (1000 * 60 * 60);
+    
+        // Verificar si es del tipo "message" y si la diferencia de tiempo es menor a 24 horas
+        return isMessageType && timeDifferenceInHours <= 24;
+    });
 
       if (!firstMessage) {
         return true;
       }
-  
       const messageDate = new Date(firstMessage.timestamp);
       const now = new Date();
 
@@ -400,7 +411,6 @@ function ChatWindow() {
   };
 
   function ReplyBar() {
-    // console.log("nuevo renderizado")
     const [referenceElement, setReferenceElement] = useState(null);
     const [popperElement, setPopperElement] = useState(null);
     const { styles, attributes } = usePopper(referenceElement, popperElement, {
