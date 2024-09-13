@@ -743,6 +743,14 @@
     width: 100%;
   }
 }
+@media (min-width: 770px) and (max-width: 1240px) {
+  .conversations_bar {
+    flex-basis: 35% !important; /* Sidebar ocupa el 30% */
+  }
+  .wallpaper_messages {
+    flex-basis: 65% !important; /* ChatWindow ocupa el 70% */
+  }
+}
 
 .content-expanded {
   margin-left: 250px; /* Ancho cuando la barra está expandida */
