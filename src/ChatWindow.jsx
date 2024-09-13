@@ -33,7 +33,9 @@ function ChatWindow() {
   const [messageText, setMessageText] = useState('');
   const [cursorPosition, setCursorPosition] = useState(null);
   const {state, setConversacionActual} = useContext(AppContext)
+
   const isMobile = useMediaQuery({ maxWidth: 767 });
+  const isTable = useMediaQuery({ maxWidth: 1240 });
 
   const [currentMessage, setCurrentMessage] = useState(messages);
 
@@ -177,7 +179,7 @@ function ChatWindow() {
         )}
         <div style={{ flex: 1 }}>
           <div className="d-flex justify-content-between align-items-center">
-            <div className="d-flex align-items-center">
+            <div className="w[70%] d-flex align-items-center">
               <strong>{getContactName()} </strong>
               <span className="ms-2">{currentConversation.label && renderLabelBadge(currentConversation.label)}</span>
               <DropdownButton
@@ -191,65 +193,110 @@ function ChatWindow() {
                 ))}
               </DropdownButton>
             </div>
-            <div className="d-flex align-items-center">
-            { !isMobile ? ( <div className="responsable mr-3">
-                <strong>Responsable: </strong>
-                <span>{`${currentConversation.responsable_nombre} ${currentConversation.responsable_apellido}` || 'No asignado'}</span>
-                <DropdownButton className="custom-dropdown" title="" variant="light">
-                  {allUsers.map((user) => (
-                    <Dropdown.Item 
-                      key={user.id_usuario} 
-                      onClick={() => handleResponsibleChange(user.id_usuario, currentConversation.id_usuario)}>
-                      {user.nombre} {user.apellido}
-                    </Dropdown.Item>
-                  ))}
-                  <hr></hr>
-                  <Dropdown.Item  className='text-danger'
-                    key="finalizar-conversacion" 
-                    onClick={() => handleEndConversation(currentConversation.conversation_id)}>
-                    Finalizar Conversación
+            <div className={isMobile ? `w-[30%] d-flex align-items-center` : `w-[55%] d-flex align-items-center mt-1`}>
+            { !isMobile ? ( 
+              <>
+              {!isTable ? (
+              <article className="w-100 d-flex">
+              <strong>Responsable: <span className='font-normal'>{`${currentConversation.responsable_nombre} ${currentConversation.responsable_apellido}` || 'No asignado'}</span></strong>  
+              <DropdownButton className="custom-dropdown" variant="light">
+                {allUsers.map((user) => (
+                  <Dropdown.Item 
+                    key={user.id_usuario} 
+                    onClick={() => handleResponsibleChange(user.id_usuario, currentConversation.id_usuario)}>
+                    {user.nombre} {user.apellido}
                   </Dropdown.Item>
-                </DropdownButton>
-              </div>) : (
-                <div className="responsable mr-3 mt-2">
-                <NavDropdown
+                ))}
+                <hr></hr>
+                <Dropdown.Item  className='text-danger'
+                  key="finalizar-conversacion" 
+                  onClick={() => handleEndConversation(currentConversation.conversation_id)}>
+                  Finalizar Conversación
+                </Dropdown.Item>
+              </DropdownButton>
+            </article>
+              ) : (
+                  <NavDropdown
                     id="nav-dropdown-dark-example"
-                    title="R"
+                    title="Responsable"
+                    menuVariant="white"
+                    className="ms-3"
+                  >
+                    {allUsers.map((user) => (
+                      <Dropdown.Item
+                        key={user.id_usuario}
+                        onClick={() => handleResponsibleChange(user.id_usuario, currentConversation.id_usuario)}
+                        className={user.id_usuario === currentConversation.id_usuario ? 'bg-info text-white' : ''}
+                      >
+                        {user.nombre} {user.apellido}
+                      </Dropdown.Item>
+                    ))}
+                    <hr />
+                    <Dropdown.Item
+                      className="text-danger"
+                      key="finalizar-conversacion"
+                      onClick={() => handleEndConversation(currentConversation.conversation_id)}
+                    >
+                      Finalizar Conversación
+                    </Dropdown.Item>
+                  </NavDropdown>
+                )}
+                {
+                  !isTable ? (
+                    <div className="icons-profile ml-2">
+                    {currentConversation.phone_number && <a href={`tel:${currentConversation.phone_number}`} target="_blank"><TelephoneFill /></a>}
+                    {currentConversation.email && <a href={`mailto:${currentConversation.email}`} target="_blank"><EnvelopeFill /></a>}
+                    {currentConversation.pagina_web && <a href={currentConversation.pagina_web} target="_blank"><Globe /></a>}
+                    {currentConversation.link_instagram && <a href={currentConversation.link_instagram} target="_blank"><Instagram /></a>}
+                    {currentConversation.link_facebook && <a href={currentConversation.link_facebook} target="_blank"><Facebook /></a>}
+                    {currentConversation.link_linkedin && <a href={currentConversation.link_linkedin} target="_blank"><Linkedin /></a>}
+                    {currentConversation.link_twitter && <a href={currentConversation.link_twitter} target="_blank"><Twitter /></a>}
+                    {currentConversation.link_tiktok && <a href={currentConversation.link_tiktok} target="_blank"><Tiktok /></a>}
+                    {currentConversation.link_youtube && <a href={currentConversation.link_youtube} target="_blank"><Youtube /></a>}
+                  </div>
+                  ) : null
+                }
+                  <Button variant="outline-secondary edit_profile" size="sm" onClick={() => {
+                        setEditContact(currentConversation);
+                        setShowEditModal(true);
+                      }}>
+                        Más
+                   </Button>
+              </>
+               ) : (
+                 <div className="w-100 mt-2">
+                  <NavDropdown
+                    id="nav-dropdown-dark-example"
+                    title="Resp."
                     menuVariant="white"
                   >
-                  {allUsers.map((user) => (
-                    <Dropdown.Item 
-                      key={user.id_usuario} 
-                      onClick={() => handleResponsibleChange(user.id_usuario, currentConversation.id_usuario)}>
-                      {user.nombre} {user.apellido}
+                    {allUsers.map((user) => (
+                      <Dropdown.Item
+                        key={user.id_usuario}
+                        onClick={() => handleResponsibleChange(user.id_usuario, currentConversation.id_usuario)}
+                        className={user.id_usuario === currentConversation.id_usuario ? 'bg-info text-white' : ''}
+                      >
+                        {user.nombre} {user.apellido}
+                      </Dropdown.Item>
+                    ))}
+                    <hr />
+                    <Dropdown.Item
+                      className="text-danger"
+                      key="finalizar-conversacion"
+                      onClick={() => handleEndConversation(currentConversation.conversation_id)}
+                    >
+                      Finalizar Conversación
                     </Dropdown.Item>
-                  ))}
-                  <hr></hr>
-                  <Dropdown.Item  className='text-danger'
-                    key="finalizar-conversacion" 
-                    onClick={() => handleEndConversation(currentConversation.conversation_id)}>
-                    Finalizar Conversación
-                  </Dropdown.Item>
                   </NavDropdown>
-              </div>
+                    <Button variant="outline-secondary edit_profile me-1" size="sm" onClick={() => {
+                        setEditContact(currentConversation);
+                        setShowEditModal(true);
+                      }}>
+                        Más
+                     </Button>
+                </div>
               )}
-              <div className="icons-profile ml-2">
-                {currentConversation.phone_number && <a href={`tel:${currentConversation.phone_number}`} target="_blank"><TelephoneFill /></a>}
-                {currentConversation.email && <a href={`mailto:${currentConversation.email}`} target="_blank"><EnvelopeFill /></a>}
-                {currentConversation.pagina_web && <a href={currentConversation.pagina_web} target="_blank"><Globe /></a>}
-                {currentConversation.link_instagram && <a href={currentConversation.link_instagram} target="_blank"><Instagram /></a>}
-                {currentConversation.link_facebook && <a href={currentConversation.link_facebook} target="_blank"><Facebook /></a>}
-                {currentConversation.link_linkedin && <a href={currentConversation.link_linkedin} target="_blank"><Linkedin /></a>}
-                {currentConversation.link_twitter && <a href={currentConversation.link_twitter} target="_blank"><Twitter /></a>}
-                {currentConversation.link_tiktok && <a href={currentConversation.link_tiktok} target="_blank"><Tiktok /></a>}
-                {currentConversation.link_youtube && <a href={currentConversation.link_youtube} target="_blank"><Youtube /></a>}
-              </div>
-              <Button variant="outline-secondary edit_profile" size="sm" onClick={() => {
-                setEditContact(currentConversation);
-                setShowEditModal(true);
-              }}>
-                Más
-              </Button>
+
             </div>
           </div>
           <div>
