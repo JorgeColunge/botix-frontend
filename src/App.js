@@ -236,7 +236,7 @@ function App() {
         </Col>
       )}
       
-      <Row xs={isMobile ? 12 : (isSidebarCollapsed ? 11 : 10)} className="px-0 ms-5">
+      <Row xs={isMobile ? 12 : (isSidebarCollapsed ? 11 : 10)} className={!isMobile ? `ms-5` : ''}>
         <Row className="renderContent">
           <Routes>
             <Route path="/login" element={
