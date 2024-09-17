@@ -11,11 +11,11 @@ const EditContactModal = ({ show, onHide, contact, socket }) => {
   const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
-    if (contact && contact.id) {
+    if (contact && contact.id && (editContact.id !== contact.id)) {
       setEditContact(contact);
     }
   }, [contact]);
-
+  
   const handleSelectLabel = useCallback(async (value) => {
     if (!editContact.id) {
       console.error('Contact ID is not defined');
