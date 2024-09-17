@@ -216,11 +216,10 @@ function App() {
 
   return (
 <ConversationsProvider socket={socket} isConnected={isConnected} userHasInteracted={userHasInteracted}>
-  <Container fluid className="h-100">
-    <Row className="h-100 d-flex" style={{ height: '100vh' }}>
-      {/* Sidebar */}
+  <Container fluid>
+    <Col>
       {isMobile ? (
-        <Offcanvas show={state.status} onHide={() => { setStatus(false); setIsSidebarCollapsed(true); }} className={`px-0 ${isSidebarCollapsed ? 'collapsed' : 'expanded'}`}>
+        <Offcanvas show={state.status} onHide={() => { setStatus(false); setIsSidebarCollapsed(true); }} className={`px-0 ${isSidebarCollapsed ? 'collapsed' : 'expanded'}`} style={{ width: isSidebarCollapsed ? '60px' : '230px' }}>
           <CollapsibleSidebar 
             onSelect={handleSelectSection} 
             isCollapsed={isSidebarCollapsed} 
@@ -228,17 +227,16 @@ function App() {
           />
         </Offcanvas>
       ) : (
-        <div style={{ display: 'flex', flexShrink: 0 }}>
+        <Col xs={isSidebarCollapsed ? 1 : 2} className="px-0">
           <CollapsibleSidebar 
             onSelect={handleSelectSection} 
             isCollapsed={isSidebarCollapsed} 
             onToggle={handleSidebarToggle} 
           />
-        </div>
+        </Col>
       )}
-
-      {/* Content */}
-      <div className={selectedSection == 'chats' ?`ms-5`: ''} style={{ flexGrow: 1, overflow: 'auto' }}>
+      
+      <Row xs={isMobile ? 12 : (isSidebarCollapsed ? 11 : 10)} className="px-0 ms-5">
         <Row className="renderContent">
           <Routes>
             <Route path="/login" element={
@@ -251,22 +249,22 @@ function App() {
                 <>
                   {isMobile ? (
                     state.conversacion_Actual.conversation_id ? (
-                      <div className="wallpaper_messages" style={{ flexBasis: '100%' }}>
+                      <Col xs={12} className="px-0 wallpaper_messages">
                         <ChatWindow socket={socket} />
-                      </div>
+                      </Col>
                     ) : (
-                      <div className="conversations_bar" style={{ flexBasis: '100%' }}>
+                      <Col xs={12} className="px-0 conversations_bar">
                         <Sidebar />
-                      </div>
+                      </Col>
                     )
                   ) : (
                     <>
-                      <div className="conversations_bar d-none d-md-block" style={{ flexBasis: '25%' }}>
+                      <Col xs={3} className="px-0 conversations_bar d-none d-md-block">
                         <Sidebar />
-                      </div>
-                      <div className="wallpaper_messages d-none d-md-block" style={{ flexBasis: '75%' }}>
+                      </Col>
+                      <Col xs={9} className="px-0 wallpaper_messages d-none d-md-block">
                         <ChatWindow socket={socket} />
-                      </div>
+                      </Col>
                     </>
                   )}
                 </>
@@ -289,8 +287,8 @@ function App() {
             <Route path="*" element={<PrivateRoute><CompanyInfo /></PrivateRoute>} />
           </Routes>
         </Row>
-      </div>
-    </Row>
+      </Row>
+    </Col>
   </Container>
 </ConversationsProvider>
 
