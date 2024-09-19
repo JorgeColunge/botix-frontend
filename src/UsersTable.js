@@ -8,6 +8,7 @@ import { AppContext } from './context';
 import { useConversations } from './ConversationsContext';
 import Swal from 'sweetalert2';
 import { Button, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from './components';
+import { UserDate } from './UserDate';
 
 const UsersTable = () => {
   const {state} = useContext(AppContext)
@@ -172,7 +173,7 @@ const UsersTable = () => {
           />
           <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Seleccione departamento" />
+              <SelectValue placeholder="departamento" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -187,6 +188,16 @@ const UsersTable = () => {
         </div>
       </div>
       <div className="table-responsive">
+      <UserDate
+        users={regularUsers}
+        departments={departments}
+        getConversationStats={getConversationStats}
+        getRoleName={getRoleName}
+        getDepartmentName={getDepartmentName}
+        hasPrivilege={hasPrivilege}
+        handleEditUserClick={handleEditUserClick}
+        handleDeleteUserClick={handleDeleteUserClick}
+      />
         {/* <Table className="custom-table" bordered hover>
           <thead>
             <tr>

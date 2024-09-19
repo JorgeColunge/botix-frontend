@@ -1,10 +1,27 @@
 import React, { useState, useMemo } from 'react';
 import { useReactTable, getCoreRowModel, getPaginationRowModel, getSortedRowModel, getFilteredRowModel, flexRender } from '@tanstack/react-table';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@shadcn/table';
-import { Input, Button, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from './components';
-import { ChevronDown, Chat, PencilSquare, Trash, Telephone, Envelope } from 'lucide-react';
+import { Input, 
+    Button,
+    DropdownMenu, 
+    DropdownMenuTrigger, 
+    DropdownMenuContent,
+    DropdownMenuCheckboxItem,  
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger, 
+    Table, 
+    TableHeader, 
+    TableRow, 
+    TableHead, 
+    TableBody, 
+    TableCell,  
+    DropdownMenuLabel,
+    DropdownMenuItem,
+    DropdownMenuSeparator} from './components';
+import { ChevronDown, MessageSquareText , Pencil , Trash, Phone, Mail, MoreHorizontal } from 'lucide-react';
 
-export function DataTableDemo({ users, departments, getConversationStats, getRoleName, getDepartmentName, hasPrivilege, handleEditUserClick, handleDeleteUserClick }) {
+export function UserDate({ users, departments, getConversationStats, getRoleName, getDepartmentName, hasPrivilege, handleEditUserClick, handleDeleteUserClick }) {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
@@ -38,18 +55,38 @@ export function DataTableDemo({ users, departments, getConversationStats, getRol
       accessorKey: 'telefono',
       header: 'Teléfono',
       cell: info => (
+       
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
         <a href={`tel:${info.getValue()}`}>
-          <Telephone /> {info.getValue()}
-        </a>
+           <Phone /> 
+          </a>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{info.getValue()}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+
       )
     },
     {
       accessorKey: 'email',
       header: 'Email',
       cell: info => (
+        <TooltipProvider>
+        <Tooltip>
+        <TooltipTrigger asChild>
         <a href={`mailto:${info.getValue()}`}>
-          <Envelope /> {info.getValue()}
-        </a>
+                <Mail />
+                </a>
+        </TooltipTrigger>
+        <TooltipContent>
+            <p> {info.getValue()}</p>
+        </TooltipContent>
+        </Tooltip>
+        </TooltipProvider>
       )
     },
     {
@@ -58,12 +95,12 @@ export function DataTableDemo({ users, departments, getConversationStats, getRol
       cell: info => getRoleName(info.getValue())
     },
     {
-      accessorKey: 'department_id',
+      accessorKey: 'departamento',
       header: 'Departamento',
       cell: info => getDepartmentName(info.getValue())
     },
     {
-      accessorKey: 'conversations',
+      accessorKey: 'conversaciones asignadas',
       header: 'Conversaciones Asignadas',
       cell: info => {
         const stats = getConversationStats(info.row.original.id_usuario);
@@ -71,7 +108,7 @@ export function DataTableDemo({ users, departments, getConversationStats, getRol
       }
     },
     {
-      accessorKey: 'pending_conversations',
+      accessorKey: 'conversaciones pendientes',
       header: 'Conversaciones Pendientes',
       cell: info => {
         const stats = getConversationStats(info.row.original.id_usuario);
@@ -79,7 +116,7 @@ export function DataTableDemo({ users, departments, getConversationStats, getRol
       }
     },
     {
-      accessorKey: 'attended_conversations',
+      accessorKey: 'conversaciones atendidas',
       header: 'Conversaciones Atendidas',
       cell: info => {
         const stats = getConversationStats(info.row.original.id_usuario);
@@ -87,24 +124,48 @@ export function DataTableDemo({ users, departments, getConversationStats, getRol
       }
     },
     {
-      accessorKey: 'acciones',
-      header: 'Acciones',
-      cell: info => (
-        <div>
-          <Button variant="link" size="sm" disabled={!hasPrivilege('Send message')}>
-            <Chat />
-          </Button>
-          <Button variant="link" size="sm" onClick={() => handleEditUserClick(info.row.original)} disabled={!hasPrivilege('Edit users')}>
-            <PencilSquare />
-          </Button>
-          {(hasPrivilege('Delete users') || hasPrivilege('Admin')) && (
-            <Button variant="link" size="sm" onClick={() => handleDeleteUserClick(info.row.original.id_usuario)}>
-              <Trash style={{ color: 'red' }} />
-            </Button>
-          )}
-        </div>
-      )
-    }
+        accessorKey: 'acciones',
+        header: 'Acciones',
+        cell: ({ row }) => {
+          const user = row.original;
+      
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem disabled={!hasPrivilege('Send message')}>
+                  <Button variant="link" size="sm" disabled={!hasPrivilege('Send message')}>
+                    <MessageSquareText />
+                    Send message
+                  </Button>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleEditUserClick(user)} disabled={!hasPrivilege('Edit users')}>
+                  <Button variant="link" size="sm">
+                    <Pencil />
+                    Edit user
+                  </Button>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {(hasPrivilege('Delete users') || hasPrivilege('Admin')) && (
+                  <DropdownMenuItem onClick={() => handleDeleteUserClick(user.id_usuario)}>
+                    <Button variant="link" size="sm">
+                      <Trash style={{ color: 'red' }} />
+                      Delete user
+                    </Button>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        }
+      }
+      
   ], [getConversationStats, getRoleName, getDepartmentName, hasPrivilege, handleEditUserClick, handleDeleteUserClick]);
 
   // Create the table instance
@@ -130,16 +191,16 @@ export function DataTableDemo({ users, departments, getConversationStats, getRol
   return (
     <div className="w-full">
       <div className="flex items-center py-4">
-        <Input
+        {/* <Input
           placeholder="Filter by email..."
           value={(table.getColumn("email")?.getFilterValue()) ?? ""}
           onChange={(event) => table.getColumn("email")?.setFilterValue(event.target.value)}
           className="max-w-sm"
-        />
+        /> */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
+              Columnas <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -189,7 +250,7 @@ export function DataTableDemo({ users, departments, getConversationStats, getRol
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  Sin resultados.
                 </TableCell>
               </TableRow>
             )}
@@ -198,10 +259,6 @@ export function DataTableDemo({ users, departments, getConversationStats, getRol
       </div>
 
       <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
         <div className="space-x-2">
           <Button
             variant="outline"
@@ -209,7 +266,7 @@ export function DataTableDemo({ users, departments, getConversationStats, getRol
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            Previous
+            Anterior
           </Button>
           <Button
             variant="outline"
@@ -217,7 +274,7 @@ export function DataTableDemo({ users, departments, getConversationStats, getRol
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            Next
+            Siguiente
           </Button>
         </div>
       </div>
