@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
 import { ListGroup, Tooltip, OverlayTrigger, InputGroup, FormControl } from 'react-bootstrap';
 import { PersonCircle, BookmarkFill } from 'react-bootstrap-icons';
 import moment from 'moment';
@@ -17,7 +17,8 @@ import {
   XCircle,
 } from "lucide-react"
 
-import { cn } from "./lib/utils"
+import { TrendingUp } from "lucide-react"
+import { Bar, BarChart, XAxis, YAxis } from "recharts"
 import {
   Command,
   CommandEmpty,
@@ -29,37 +30,20 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  Card,
+  CardHeader,
+  CardContent,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  CardFooter,
+  CardTitle,
+  CardDescription,
 } from "./components"
+import { AppContext } from './context';
 
 const ItemType = 'CONVERSATION';
 
-const statuses = [
-  {
-    value: "backlog",
-    label: "Backlog",
-    icon: HelpCircle,
-  },
-  {
-    value: "todo",
-    label: "Todo",
-    icon: Circle,
-  },
-  {
-    value: "in progress",
-    label: "In Progress",
-    icon: ArrowUpCircle,
-  },
-  {
-    value: "done",
-    label: "Done",
-    icon: CheckCircle2,
-  },
-  {
-    value: "canceled",
-    label: "Canceled",
-    icon: XCircle,
-  },
-];
 
 const DraggableConversation = ({ conversation, phaseId, moveConversation, handleConversationDrop, phases }) => {
   const ref = useRef(null);
@@ -182,21 +166,90 @@ const DroppableColumn = ({ phaseId, phase, groupedConversations, moveConversatio
 
 const FunnelGraph = ({ phases, groupedConversations }) => {
   const totalConversations = Object.values(groupedConversations).reduce((acc, phase) => acc + phase.length, 0);
+  const calculateVisitors = (phaseCount) => (phaseCount / totalConversations) * 100;
 
+  const phasesArray = Object.values(phases).filter((phase) => {
+    const phaseId = Object.keys(phases).find((key) => phases[key] === phase);
+    const phaseCount = groupedConversations[phaseId]?.length || 0;
+    
+    return phaseCount > 0;
+  }).map((phase) => {
+    const phaseId = Object.keys(phases).find((key) => phases[key] === phase);
+    const phaseCount = groupedConversations[phaseId]?.length || 0;
+    
+    return {
+      name: phase.name,
+      fill: phase.color, // Asegúrate de que el color esté presente
+      visitors: calculateVisitors(phaseCount),
+    };
+  });
+  
   const calculateWidth = (phaseCount) => (phaseCount / totalConversations) * 100;
 
+  const chartConfig = {
+    ...Object.entries(phases).reduce((acc, [key, fas], index) => {
+      // Usamos el nombre de la fase como clave del objeto
+      acc[fas.name] = {
+        label: fas.name,
+        color: fas.color , // Usar color de fase o un valor por defecto
+      };
+      return acc;
+    }, {}),
+  }
+
   return (
-    <div className="funnel-graph">
-      {Object.entries(phases).map(([phaseId, phase]) => {
-        const phaseCount = groupedConversations[phaseId] ? groupedConversations[phaseId].length : 0;
-        const width = totalConversations === 0 ? 100 : calculateWidth(phaseCount);
-        return (
-          <div key={phaseId} className="funnel-graph-segment" style={{ width: `${width}%`, backgroundColor: phase.color }}>
-            {phase.name} ({phaseCount})
-          </div>
-        );
-      })}
-    </div>
+    // <div className="funnel-graph">
+    //   {Object.entries(phases).map(([phaseId, phase]) => {
+    //     const phaseCount = groupedConversations[phaseId] ? groupedConversations[phaseId].length : 0;
+    //     const width = totalConversations === 0 ? 100 : calculateWidth(phaseCount);
+    //     return (
+    //       <div key={phaseId} className="funnel-graph-segment" style={{ width: `${width}%`, backgroundColor: phase.color }}>
+    //         {phase.name} ({phaseCount})
+    //       </div>
+    //     );
+    //   })}
+    // </div>
+
+    <Card className='w-full h-[100%] mb-5'>
+      <CardHeader>
+        <CardTitle>Descripción de Fases</CardTitle>
+      </CardHeader>
+      <CardContent>
+      <CardContent>
+  <ChartContainer className='h-[20vh]' config={chartConfig}>
+    <BarChart
+      accessibilityLayer
+      data={phasesArray}
+      layout="vertical"
+      margin={{
+        top: 0,
+        right: 5,
+        bottom: 0,
+        left: 115,
+      }}
+      barCategoryGap={1} 
+    >
+      <YAxis
+        dataKey="name" 
+        type="category"
+        tickLine={false}
+        tickMargin={10}
+        axisLine={false}
+        tick={{ fontSize: 15, width: 150, wordBreak: "break-word" }}
+        tickFormatter={(name) => name} 
+      />
+      <XAxis dataKey="visitors" type="number" hide />
+      <ChartTooltip
+        cursor={false}
+        content={<ChartTooltipContent hideLabel />}
+      />
+      <Bar dataKey="visitors" layout="vertical" radius={5} barSize={30}  minPointSize={15}/>
+    </BarChart>
+  </ChartContainer>
+</CardContent>
+
+      </CardContent>
+    </Card>
   );
 };
 
@@ -209,7 +262,7 @@ function FunnelComponent() {
   } = useConversations();
   const [open, setOpen] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState(null);
-
+  const {state} = useContext(AppContext)
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleSearchChange = (event) => {
@@ -239,13 +292,23 @@ function FunnelComponent() {
     const phoneNumber = convo.phone_number?.toLowerCase() || '';
     const phaseName = phases[convo.label]?.name.toLowerCase() || '';
     const searchTermLower = searchTerm.toLowerCase();
+  
+    // Buscar el usuario correspondiente en state.usuarios
+    const user = state.usuarios.find(user => user.id_usuario == convo.id_usuario);
+    // Filtrar por el departamento si hay un departamento seleccionado
+    const isInSelectedDepartment = selectedStatus 
+      ? user && user.department_id == selectedStatus.id
+      : true; // Si no hay un departamento seleccionado, mostrar todas las conversaciones
     
+    // Condición general del filtro
     return (
-      name.includes(searchTermLower) ||
+      (name.includes(searchTermLower) ||
       phoneNumber.includes(searchTermLower) ||
-      phaseName.includes(searchTermLower)
+      phaseName.includes(searchTermLower)) &&
+      isInSelectedDepartment // Aplicar filtro del departamento
     );
   });
+  
 
   // Agrupamos las conversaciones por fases
   const groupedConversations = filteredConversations.reduce((acc, convo) => {
@@ -256,7 +319,6 @@ function FunnelComponent() {
     acc[phaseId].push(convo);
     return acc;
   }, {});
-
   return (
     <DndProvider backend={HTML5Backend}>
     <div className="container mt-5">
@@ -283,43 +345,41 @@ function FunnelComponent() {
                 >
                   {selectedStatus ? (
                     <>
-                      <selectedStatus.icon className="mr-2 h-4 w-4 shrink-0" />
-                      {selectedStatus.label}
+                      {selectedStatus.name}
                     </>
                   ) : (
-                    <>+ Set status</>
+                    <>Todos</>
                   )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="p-0" side="right" align="start">
                 <Command>
-                  <CommandInput placeholder="Change status..." />
+                  <CommandInput placeholder="Cambiar departamento..." />
                   <CommandList>
-                    <CommandEmpty>No results found.</CommandEmpty>
+                    <CommandEmpty>Sin resultado</CommandEmpty>
                     <CommandGroup>
-                      {statuses.map((status) => (
+                      {state?.departamentos?.map((dep) => (
                         <CommandItem
-                          key={status.value}
-                          value={status.value}
+                          key={dep.id}
+                          value={dep.id}
                           onSelect={(value) => {
                             setSelectedStatus(
-                              statuses.find((priority) => priority.value === value) ||
+                              state.departamentos.find((priority) => priority.name === value) ||
                               null
                             )
                             setOpen(false)
                           }}
                         >
-                          <status.icon
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              status.value === selectedStatus?.value
-                                ? "opacity-100"
-                                : "opacity-40"
-                            )}
-                          />
-                          <span>{status.label}</span>
+                          <span>{dep.name}</span>
                         </CommandItem>
                       ))}
+                      <CommandItem 
+                        onSelect={ () =>
+                          {setSelectedStatus('')
+                            setOpen(false)}
+                        } >
+                      <span>Todos</span>
+                      </CommandItem>
                     </CommandGroup>
                   </CommandList>
                 </Command>
@@ -346,7 +406,7 @@ function FunnelComponent() {
         </div>
         <br></br><br></br>
       </div>
-      <div className='funnel-container mt-5'>
+      <div className='funnel-container w-full mt-5'>
         <FunnelGraph phases={phases} groupedConversations={groupedConversations} />
       </div>
     </DndProvider>
