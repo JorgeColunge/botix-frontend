@@ -180,7 +180,7 @@ const FunnelGraph = ({ phases, groupedConversations }) => {
     return {
       name: phase.name,
       fill: phase.color, // Asegúrate de que el color esté presente
-      visitors: calculateVisitors(phaseCount),
+      Cantidad: calculateVisitors(phaseCount).toFixed(1),
     };
   });
   
@@ -227,7 +227,6 @@ const FunnelGraph = ({ phases, groupedConversations }) => {
         bottom: 0,
         left: 115,
       }}
-      barCategoryGap={1} 
     >
       <YAxis
         dataKey="name" 
@@ -237,13 +236,17 @@ const FunnelGraph = ({ phases, groupedConversations }) => {
         axisLine={false}
         tick={{ fontSize: 15, width: 150, wordBreak: "break-word" }}
         tickFormatter={(name) => name} 
+        margin={{
+          top: 0,
+          botton: 0
+        }}
       />
-      <XAxis dataKey="visitors" type="number" hide />
+      <XAxis dataKey="Cantidad" type="number" hide />
       <ChartTooltip
         cursor={false}
         content={<ChartTooltipContent hideLabel />}
       />
-      <Bar dataKey="visitors" layout="vertical" radius={5} barSize={30}  minPointSize={15}/>
+      <Bar dataKey="Cantidad" layout="vertical" radius={6} barSize={30} minPointSize={15}/>
     </BarChart>
   </ChartContainer>
 </CardContent>
