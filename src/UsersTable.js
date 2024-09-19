@@ -1,16 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { Table, Button, Modal, Form, FormControl, InputGroup } from 'react-bootstrap';
+import { Table, Modal, Form, FormControl, InputGroup } from 'react-bootstrap';
 import { Telephone, Envelope, Chat, PencilSquare, Trash, PlusCircle } from 'react-bootstrap-icons';
 import CreateUserModal from './createUserModal'; // Asegúrate de que la ruta sea correcta
 import './UsersTable.css'; // Import the CSS file
+import { AppContext } from './context';
+import { useConversations } from './ConversationsContext';
+import Swal from 'sweetalert2';
+import { Button, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from './components';
 
 const UsersTable = () => {
-  const [users, setUsers] = useState([]);
-  const [roles, setRoles] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [conversationStats, setConversationStats] = useState([]);
-  const [privileges, setPrivileges] = useState([]);
+  const {state} = useContext(AppContext)
+  const {userPrivileges, conversationStats: status} = useConversations()
+
+  const [users, setUsers] = useState(state.usuarios);
+  const [roles, setRoles] = useState(state.roles);
+  const [departments, setDepartments] = useState(state.departamentos);
+  const [conversationStats, setConversationStats] = useState(status);
+  const [privileges, setPrivileges] = useState(userPrivileges);
   const [showUserModal, setShowUserModal] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] = useState(false);
@@ -20,33 +27,13 @@ const UsersTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const companyId = localStorage.getItem('company_id');
-  const userId = localStorage.getItem('user_id');
 
-  useEffect(() => {
-    const fetchUsersData = async () => {
-      try {
-        const usersResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/users?company_id=${companyId}`);
-        setUsers(usersResponse.data);
-
-        const rolesResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/roles/${companyId}`);
-        setRoles(rolesResponse.data);
-
-        const departmentsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/departments/${companyId}`);
-        setDepartments(departmentsResponse.data);
-
-        const conversationStatsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/users/conversation-stats/${companyId}`);
-        setConversationStats(conversationStatsResponse.data);
-
-        const privilegesResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/privileges/${userId}`);
-        setPrivileges(privilegesResponse.data);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
-    fetchUsersData();
-  }, [companyId, userId]);
-
+ useEffect(() => {
+  if (selectedDepartment === 'Todos') {
+    setSelectedDepartment('')
+  }
+ }, [selectedDepartment])
+ 
   const getRoleName = (roleId) => {
     const role = roles.find(r => r.id === roleId);
     return role ? role.name : 'N/A';
@@ -84,6 +71,11 @@ const UsersTable = () => {
       })
       .catch(error => {
         console.error('Error deleting user:', error);
+        Swal.fire({
+          title: "Error",
+          text: `Error al intentar Eliminar usuario. Error: ${error.message}`,
+          icon: "error"
+        });
       });
   };
 
@@ -138,24 +130,24 @@ const UsersTable = () => {
   const handleSearchTermChange = (e) => {
     setSearchTerm(e.target.value);
   };
-
-  const handleDepartmentChange = (e) => {
-    setSelectedDepartment(e.target.value);
-  };
-
+  
   const filteredUsers = users.filter(user => {
     const stats = getConversationStats(user.id_usuario);
-    const searchTermLower = searchTerm.toLowerCase();
-
+     const searchTermLower = searchTerm?.toLowerCase()
+    
+    // Verifica si user.telefono es null o undefined antes de llamar a includes
+    const telefono = user.telefono ? user.telefono.toLowerCase() : '';
+  
     return (
       (!selectedDepartment || user.department_id === parseInt(selectedDepartment)) &&
       (user.nombre.toLowerCase().includes(searchTermLower) ||
       user.apellido.toLowerCase().includes(searchTermLower) ||
-      user.telefono.includes(searchTermLower) ||
+      telefono.toLowerCase().includes(searchTermLower) ||
       user.email.toLowerCase().includes(searchTermLower) ||
       user.id_usuario.toString().includes(searchTermLower))
     );
   });
+  
 
   const regularUsers = filteredUsers.filter(user => roles.find(r => r.id === user.rol && r.type === 'Humano'));
 
@@ -165,8 +157,8 @@ const UsersTable = () => {
       <div className="mb-3 d-flex justify-content-between align-items-center">
         <div>
           {(hasPrivilege('Create users') || hasPrivilege('Admin')) && (
-            <Button variant="primary" onClick={handleCreateUserClick}>
-              <PlusCircle /> Crear Usuario
+            <Button variant="outline" className="bg-[#d033b9] hover:bg-[#f83cdc] text-white w-100 " onClick={handleCreateUserClick}>
+              <PlusCircle className="mr-2 h-6 w-6"/> Crear Usuario
             </Button>
           )}
         </div>
@@ -176,18 +168,22 @@ const UsersTable = () => {
             placeholder="Buscar..."
             value={searchTerm}
             onChange={handleSearchTermChange}
-            className="mr-2"
+            className="mr-2 p-2 "
           />
-          <FormControl
-            as="select"
-            value={selectedDepartment}
-            onChange={handleDepartmentChange}
-          >
-            <option value="">Todos los departamentos</option>
-            {departments.map(department => (
-              <option key={department.id} value={department.id}>{department.name}</option>
-            ))}
-          </FormControl>
+          <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Seleccione departamento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Departamentos</SelectLabel>
+                <SelectItem key='todos' value='Todos' >Todos</SelectItem>
+                {departments.map(department => (
+                  <SelectItem key={department.id} value={department.id} >{department.name}</SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div className="table-responsive">

@@ -180,7 +180,7 @@ const FunnelGraph = ({ phases, groupedConversations }) => {
     return {
       name: phase.name,
       fill: phase.color, // Asegúrate de que el color esté presente
-      Cantidad: calculateVisitors(phaseCount).toFixed(1),
+      Cantidad: groupedConversations[phaseId] ? groupedConversations[phaseId].length : 0,
     };
   });
   
@@ -271,7 +271,7 @@ function FunnelComponent() {
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
   };
-  console.log("estado",selectedStatus)
+
   
   const filterPhases = state.fases
   .filter(fase => 
@@ -282,9 +282,6 @@ function FunnelComponent() {
     name: fase.name,
     color: fase.color
   }))
-
-  
-  console.log("lista de fases", filterPhases)
 
   const handleConversationDrop = async (conversation, newPhaseId) => {
     try {

@@ -39,6 +39,7 @@ const getPhases = async (departmentId, companyId, userPrivileges) => {
 
 export const ConversationsProvider = ({ children, socket, userHasInteracted }) => {
   const [conversations, setConversations] = useState(null);
+  const [conversationStats, setConversationStats] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [messages, setMessages] = useState({});
   const [loading, setLoading] = useState(false);
@@ -48,7 +49,9 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
   const [phases, setPhases] = useState({});
   const [defaultUser, setDefaultUser] = useState(null);
   const {state} = useContext(AppContext)
-  
+  const companyId = localStorage.getItem('company_id');
+  const userId = localStorage.getItem('user_id');
+
   const loadMessages = async (conversationId, offset = 0) => {
     setLoading(true);
     try {
@@ -299,7 +302,20 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
     };
   }, [socket, setCurrentConversation, setConversations]);
 
+   useEffect(() => {
+    const fetchUsersData = async () => {
+      try {
+        const conversationStatsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/users/conversation-stats/${companyId}`);
+        setConversationStats(conversationStatsResponse.data);
 
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchUsersData();
+   }, [companyId, userId])
+   
 
   useEffect(() => {
     if (!socket) return;
@@ -416,7 +432,6 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
 
   useEffect(() => {
     if (!socket) return;
-
     const messageStatusUpdateHandler = ({ messageId, status }) => {
       console.log(`nuevo estado recibido ${status} para el mensaje ${messageId}`);
       setMessages(prevMessages => {
@@ -531,6 +546,8 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
         messages,
         setMessages,
         loading,
+        userPrivileges,
+        conversationStats,
         loadMessages,
         activeConversation,
         userHasInteracted,
