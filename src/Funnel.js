@@ -271,6 +271,20 @@ function FunnelComponent() {
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
   };
+  console.log("estado",selectedStatus)
+  
+  const filterPhases = state.fases
+  .filter(fase => 
+    selectedStatus?.id ? fase.department_id == selectedStatus.id : true
+  )
+  .map(fase => ({
+    phase_id: fase.department_id,
+    name: fase.name,
+    color: fase.color
+  }))
+
+  
+  console.log("lista de fases", filterPhases)
 
   const handleConversationDrop = async (conversation, newPhaseId) => {
     try {
@@ -296,22 +310,12 @@ function FunnelComponent() {
     const phaseName = phases[convo.label]?.name.toLowerCase() || '';
     const searchTermLower = searchTerm.toLowerCase();
   
-    // Buscar el usuario correspondiente en state.usuarios
-    const user = state.usuarios.find(user => user.id_usuario == convo.id_usuario);
-    // Filtrar por el departamento si hay un departamento seleccionado
-    const isInSelectedDepartment = selectedStatus 
-      ? user && user.department_id == selectedStatus.id
-      : true; // Si no hay un departamento seleccionado, mostrar todas las conversaciones
-    
-    // Condición general del filtro
     return (
       (name.includes(searchTermLower) ||
       phoneNumber.includes(searchTermLower) ||
-      phaseName.includes(searchTermLower)) &&
-      isInSelectedDepartment // Aplicar filtro del departamento
+      phaseName.includes(searchTermLower))
     );
   });
-  
 
   // Agrupamos las conversaciones por fases
   const groupedConversations = filteredConversations.reduce((acc, convo) => {
@@ -322,6 +326,7 @@ function FunnelComponent() {
     acc[phaseId].push(convo);
     return acc;
   }, {});
+
   return (
     <DndProvider backend={HTML5Backend}>
     <div className="container mt-5">
@@ -395,7 +400,7 @@ function FunnelComponent() {
     </div>
       <div className="funnel-container">
         <div className="funnel-columns">
-          {Object.entries(phases).map(([phaseId, phase]) => (
+          {Object.entries(filterPhases).map(([phaseId, phase]) => (
             <DroppableColumn
               key={phaseId}
               phaseId={phaseId}
@@ -403,14 +408,14 @@ function FunnelComponent() {
               groupedConversations={groupedConversations}
               moveConversation={moveConversation}
               handleConversationDrop={handleConversationDrop}
-              phases={phases}
+              phases={filterPhases}
             />
           ))}
         </div>
         <br></br><br></br>
       </div>
       <div className='funnel-container w-full mt-5'>
-        <FunnelGraph phases={phases} groupedConversations={groupedConversations} />
+        <FunnelGraph phases={filterPhases} groupedConversations={groupedConversations} />
       </div>
     </DndProvider>
   );
