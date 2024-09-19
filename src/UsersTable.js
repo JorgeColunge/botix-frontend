@@ -187,7 +187,7 @@ const UsersTable = () => {
         </div>
       </div>
       <div className="table-responsive">
-        <Table className="custom-table" bordered hover>
+        {/* <Table className="custom-table" bordered hover>
           <thead>
             <tr>
               <th>Foto</th>
@@ -249,7 +249,7 @@ const UsersTable = () => {
               );
             })}
           </tbody>
-        </Table>
+        </Table> */}
       </div>
 
       <Modal show={showUserModal} onHide={() => setShowUserModal(false)}>
