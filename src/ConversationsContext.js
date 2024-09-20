@@ -342,7 +342,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
             ...prev,
             conversation_id: newMessage.conversationId,
             last_message: newMessage.text,
-            last_message_time:  msj.timestamp ? msj.timestamp : state.conversacion_Actual.last_message_time,
+            last_message_time:  msj.timestamp ? msj.timestamp : new Date().toISOString(),
             unread_messages: newMessage.unread_messages,
             phase_id: prev.phase_id
           })
