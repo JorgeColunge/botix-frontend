@@ -30,7 +30,22 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
   }
+  * {
+    scrollbar-width: thin !important; /* Para Firefox */
+  }
+  
+  *::-webkit-scrollbar {
+    width: 1px !important; /* Para WebKit (Chrome, Safari) */
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background-color: rgba(236, 18, 18, 0.5) !important; /* Color del scrollbar */
+    border-radius: 10px !important; /* Bordes redondeados */
+  }
 
+  *::-webkit-scrollbar-track {
+    background-color: transparent !important; /* Fondo del track */
+  }
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;

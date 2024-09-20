@@ -236,7 +236,7 @@ function App() {
         </Col>
       )}
       
-      <Row xs={isMobile ? 12 : (isSidebarCollapsed ? 11 : 10)} className={!isMobile ? `ms-5` : 'pe-0'}>
+      <Row xs={isMobile ? 12 : (isSidebarCollapsed ? 11 : 10)} className={!isMobile ? `ms-5` : 'pe-0 scrollrender'}>
         <Row className={selectedSection == 'chats' ? `renderContent me-0 pe-0` : `renderContent `}>
           <Routes>
             <Route path="/login" element={
