@@ -45,7 +45,7 @@
 .chat-window-container {
   display: flex;
   flex-direction: column;
-  height: 99%; /* Toma toda la altura de la ventana */
+  height: 100%; /* Toma toda la altura de la ventana */
 }
 
 .messages-container {
@@ -56,14 +56,8 @@
   overflow-y: scroll;
   scrollbar-width: thin; /* Firefox */
 }
-.chat-window-container ::-webkit-scrollbar-thumb {
-  background-color: rgba(180, 45, 45, 0.5); /* Color de la barra */
-  border-radius: 10px; /* Bordes redondeados */
-}
-@media all and (max-width: 767px) {
-  .window-container{
 
-  }
+@media all and (max-width: 767px) {
   .messages-container{
     height: 100% !important;
     width: 100vw !important;
