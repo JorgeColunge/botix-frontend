@@ -89,7 +89,7 @@
 
 .message-bubble {
   padding: 2px 4px; /* Espacio alrededor del texto dentro de la burbuja */
-  margin: 8px 45px; /* Espacio alrededor de la burbuja */
+  margin: 8px 1em; /* Espacio alrededor de la burbuja */
   max-width: 65%; /* Máximo ancho de la burbuja */
   word-wrap: break-word; /* Asegurar que el texto no salga de la burbuja */
 }
