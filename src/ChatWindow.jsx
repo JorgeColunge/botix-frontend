@@ -695,7 +695,6 @@ function ChatWindow() {
         requestAnimationFrame(() => {
           const element = document.getElementById(`msg-${lastMessageId}`);
           setConversacionActual({...state.conversacion_Actual, position_scroll: true})
-          console.log("POsicion del msj:", element)
           if (element) {
             const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
             if (scrollPosition !== undefined) {

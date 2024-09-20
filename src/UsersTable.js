@@ -35,6 +35,14 @@ const UsersTable = () => {
   }
  }, [selectedDepartment])
  
+ useEffect(() => {
+  setUsers(state.usuarios)
+  setRoles(state.roles)
+  setDepartments(state.departamentos)
+  setConversationStats(status)
+  setPrivileges(userPrivileges)
+ }, [state])
+ 
   const getRoleName = (roleId) => {
     const role = roles.find(r => r.id === roleId);
     return role ? role.name : 'N/A';
