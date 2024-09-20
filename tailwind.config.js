@@ -88,7 +88,7 @@ module.exports = {
         },
         '.scrollbar-custom': {
           '&::-webkit-scrollbar': {
-            width: '6px', // Ancho del scrollbar
+            width: '2px', // Ancho del scrollbar
           },
           '&::-webkit-scrollbar-thumb': {
             backgroundColor: 'rgba(0, 0, 0, 0.5)', // Color del scrollbar

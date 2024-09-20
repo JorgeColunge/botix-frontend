@@ -216,7 +216,7 @@ function App() {
 
   return (
 <ConversationsProvider socket={socket} isConnected={isConnected} userHasInteracted={userHasInteracted}>
-  <Container fluid>
+  <Container fluid className={ isMobile ? 'contendorMobile' : ''}>
     <Col>
       {isMobile ? (
         <Offcanvas show={state.status} onHide={() => { setStatus(false); setIsSidebarCollapsed(true); }} className={`px-0 ${isSidebarCollapsed ? 'collapsed' : 'expanded'}`} style={{ width: isSidebarCollapsed ? '60px' : '230px' }}>
