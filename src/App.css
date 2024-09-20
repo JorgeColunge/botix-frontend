@@ -45,14 +45,46 @@
 .chat-window-container {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Toma toda la altura de la ventana */
+  height: 99%; /* Toma toda la altura de la ventana */
 }
 
 .messages-container {
+  width: 100% !important;
   display: flex;
   flex: 1;
   flex-direction: column; /* Cambiado a la columna estándar */
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-width: thin; /* Firefox */
+}
+.chat-window-container ::-webkit-scrollbar-thumb {
+  background-color: rgba(180, 45, 45, 0.5); /* Color de la barra */
+  border-radius: 10px; /* Bordes redondeados */
+}
+@media all and (max-width: 767px) {
+  .window-container{
+
+  }
+  .messages-container{
+    height: 100% !important;
+    width: 100vw !important;
+  }
+  body{
+    height: 100vh !important;
+    width: 100vw !important;
+  }
+  #root{
+    height: 100% !important;
+    width: 100vw !important;
+  }
+}
+
+.messages-container::-webkit-scrollbar {
+  width: 3px; /* Cambia a lo que prefieras */
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background-color: rgba(73, 70, 70, 0.5); /* Color de la barra */
+  border-radius: 10px; /* Bordes redondeados */
 }
 
 .contact-info-bar{
@@ -203,7 +235,6 @@
 .icon-spacing {
   margin-right: 5px; /* Ajusta este valor a lo que necesites */
 }
-
 
 .message-content img,
 .message-content video {

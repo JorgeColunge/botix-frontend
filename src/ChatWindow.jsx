@@ -193,7 +193,7 @@ function ChatWindow() {
                 ))}
               </DropdownButton>
             </div>
-            <div className={isMobile ? `w-[30%] d-flex align-items-center` : `w-[55%] d-flex align-items-center mt-1`}>
+            <div className={isMobile ? `w-[40%] d-flex align-items-center` : `w-[55%] d-flex align-items-center mt-1`}>
             { !isMobile ? ( 
               <>
               {!isTable ? (
@@ -264,10 +264,10 @@ function ChatWindow() {
                    </Button>
               </>
                ) : (
-                 <div className="w-100 mt-2">
+                 <div className="w-100 mb-3">
                   <NavDropdown
                     id="nav-dropdown-dark-example"
-                    title="Resp."
+                    title="Rp."
                     menuVariant="white"
                   >
                     {allUsers.map((user) => (
@@ -889,7 +889,7 @@ function ChatWindow() {
       <div className="chat-window-container">
         <ContactInfoBar />
         <EditContactModal show={showEditModal} onHide={() => setShowEditModal(false)} contact={currentConversation} socket={socket} />
-        <div className="messages-container" ref={messagesEndRef} >
+        <div className={isMobile ? `messages-container` : `messages-container`} ref={messagesEndRef} >
           {sortedDates.map((date) => (
             <React.Fragment key={date}>
               <div className="date-header">{formatDate(date)}</div>
