@@ -26,7 +26,7 @@ function ChatWindow() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastMessageId, setLastMessageId] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [audioUrl, setAudioUrl] = useState(null);
+  const [updateMoreMsj, setUpdateMoreMsj] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
   const [isScrolledToEnd, setIsScrolledToEnd] = useState(true); 
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -44,15 +44,18 @@ function ChatWindow() {
     if (target.scrollTop === 0 && messages[currentConversation.conversation_id].length) {
       setIsLoadingMore(true);
       const moreMessages = await loadMessages(currentConversation.conversation_id, offset + 50);
-      console.log('Loaded messages IDs:', moreMessages.map(m => m.id));
+      //console.log('Loaded mekssages IDs:', moreMessages.map(m => m.id));
       if (moreMessages.length) {
         setMessages(prevMessages => ({
           ...prevMessages,
           [currentConversation.conversation_id]: [...moreMessages, ...prevMessages[currentConversation.conversation_id]]
         }));
         setOffset(prevOffset => prevOffset + 50);
+        console.log("redireccion a :",new Date(moreMessages[0].timestamp).getTime() )
         setLastMessageId(new Date(moreMessages[0].timestamp).getTime());
+
         console.log('Last message ID for scroll:', moreMessages[0].id);
+        setUpdateMoreMsj(moreMessages[0].id)
         setIsLoadingMore(false);
       } else {
         setIsLoadingMore(false);
@@ -691,19 +694,24 @@ function ChatWindow() {
     } else {
       console.log("ingresa en el segundo")
 
-      if (lastMessageId && messagesEndRef.current && isScrolledToEnd) {
+      if (lastMessageId && messagesEndRef.current && (isScrolledToEnd || updateMoreMsj != null)) {
         requestAnimationFrame(() => {
-          const element = document.getElementById(`msg-${lastMessageId}`);
-          setConversacionActual({...state.conversacion_Actual, position_scroll: true})
-          if (element) {
-            const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
-            if (scrollPosition !== undefined) {
-              messagesEndRef.current.scrollTop = 200 + messagesEndRef.current.scrollHeight;
-              console.log("position", scrollPosition)
+          setTimeout(() => {
+            const element = document.getElementById(`msg-${lastMessageId}`);
+            if (element) {
+              const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
+              if (scrollPosition !== undefined) {
+                messagesEndRef.current.scrollTop = scrollPosition;
+                console.log("Posición del scroll", scrollPosition);
+              }
+              console.log('Redirigiendo al mensaje con ID:', lastMessageId);
+            } else {
+              console.log("Elemento no encontrado, intentar nuevamente");
             }
-            console.log('Scrolling to message ID:', lastMessageId);
-          }
+          }, 200);
         });
+        
+        setUpdateMoreMsj(null)
       }
     }
   }, [lastMessageId, messages]);
