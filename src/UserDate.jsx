@@ -95,10 +95,14 @@ export function UserDate({ users, departments, getConversationStats, getRoleName
       cell: info => getRoleName(info.getValue())
     },
     {
-      accessorKey: 'departamento',
-      header: 'Departamento',
-      cell: info => getDepartmentName(info.getValue())
-    },
+        accessorKey: 'departamento',
+        header: 'Departamento',
+        cell: info => {
+          const departmentId = info.row.original.department_id;
+          return getDepartmentName(departmentId);
+        }
+      },
+      
     {
       accessorKey: 'conversaciones asignadas',
       header: 'Conversaciones Asignadas',
@@ -138,25 +142,25 @@ export function UserDate({ users, departments, getConversationStats, getRoleName
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                 <DropdownMenuItem disabled={!hasPrivilege('Send message')}>
                   <Button variant="link" size="sm" disabled={!hasPrivilege('Send message')}>
-                    <MessageSquareText />
-                    Send message
+                    <MessageSquareText className="mr-2 h-6 w-6"/>
+                    Enviar mensaje
                   </Button>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleEditUserClick(user)} disabled={!hasPrivilege('Edit users')}>
                   <Button variant="link" size="sm">
-                    <Pencil />
-                    Edit user
+                    <Pencil className="mr-2 h-6 w-6"/>
+                    Editar
                   </Button>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {(hasPrivilege('Delete users') || hasPrivilege('Admin')) && (
                   <DropdownMenuItem onClick={() => handleDeleteUserClick(user.id_usuario)}>
                     <Button variant="link" size="sm">
-                      <Trash style={{ color: 'red' }} />
-                      Delete user
+                      <Trash style={{ color: 'red' }} className="mr-2 h-6 w-6"/>
+                      Eliminar
                     </Button>
                   </DropdownMenuItem>
                 )}
