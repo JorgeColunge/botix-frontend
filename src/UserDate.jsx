@@ -28,8 +28,9 @@ import { Plus } from 'lucide-react';
 import { HardDriveUpload } from 'lucide-react';
 import axios from 'axios';
 import { AppContext } from './context';
+import { Link } from 'react-router-dom';
 
-export function UserDate({ users, contacts, departments, getConversationStats, getRoleName, getDepartmentName, hasPrivilege, handleEditUserClick, handleDeleteUserClick, handleEditContactClick, handleDeleteContactClick, formatTimeSinceLastMessage, handleCreateContactClick, handleUploadCSVClick, tipo_tabla }) {
+export function UserDate({ users, contacts, departments, getConversationStats, getRoleName, getDepartmentName, hasPrivilege, handleEditUserClick, handleDeleteUserClick, handleEditContactClick, handleDeleteContactClick, formatTimeSinceLastMessage, handleCreateContactClick, handleUploadCSVClick, handleSelectContactChat, tipo_tabla }) {
   const {state} = useContext(AppContext)
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -44,21 +45,30 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
     lastContact: '',
   })
 
-  const [transformedContacts, setTransformedContacts] = useState([]);  // Datos transformados originales
-  const [filtroContacts, setFilteredContacts] = useState([]);  // Datos filtrados
+  const [transformedContacts, setTransformedContacts] = useState([]);  
+  const [filtroContacts, setFilteredContacts] = useState([]); 
 
   useEffect(() => {
-    axios.get("https://restcountries.com/v3.1/all")
-      .then(response => {
-        const countryList = response.data.map((country) => ({
-          id: country.cca3, // Código de país
-          name: country.name.common, // Nombre del país
-        }));
-        setCountries(countryList);
-      })
-      .catch(error => {
-        console.error("Error fetching the countries data:", error);
-      });
+    if (tipo_tabla == 'contactos') {
+      const countrysDates = JSON.parse(localStorage.getItem('paises'));
+      if (countrysDates) {
+        setCountries(countrysDates);
+      }else{
+
+        axios.get("https://restcountries.com/v3.1/all")
+          .then(response => {
+            const countryList = response.data.map((country) => ({
+              id: country.cca3, // Código de país
+              name: country.name.common, // Nombre del país
+            }));
+            setCountries(countryList);
+            localStorage.setItem('paises', JSON.stringify(countryList));
+          })
+          .catch(error => {
+            console.error("Error fetching the countries data:", error);
+          });
+      }
+    }
   }, []);
   
   useEffect(() => {
@@ -411,11 +421,10 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                <DropdownMenuItem >
-                  <Button variant="link" size="sm">
-                    <MessageSquareText className="mr-2 h-6 w-6"/>
-                    Enviar mensaje
-                  </Button>
+                <DropdownMenuItem onClick={()  => handleSelectContactChat(contact)} disabled={!contact.telefono}>
+                   <Link to={'/chats'} className='w-100 d-flex' size="sm">
+                   <MessageSquareText className="mr-2 h-6 w-6"/> Enviar mensaje
+                   </Link> 
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleEditContactClick(contact)}>
                   <Button variant="link" size="sm">
