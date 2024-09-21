@@ -8,6 +8,7 @@ import CreateContactModal from './CreateContactModal'; // Asegúrate de que la r
 import UploadCSVModal from './UploadCSVModal'; // Asegúrate de que la ruta sea correcta
 import './ContactsTable.css'; // Import the CSS file
 import { AppContext } from './context';
+import { UserDate } from './UserDate';
 
 const geoUrl = '/ne_110m_admin_0_countries.json'; // Ruta al archivo GeoJSON en la carpeta public
 
@@ -256,7 +257,7 @@ const ContactsTable = () => {
           </Form.Select>
         </Col>
       </Row>
-      <Row className="mb-3">
+      {/* <Row className="mb-3">
         <Col>
           <Button variant="primary" onClick={handleCreateContactClick}>
             <PlusCircle /> Crear Contacto
@@ -267,9 +268,9 @@ const ContactsTable = () => {
             <Upload /> Cargar CSV
           </Button>
         </Col>
-      </Row>
+      </Row> */}
       <div className="table-responsive">
-        <Table className="custom-table" bordered hover>
+        {/* <Table className="custom-table" bordered hover>
           <thead>
             <tr>
               <th>Nombre</th>
@@ -322,7 +323,16 @@ const ContactsTable = () => {
               </tr>
             ))}
           </tbody>
-        </Table>
+        </Table> */}
+        <UserDate 
+        tipo_tabla={'contactos'}
+        contacts={filteredContacts}
+        handleEditContactClick={handleEditContactClick}
+        handleDeleteContactClick={handleDeleteContactClick}
+        formatTimeSinceLastMessage={formatTimeSinceLastMessage}
+        handleCreateContactClick={handleCreateContactClick}
+        handleUploadCSVClick={handleUploadCSVClick}
+        />
       </div>
 
       <CreateContactModal

@@ -205,6 +205,7 @@ const UsersTable = () => {
         hasPrivilege={hasPrivilege}
         handleEditUserClick={handleEditUserClick}
         handleDeleteUserClick={handleDeleteUserClick}
+        tipo_tabla={'usuarios'}
       />
         {/* <Table className="custom-table" bordered hover>
           <thead>
