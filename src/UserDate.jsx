@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useContext } from 'react';
 import { useReactTable, getCoreRowModel, getPaginationRowModel, getSortedRowModel, getFilteredRowModel, flexRender } from '@tanstack/react-table';
 import { Input, 
     Button,
@@ -18,46 +18,132 @@ import { Input,
     TableCell,  
     DropdownMenuLabel,
     DropdownMenuItem,
-    DropdownMenuSeparator} from './components';
+    DropdownMenuSeparator,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    ScrollArea,
+    Separator} from './components';
 import { ChevronDown, MessageSquareText , Pencil , Trash, Phone, Mail, MoreHorizontal } from 'lucide-react';
 import { Plus } from 'lucide-react';
 import { HardDriveUpload } from 'lucide-react';
+import axios from 'axios';
+import { AppContext } from './context';
 
 export function UserDate({ users, contacts, departments, getConversationStats, getRoleName, getDepartmentName, hasPrivilege, handleEditUserClick, handleDeleteUserClick, handleEditContactClick, handleDeleteContactClick, formatTimeSinceLastMessage, handleCreateContactClick, handleUploadCSVClick, tipo_tabla }) {
+  const {state} = useContext(AppContext)
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
+  const [phases, setPhases] = useState([])
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [countries, setCountries] = useState([]);
+  const [filters, setFilters] = useState({
+    phase: '',
+    country: '',
+    lastContact: '',
+  })
 
   const [transformedContacts, setTransformedContacts] = useState([]);  // Datos transformados originales
   const [filtroContacts, setFilteredContacts] = useState([]);  // Datos filtrados
+
+  useEffect(() => {
+    axios.get("https://restcountries.com/v3.1/all")
+      .then(response => {
+        const countryList = response.data.map((country) => ({
+          id: country.cca3, // Código de país
+          name: country.name.common, // Nombre del país
+        }));
+        setCountries(countryList);
+      })
+      .catch(error => {
+        console.error("Error fetching the countries data:", error);
+      });
+  }, []);
   
-  // Función para filtrar los contactos
-  const filterContacts = (contacts, searchTerm) => {
-    if (!searchTerm) return contacts;  // Si no hay búsqueda, devuelve todos los contactos
+  useEffect(() => {
+     setPhases(state.fases)
+  }, [])
   
-    const lowercasedSearch = searchTerm.toLowerCase();
+// Función para filtrar contactos usando useCallback
+  const filterContacts = useCallback((contacts, searchTerm, filters) => {
+    let tempContacts = [...contacts];
+
+    // Filtrado por búsqueda
+    if (searchTerm) {
+      const lowercasedSearch = searchTerm.toLowerCase();
+      tempContacts = tempContacts.filter(contact =>
+        (contact.nombre?.toLowerCase() || '').includes(lowercasedSearch) ||
+        (contact.apellido?.toLowerCase() || '').includes(lowercasedSearch) ||
+        (contact.telefono || '').includes(lowercasedSearch) ||
+        (contact.correo?.toLowerCase() || '').includes(lowercasedSearch)
+      );
+    }
+
+    // Filtrado por fase
+    if (filters.phase) {
+      tempContacts = tempContacts.filter(contact => contact.fase === filters.phase);
+    }
+
+    // Filtrado por país
+    if (filters.country) {
+      tempContacts = tempContacts.filter(contact => contact.nacionalidad === filters.country);
+    }
+
+    // Filtrado por último contacto
+    if (filters.lastContact) {
+      const now = new Date();
+      tempContacts = tempContacts.filter(contact => {
+        const lastContactDate = new Date(contact.ultimo_mensaje);
+        const timeDiff = (now - lastContactDate) / 1000;
+
+        switch (filters.lastContact) {
+          case 'today':
+            return timeDiff <= 86400;
+          case 'yesterday':
+            return timeDiff > 86400 && timeDiff <= 172800;
+          case 'thisWeek':
+            return timeDiff <= 604800;
+          case 'lastWeek':
+            return timeDiff > 604800 && timeDiff <= 1209600;
+          case 'thisMonth':
+            return now.getMonth() === lastContactDate.getMonth() && now.getFullYear() === lastContactDate.getFullYear();
+          case 'lastMonth':
+            const lastMonth = new Date(now.setMonth(now.getMonth() - 1));
+            return lastContactDate.getMonth() === lastMonth.getMonth() && lastContactDate.getFullYear() === lastMonth.getFullYear();
+          case 'beforeLastMonth':
+            return lastContactDate < new Date(now.setMonth(now.getMonth() - 2));
+          default:
+            return true;
+        }
+      });
+    }
+
+    return tempContacts;
+  }, [filters]);
+
+  const handleFilterChange = useCallback((e) => {
+    console.log(e.target)
+    const { name, value } = e.target;
+    setFilters({
+      ...filters,
+      [name]: value,
+    });
+  }, []);
   
-    return contacts.filter(contact =>
-      (contact.nombre?.toLowerCase() || '').includes(lowercasedSearch) ||
-      (contact.apellido?.toLowerCase() || '').includes(lowercasedSearch) ||
-      (contact.telefono || '').includes(lowercasedSearch) ||
-      (contact.correo?.toLowerCase() || '').includes(lowercasedSearch)
-    );
-  };
-  
-  // Uso de la función para actualizar el estado filtrado
   const handleSearch = (event) => {
     const value = event.target.value;
     setSearchTerm(value);
   
-    // Filtra los contactos transformados
-    const filteredContacts = filterContacts(transformedContacts, value);
+    const filteredContacts = filterContacts(transformedContacts, value, filters);
     setFilteredContacts(filteredContacts);
   };
   
-  // Se ejecuta cuando `contacts` o `tipo_tabla` cambian, y transforma los contactos
+  useEffect(() => {
+    const filteredContacts = filterContacts(transformedContacts, searchTerm, filters);
+    setFilteredContacts(filteredContacts);
+  }, [transformedContacts, searchTerm, filters, filterContacts]);
+
   useEffect(() => {
     if (tipo_tabla === 'contactos') {
       const newContacts = contacts.map(contacto => {
@@ -77,12 +163,11 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
         };
       });
   
-      setTransformedContacts(newContacts);  // Guarda los contactos transformados
-      setFilteredContacts(newContacts);  // Inicialmente, los contactos filtrados son todos
+      setTransformedContacts(newContacts); 
+      setFilteredContacts(newContacts);  
     }
   }, [contacts, tipo_tabla]);
   
-  // Define your table columns
   const columnsUser  = useMemo(() => [
     {
       accessorKey: 'link_foto',
@@ -226,7 +311,6 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
       
   ], [getConversationStats, getRoleName, getDepartmentName, hasPrivilege, handleEditUserClick, handleDeleteUserClick]);
 
-   // Define your columns for 'contactos' table
    const columnsContact = useMemo(() => [
     {
       accessorKey: 'nombre',
@@ -292,22 +376,22 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
       cell: info => info.getValue()
     },
     {
-      accessorKey: 'last_message_time',
+      accessorKey: 'ultimo_mensaje',
       header: 'Último Mensaje',
       cell: info => info.getValue() ? new Date(info.getValue()).toLocaleString() : '-'
     },
     {
-      accessorKey: 'time_since_last_message',
+      accessorKey: 'tiempo_ultimo_mensaje',
       header: 'Tiempo Desde Último Contacto',
       cell: info => formatTimeSinceLastMessage(info.getValue())
     },
     {
-      accessorKey: 'phase_name',
+      accessorKey: 'fase',
       header: 'Fase',
       cell: info => info.getValue()
     },
     {
-      accessorKey: 'has_conversation',
+      accessorKey: 'conversacion',
       header: 'Conversación',
       cell: info => info.getValue() ? 'Sí' : 'No'
     },
@@ -356,11 +440,10 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
     }
   ], [handleEditContactClick, handleDeleteContactClick]);
 
-    // Conditionally set the columns and data based on tipo_tabla
     const columns = tipo_tabla === 'usuarios' ? columnsUser : columnsContact;
     const data = tipo_tabla === 'usuarios' ? users : filtroContacts;
-  // Create the table instance
-  const table = useReactTable({
+
+    const table = useReactTable({
     data,
     columns,
     onSortingChange: setSorting,
@@ -382,7 +465,7 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
   
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
+      <div className="flex items-end py-4">
        {
          tipo_tabla == 'contactos' ? (
            <section className=' d-flex row gap-2 w-[30%]'>
@@ -409,29 +492,146 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
           </>
         )
        }
- 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columnas <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  className="capitalize"
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+       
+       {
+         tipo_tabla == 'contactos' ? (
+          <section className='d-flex justify-end w-[70%]'>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Filtro por Países <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <ScrollArea className="h-72 w-55 rounded-md border">
+                  <div className="p-4">
+                  <DropdownMenuRadioGroup value={filters.country} onValueChange={(value) => handleFilterChange({ target: { name: 'country', value } })}>
+                    <DropdownMenuRadioItem value="">
+                      Todas las fases
+                    </DropdownMenuRadioItem>
+                    {countries.map((pais) => (
+                      <React.Fragment key={pais.id}>
+                        <DropdownMenuRadioItem value={pais.name} className="capitalize">
+                          {pais.name}
+                        </DropdownMenuRadioItem>
+                        <Separator className="my-2" />
+                      </React.Fragment>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                  </div>
+                </ScrollArea>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="ml-auto">
+                Filtro por Fase <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuRadioGroup value={filters.phase} onValueChange={(value) => handleFilterChange({ target: { name: 'phase', value } })}>
+                <DropdownMenuRadioItem value="">
+                  Todas las fases
+                </DropdownMenuRadioItem>
+                {phases.map((fase) => (
+                  <React.Fragment key={fase.id}>
+                    <DropdownMenuRadioItem value={fase.name} className="capitalize">
+                      {fase.name}
+                    </DropdownMenuRadioItem>
+                    <Separator className="my-2" />
+                  </React.Fragment>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Filtro por último contacto <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuRadioGroup value={filters.lastContact} onValueChange={(value) => handleFilterChange({ target: { name: 'lastContact', value } })}>
+                  <DropdownMenuRadioItem value="">
+                    Todos los contactos
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="today">
+                    Hoy
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="yesterday">
+                    Ayer
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="thisWeek">
+                    Esta semana
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="lastWeek">
+                    Semana anterior
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="thisMonth">
+                    Este mes
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="lastMonth">
+                    El mes pasado
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="beforeLastMonth">
+                    Antes del mes pasado
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Columnas <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </section>
+        
+         ) :(
+           
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Columnas <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+         )
+       }
       </div>
 
       <div className="rounded-md border">

@@ -141,9 +141,9 @@ const ContactsTable = () => {
       });
   };
 
-  const handleSearchChange = (e) => {
-    setSearch(e.target.value);
-  };
+  // const handleSearchChange = (e) => {
+  //   setSearch(e.target.value);
+  // };
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -223,8 +223,8 @@ const ContactsTable = () => {
           </Geographies>
         </ComposableMap>
       </div>
-      <Row className="mb-3">
-        <Col>
+      {/* <Row className="mb-3"> */}
+        {/* <Col>
           <Form.Control 
             type="text" 
             placeholder="Buscar por nombre, apellido, teléfono o correo" 
@@ -236,7 +236,7 @@ const ContactsTable = () => {
           <Form.Select name="phase" value={filters.phase} onChange={handleFilterChange}>
             <option value="">Filtrar por fase</option>
             {/* Añadir opciones de fases aquí */}
-          </Form.Select>
+          {/* </Form.Select>
         </Col>
         <Col>
           <Form.Select name="country" value={filters.country} onChange={handleFilterChange}>
@@ -254,9 +254,9 @@ const ContactsTable = () => {
             <option value="thisMonth">Este mes</option>
             <option value="lastMonth">El mes pasado</option>
             <option value="beforeLastMonth">Antes del mes pasado</option>
-          </Form.Select>
-        </Col>
-      </Row>
+          </Form.Select> */}
+        {/* </Col> */}
+    {/* </Row> */} 
       {/* <Row className="mb-3">
         <Col>
           <Button variant="primary" onClick={handleCreateContactClick}>
