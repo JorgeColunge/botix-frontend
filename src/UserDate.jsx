@@ -250,8 +250,7 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
           const departmentId = info.row.original.department_id;
           return getDepartmentName(departmentId);
         }
-      },
-      
+    },  
     {
       accessorKey: 'conversaciones asignadas',
       header: 'Conversaciones Asignadas',
@@ -292,11 +291,10 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                <DropdownMenuItem disabled={!hasPrivilege('Send message')}>
-                  <Button variant="link" size="sm" disabled={!hasPrivilege('Send message')}>
-                    <MessageSquareText className="mr-2 h-6 w-6"/>
-                    Enviar mensaje
-                  </Button>
+                <DropdownMenuItem onClick={()  => handleSelectContactChat(user)} disabled={!user.telefono}>
+                   <Link to={'/chats'} className='w-100 d-flex' size="sm">
+                   <MessageSquareText className="mr-2 h-6 w-6"/> Enviar mensaje
+                   </Link> 
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleEditUserClick(user)} disabled={!hasPrivilege('Edit users')}>
                   <Button variant="link" size="sm">
@@ -317,7 +315,7 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
             </DropdownMenu>
           );
         }
-      }
+    }
       
   ], [getConversationStats, getRoleName, getDepartmentName, hasPrivilege, handleEditUserClick, handleDeleteUserClick]);
 
