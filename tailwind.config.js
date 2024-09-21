@@ -73,5 +73,33 @@ module.exports = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    function ({ addUtilities }) {
+      const newUtilities = {
+        '.scrollbar-thin': {
+          'scrollbar-width': 'thin', // Para Firefox
+        },
+        '.scrollbar-hidden': {
+          'scrollbar-width': 'none', // Para Firefox
+          '&::-webkit-scrollbar': {
+            display: 'none', // Para navegadores WebKit (Chrome, Safari)
+          },
+        },
+        '.scrollbar-custom': {
+          '&::-webkit-scrollbar': {
+            width: '2px', // Ancho del scrollbar
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)', // Color del scrollbar
+            borderRadius: '10px', // Bordes redondeados
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent', // Fondo del track
+          },
+        },
+      };
+      addUtilities(newUtilities, ['responsive', 'hover']);
+    }
+  ],
 }

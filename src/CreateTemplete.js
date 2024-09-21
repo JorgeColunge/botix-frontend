@@ -669,8 +669,10 @@ const CreateTemplate = () => {
   };
 
   const renderTextWithExamples = (text, examples) => {
+    console.log(examples)
     return text.replace(/{{\d+}}/g, (match) => {
       const key = match;
+      console.log("respes", examples[key])
       return examples[key] || 'Ejemplo';
     });
   };
@@ -911,7 +913,7 @@ const CreateTemplate = () => {
               <>
                 <Form.Group className="mb-3">
                   <Form.Label>Texto de Encabezado:</Form.Label>
-                  <Form.Control type="text" value={headerText} onChange={(e) => setHeaderText(e.target.value)} required />
+                  <Form.Control type="text" value={headerText} onChange={(e) => {setHeaderText(e.target.value);  setHeaderVariableAdded(true);}} required />
                 </Form.Group>
                 {!headerVariableAdded && (
                   <div className="text-end">
@@ -1192,7 +1194,7 @@ const CreateTemplate = () => {
               <div className="whatsapp-preview">
                 <div className="message">
                   <div className="header">
-                    {headerType === 'text' && <div><strong>{renderTextWithExamples(headerText, { '{{1}}': headerExample })}</strong></div>}
+                    {headerType === 'TEXT' && <div><strong>{renderTextWithExamples(headerText, { '{{1}}': headerExample })}</strong></div>}
                     {(headerType === 'MEDIA' || headerType === 'IMAGE') && mediaType === 'IMAGE' && headerImageUrl && <img src={`${process.env.REACT_APP_API_URL}${headerImageUrl}`} alt="Header" style={{ width: '100%' }} />}
                     {(headerType === 'MEDIA'|| headerType === 'VIDEO') && mediaType === 'VIDEO' && headerVideoUrl && <video src={`${process.env.REACT_APP_API_URL}${headerVideoUrl}`} controls style={{ width: '100%' }} />}
                     {(headerType === 'MEDIA'|| headerType === 'DOCUMENT') && mediaType === 'DOCUMENT' && headerDocumentUrl && (

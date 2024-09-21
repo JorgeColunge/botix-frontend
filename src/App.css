@@ -6,7 +6,6 @@
   height: 40vmin;
   pointer-events: none;
 }
-
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
     animation: App-logo-spin infinite 20s linear;
@@ -45,14 +44,31 @@
 .chat-window-container {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Toma toda la altura de la ventana */
+  height: 100%; /* Toma toda la altura de la ventana */
 }
 
 .messages-container {
+  width: 100% !important;
   display: flex;
   flex: 1;
+
   flex-direction: column; /* Cambiado a la columna estándar */
-  overflow-y: auto;
+  overflow-y: scroll;
+}
+
+@media all and (max-width: 767px) {
+  .messages-container{
+    height: 100% !important;
+    width: 100vw !important;
+  }
+  body{
+    height: 100vh !important;
+    width: 100vw !important;
+  }
+  /* #root{
+    height: 100% !important;
+    width: 100vw !important;
+  } */
 }
 
 .contact-info-bar{
@@ -73,7 +89,7 @@
 
 .message-bubble {
   padding: 2px 4px; /* Espacio alrededor del texto dentro de la burbuja */
-  margin: 8px 45px; /* Espacio alrededor de la burbuja */
+  margin: 8px 1em; /* Espacio alrededor de la burbuja */
   max-width: 65%; /* Máximo ancho de la burbuja */
   word-wrap: break-word; /* Asegurar que el texto no salga de la burbuja */
 }
@@ -83,7 +99,6 @@
 }
 
 .message-bubble .message-content {
-  margin-right: 70px;
   margin: 5px 10px;
 }
 
@@ -93,8 +108,6 @@
   word-wrap: break-word;
   border-radius: 18px;
   margin-top: 2px; /* Espacio estándar entre mensajes del mismo tipo */
-  margin-right: 55px;
-  margin-left: 55px;
 }
 
 .message-bubble.message {
@@ -203,7 +216,6 @@
 .icon-spacing {
   margin-right: 5px; /* Ajusta este valor a lo que necesites */
 }
-
 
 .message-content img,
 .message-content video {
@@ -650,14 +662,23 @@
     padding: 0.1em;
   }
   .message-bubble {
-    margin-right: 1em;
-    margin-left: 1em;
+    margin-right: .3em;
+    margin-left: .3em;
   }
-  .container-fluid{
-    padding-right: 0;
+  .contendorMobile{
+    width: 100vw !important;
+    height: 100vh !important;
+    padding: 0;
   }
   .renderContent{
-    width: 100vw;
+    width: 100%;
+  }
+  .scrollrender{
+    padding: 0;
+    margin: 0;
+  }
+  .list-group{
+    width: 99vw !important;
   }
 }
 

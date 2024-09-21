@@ -330,6 +330,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
         return;
       }else{
         const msj = { ...newMessage };
+        console.log("nuevo msj", msj)
       const isResponsibleOrAdmin = String(newMessage.responsibleUserId) === userId || userPrivileges.includes('Admin') || userPrivileges.includes('Show All Conversations');
   
       if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
@@ -341,7 +342,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
             ...prev,
             conversation_id: newMessage.conversationId,
             last_message: newMessage.text,
-            last_message_time:  msj.timestamp ? msj.timestamp : state.conversacion_Actual.last_message_time,
+            last_message_time:  msj.timestamp ? msj.timestamp : new Date().toISOString(),
             unread_messages: newMessage.unread_messages,
             phase_id: prev.phase_id
           })
@@ -370,7 +371,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
               return {
                 ...convo,
                 last_message: newMessage.text,
-                last_message_time: newMessage.timestamp ? newMessage.timestamp : state.conversacion_Actual.last_message_time,
+                last_message_time: newMessage.timestamp ? newMessage.timestamp : new Date().toISOString(),
                 unread_messages: newMessage.unread_messages
               };
             }

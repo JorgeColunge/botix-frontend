@@ -217,7 +217,7 @@ function App() {
 
   return (
 <ConversationsProvider socket={socket} isConnected={isConnected} userHasInteracted={userHasInteracted}>
-  <Container fluid>
+  <Container fluid className={ isMobile ? 'contendorMobile' : ''}>
     <Col>
       {isMobile ? (
         <Offcanvas show={state.status} onHide={() => { setStatus(false); setIsSidebarCollapsed(true); }} className={`px-0 ${isSidebarCollapsed ? 'collapsed' : 'expanded'}`} style={{ width: isSidebarCollapsed ? '60px' : '230px' }}>
@@ -237,8 +237,8 @@ function App() {
         </Col>
       )}
       
-      <Row xs={isMobile ? 12 : (isSidebarCollapsed ? 11 : 10)} className={!isMobile ? `ms-5` : ''}>
-        <Row className="renderContent">
+      <Row xs={isMobile ? 12 : (isSidebarCollapsed ? 11 : 10)} className={!isMobile ? `ms-5` : 'pe-0 scrollrender'}>
+        <Row className={selectedSection == 'chats' ? `renderContent me-0 pe-0` : `renderContent `}>
           <Routes>
             <Route path="/login" element={
               <PublicRoute>

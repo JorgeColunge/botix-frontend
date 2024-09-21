@@ -8,10 +8,16 @@ import { AppContext } from './context';
 import { useConversations } from './ConversationsContext';
 import Swal from 'sweetalert2';
 import { Button, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from './components';
+import { UserDate } from './UserDate';
 
 const UsersTable = () => {
-  const {state} = useContext(AppContext)
-  const {userPrivileges, conversationStats: status} = useConversations()
+  const {state, setConversacionActual} = useContext(AppContext)
+  const {
+      userPrivileges, 
+      conversationStats: status,   
+      conversations,
+      setCurrentConversation,
+      setConversations} = useConversations()
 
   const [users, setUsers] = useState(state.usuarios);
   const [roles, setRoles] = useState(state.roles);
@@ -33,6 +39,14 @@ const UsersTable = () => {
     setSelectedDepartment('')
   }
  }, [selectedDepartment])
+ 
+ useEffect(() => {
+  setUsers(state.usuarios)
+  setRoles(state.roles)
+  setDepartments(state.departamentos)
+  setConversationStats(status)
+  setPrivileges(userPrivileges)
+ }, [state])
  
   const getRoleName = (roleId) => {
     const role = roles.find(r => r.id === roleId);
@@ -94,6 +108,52 @@ const UsersTable = () => {
   const handleProfileFileChange = (e) => {
     setProfileFile(e.target.files[0]);
   };
+
+  const resetUnreadMessages = async (conversationId) => {
+    try {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/reset-unread/${conversationId}`);
+      setConversations(prevConversations =>
+        prevConversations.map(convo => {
+          if (convo.conversation_id === conversationId) {
+            return { ...convo, unread_messages: 0 };
+          }
+          return convo;
+        })
+      );
+    } catch (error) {
+      console.error('Error resetting unread messages:', error);
+    }
+  };
+
+  const handleSelectContactChat = async (contacto) => {
+    const conver = conversations.find(conv => conv.phone_number == contacto.telefono)
+    if (conver) {
+      await resetUnreadMessages(conver.conversation_id);
+      setCurrentConversation(conver);
+      setConversacionActual({...conver, position_scroll: false})
+    }else{
+      const usuario = state.usuarios.find(us => us.id_usuario == Number(localStorage.getItem('user_id')))
+      const {nombre, apellido, telefono, direccion, correo, ciudad, ultimo_mensaje, tiempo_ultimo_mensaje, fase, conversacion, ...rest} = contacto
+      let cont = {
+        ...rest,
+        first_name: nombre,
+        last_name: apellido,
+        phone_number: telefono,
+        direccion_completa: direccion,
+        email: correo,
+        ciudad_residencia: ciudad,
+        last_message_time: ultimo_mensaje,
+        time_since_last_message: tiempo_ultimo_mensaje,
+        phase_name: fase,
+        has_conversation: conversacion,
+        id_usuario: usuario.id_usuario,
+        responsable_nombre: usuario.nombre,
+        responsable_apellido: usuario.apellido,
+      }
+      setCurrentConversation(cont);
+      setConversacionActual({...cont, position_scroll: false})
+    }
+  }
 
   const handleUserFormSubmit = async (e) => {
     e.preventDefault();
@@ -172,7 +232,7 @@ const UsersTable = () => {
           />
           <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Seleccione departamento" />
+              <SelectValue placeholder="departamento" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -187,6 +247,18 @@ const UsersTable = () => {
         </div>
       </div>
       <div className="table-responsive">
+      <UserDate
+        users={regularUsers}
+        departments={departments}
+        getConversationStats={getConversationStats}
+        getRoleName={getRoleName}
+        getDepartmentName={getDepartmentName}
+        hasPrivilege={hasPrivilege}
+        handleEditUserClick={handleEditUserClick}
+        handleDeleteUserClick={handleDeleteUserClick}
+        tipo_tabla={'usuarios'}
+        handleSelectContactChat={handleSelectContactChat}
+      />
         {/* <Table className="custom-table" bordered hover>
           <thead>
             <tr>

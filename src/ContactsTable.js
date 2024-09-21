@@ -8,11 +8,18 @@ import CreateContactModal from './CreateContactModal'; // Asegúrate de que la r
 import UploadCSVModal from './UploadCSVModal'; // Asegúrate de que la ruta sea correcta
 import './ContactsTable.css'; // Import the CSS file
 import { AppContext } from './context';
+import { UserDate } from './UserDate';
+import { useConversations } from './ConversationsContext';
 
 const geoUrl = '/ne_110m_admin_0_countries.json'; // Ruta al archivo GeoJSON en la carpeta public
 
 const ContactsTable = () => {
-  const {state} = useContext(AppContext)
+  const {state, setConversacionActual} = useContext(AppContext)
+  const {
+    conversations,
+    setCurrentConversation,
+    setConversations,
+  } = useConversations();
   const [contacts, setContacts] = useState([]);
   const [filteredContacts, setFilteredContacts] = useState([]);
   const [showCreateContactModal, setShowCreateContactModal] = useState(false);
@@ -140,9 +147,9 @@ const ContactsTable = () => {
       });
   };
 
-  const handleSearchChange = (e) => {
-    setSearch(e.target.value);
-  };
+  // const handleSearchChange = (e) => {
+  //   setSearch(e.target.value);
+  // };
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -151,6 +158,52 @@ const ContactsTable = () => {
       [name]: value,
     });
   };
+
+  const resetUnreadMessages = async (conversationId) => {
+    try {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/reset-unread/${conversationId}`);
+      setConversations(prevConversations =>
+        prevConversations.map(convo => {
+          if (convo.conversation_id === conversationId) {
+            return { ...convo, unread_messages: 0 };
+          }
+          return convo;
+        })
+      );
+    } catch (error) {
+      console.error('Error resetting unread messages:', error);
+    }
+  };
+
+  const handleSelectContactChat = async (contacto) => {
+    const conver = conversations.find(conv => conv.phone_number == contacto.telefono)
+    if (conver) {
+      await resetUnreadMessages(conver.conversation_id);
+      setCurrentConversation(conver);
+      setConversacionActual({...conver, position_scroll: false})
+    }else{
+      const usuario = state.usuarios.find(us => us.id_usuario == Number(localStorage.getItem('user_id')))
+      const {nombre, apellido, telefono, direccion, correo, ciudad, ultimo_mensaje, tiempo_ultimo_mensaje, fase, conversacion, ...rest} = contacto
+      let cont = {
+        ...rest,
+        first_name: nombre,
+        last_name: apellido,
+        phone_number: telefono,
+        direccion_completa: direccion,
+        email: correo,
+        ciudad_residencia: ciudad,
+        last_message_time: ultimo_mensaje,
+        time_since_last_message: tiempo_ultimo_mensaje,
+        phase_name: fase,
+        has_conversation: conversacion,
+        id_usuario: usuario.id_usuario,
+        responsable_nombre: usuario.nombre,
+        responsable_apellido: usuario.apellido,
+      }
+      setCurrentConversation(cont);
+      setConversacionActual({...cont, position_scroll: false})
+    }
+  }
 
   const formatTimeSinceLastMessage = (seconds) => {
     if (!seconds) return '-';
@@ -222,8 +275,8 @@ const ContactsTable = () => {
           </Geographies>
         </ComposableMap>
       </div>
-      <Row className="mb-3">
-        <Col>
+      {/* <Row className="mb-3"> */}
+        {/* <Col>
           <Form.Control 
             type="text" 
             placeholder="Buscar por nombre, apellido, teléfono o correo" 
@@ -235,7 +288,7 @@ const ContactsTable = () => {
           <Form.Select name="phase" value={filters.phase} onChange={handleFilterChange}>
             <option value="">Filtrar por fase</option>
             {/* Añadir opciones de fases aquí */}
-          </Form.Select>
+          {/* </Form.Select>
         </Col>
         <Col>
           <Form.Select name="country" value={filters.country} onChange={handleFilterChange}>
@@ -253,10 +306,10 @@ const ContactsTable = () => {
             <option value="thisMonth">Este mes</option>
             <option value="lastMonth">El mes pasado</option>
             <option value="beforeLastMonth">Antes del mes pasado</option>
-          </Form.Select>
-        </Col>
-      </Row>
-      <Row className="mb-3">
+          </Form.Select> */}
+        {/* </Col> */}
+    {/* </Row> */} 
+      {/* <Row className="mb-3">
         <Col>
           <Button variant="primary" onClick={handleCreateContactClick}>
             <PlusCircle /> Crear Contacto
@@ -267,9 +320,9 @@ const ContactsTable = () => {
             <Upload /> Cargar CSV
           </Button>
         </Col>
-      </Row>
+      </Row> */}
       <div className="table-responsive">
-        <Table className="custom-table" bordered hover>
+        {/* <Table className="custom-table" bordered hover>
           <thead>
             <tr>
               <th>Nombre</th>
@@ -322,7 +375,17 @@ const ContactsTable = () => {
               </tr>
             ))}
           </tbody>
-        </Table>
+        </Table> */}
+        <UserDate 
+        tipo_tabla={'contactos'}
+        contacts={filteredContacts}
+        handleEditContactClick={handleEditContactClick}
+        handleDeleteContactClick={handleDeleteContactClick}
+        formatTimeSinceLastMessage={formatTimeSinceLastMessage}
+        handleCreateContactClick={handleCreateContactClick}
+        handleUploadCSVClick={handleUploadCSVClick}
+        handleSelectContactChat={handleSelectContactChat}
+        />
       </div>
 
       <CreateContactModal
