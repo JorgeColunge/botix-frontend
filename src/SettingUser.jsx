@@ -59,108 +59,109 @@ export const SettingUser = () => {
       };
     
       return (
-        <section className="min-h-screen flex items-center justify-center">
-          <Card className="w-[50%]">
+        <section className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-[90%] md:w-[50%]">
             <CardHeader className="flex justify-between items-center">
-              <CardTitle>Configuraciones de Usuario</CardTitle>
-              <CardDescription className='d-flex w-full justify-end'>
+            <CardTitle>Configuraciones de Usuario</CardTitle>
+            <CardDescription className='d-flex w-full justify-end'>
                 <Button variant="icon" onClick={handleEditToggle}>
-                  <TooltipProvider>
+                <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger asChild>
+                    <TooltipTrigger asChild>
                         <Pencil fill='#2ec426' />
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-green-500 text-white">
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-green-500 text-white">
                         Editar usuario
-                      </TooltipContent>
+                    </TooltipContent>
                     </Tooltip>
-                  </TooltipProvider>
+                </TooltipProvider>
                 </Button>
-              </CardDescription>
+            </CardDescription>
             </CardHeader>
             <Separator />
             <CardContent className="mt-4">
-              <form>
+            <form>
                 <div className="grid w-full items-center gap-4">
-                  {/* Fila para Nombre, Apellido y Avatar */}
-                  <div className="flex space-x-4 items-center">
+                {/* Fila para Nombre, Apellido y Avatar */}
+                <div className="flex flex-col md:flex-row space-x-0 md:space-x-4 items-center">
                     {/* Componente Avatar */}
-                    <Avatar className="relative w-[6em] h-[6em] cursor-pointer">
-                        <label htmlFor="link_foto" className="absolute inset-0 z-10 cursor-pointer">
-                            <AvatarImage src={`${process.env.REACT_APP_API_URL}${userData.link_foto}`} alt={`${userData.nombre} ${userData.apellido}`} />
-                            <AvatarFallback>{userData.nombre?.charAt(0)}{userData.apellido?.charAt(0)}</AvatarFallback>
-                        </label>
-                        {isEditing && (
-                            <Input
-                            type="file"
-                            id="link_foto"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="absolute inset-0 opacity-0 z-20 cursor-pointer"
-                            />
-                        )}
-                        </Avatar>
-                    <div className="flex flex-col w-full space-y-1.5">
-                      <Label htmlFor="nombre">Nombre</Label>
-                      <Input 
+                    <Avatar className="relative w-[7em] h-[7em] cursor-pointer">
+                    <label htmlFor="link_foto" className="absolute inset-0 z-10 cursor-pointer">
+                        <AvatarImage src={`${process.env.REACT_APP_API_URL}${userData.link_foto}`} alt={`${userData.nombre} ${userData.apellido}`} />
+                        <AvatarFallback>{userData.nombre?.charAt(0)}{userData.apellido?.charAt(0)}</AvatarFallback>
+                    </label>
+                    {isEditing && (
+                        <Input
+                        type="file"
+                        id="link_foto"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="absolute inset-0 opacity-0 z-20 cursor-pointer"
+                        />
+                    )}
+                    </Avatar>
+                    {/* Campos Nombre y Apellido */}
+                    <div className="flex flex-col w-full space-y-1.5 mt-4 md:mt-0">
+                    <Label htmlFor="nombre">Nombre</Label>
+                    <Input 
                         id="nombre" 
                         value={userData.nombre} 
                         onChange={handleInputChange} 
                         disabled={!isEditing} 
-                      />
+                    />
                     </div>
-                    <div className="flex flex-col w-full space-y-1.5">
-                      <Label htmlFor="apellido">Apellido</Label>
-                      <Input 
+                    <div className="flex flex-col w-full space-y-1.5 mt-4 md:mt-0">
+                    <Label htmlFor="apellido">Apellido</Label>
+                    <Input 
                         id="apellido" 
                         value={userData.apellido} 
                         onChange={handleInputChange} 
                         disabled={!isEditing} 
-                      />
+                    />
                     </div>
-                  </div>
-                  {/* Campo de Telefono */}
-                  <div className="flex flex-col space-y-1.5">
+                </div>
+                {/* Campo de Telefono */}
+                <div className="flex flex-col space-y-1.5">
                     <Label htmlFor="telefono">Teléfono</Label>
                     <Input 
-                      id="telefono" 
-                      value={userData.telefono} 
-                      onChange={handleInputChange} 
-                      disabled={!isEditing} 
+                    id="telefono" 
+                    value={userData.telefono} 
+                    onChange={handleInputChange} 
+                    disabled={!isEditing} 
                     />
-                  </div>
-                  {/* Campo de Email */}
-                  <div className="flex flex-col space-y-1.5">
+                </div>
+                {/* Campo de Email */}
+                <div className="flex flex-col space-y-1.5">
                     <Label htmlFor="email">Correo</Label>
                     <Input 
-                      id="email" 
-                      value={userData.email} 
-                      onChange={handleInputChange} 
-                      disabled={!isEditing} 
+                    id="email" 
+                    value={userData.email} 
+                    onChange={handleInputChange} 
+                    disabled={!isEditing} 
                     />
-                  </div>
-                  {/* Campo de Rol */}
-                  <div className="flex flex-col space-y-1.5">
+                </div>
+                {/* Campo de Rol */}
+                <div className="flex flex-col space-y-1.5">
                     <Label htmlFor="rol">Rol</Label>
                     <Input id="rol" value={rolUser.name} readOnly />
-                  </div>
-                  {/* Campo de Compañía */}
-                  <div className="flex flex-col space-y-1.5">
+                </div>
+                {/* Campo de Compañía */}
+                <div className="flex flex-col space-y-1.5">
                     <Label htmlFor="compania">Compañía</Label>
                     <Input id="compania" value={empresa.name} readOnly />
-                  </div>
                 </div>
-              </form>
+                </div>
+            </form>
             </CardContent>
             <CardFooter className="flex justify-between">
-              {isEditing && (
+            {isEditing && (
                 <>
-                  <Button variant="outline" onClick={handleEditToggle}>Cancelar</Button>
-                  <Button>Guardar</Button>
+                <Button variant="outline" onClick={handleEditToggle}>Cancelar</Button>
+                <Button>Guardar</Button>
                 </>
-              )}
+            )}
             </CardFooter>
-          </Card>
+        </Card>
         </section>
       );
     };
