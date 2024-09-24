@@ -2156,7 +2156,43 @@ const generateCodeForIntentions = async () => {
                 `  };`,
                 `  try {`,
                 `    responseGpt = await axios.post(url, payload, { headers });`,
-                `    return responseGpt.data.choices[0].message.content.trim();`,
+                `    const resultado = responseGpt.data.choices[0].message.content.trim();`,
+                ` // Obtener los tokens de entrada y salida
+                  const usage = responseGpt.data.usage;
+                  const inputTokens = usage.prompt_tokens;
+                  const outputTokens = usage.completion_tokens;
+                  
+                  // URL del backend
+                  const backendUrl = "${process.env.REACT_APP_API_URL}/api/consumptions";
+
+                  // Enviar al backend el consumo de la API en el input
+                  const backendPayloadInput = {
+                    api_name: "GPT",
+                    model: "${gptModel}",
+                    unit_type: "input_token",
+                    unit_count: inputTokens,
+                    query_details: "${assistantName}",
+                    company_id: integrationDetails.company_id,
+                    user_id: responsibleUserId,
+                    conversationId: conversationId
+                  };
+
+                  await axios.post(backendUrl, backendPayloadInput);
+
+                  // Enviar al backend el consumo de la API en el output
+                  const backendPayloadOutput = {
+                    api_name: "GPT",
+                    model: "${gptModel}",
+                    unit_type: "output_token",
+                    unit_count: outputTokens,
+                    query_details: "${assistantName}",
+                    company_id: integrationDetails.company_id,
+                    user_id: responsibleUserId,
+                    conversationId: conversationId
+                  };
+
+                  await axios.post(backendUrl, backendPayloadOutput);
+                  return resultado`,
                 `  } catch (error) {`,
                 `    console.error("Error al obtener respuesta de GPT:", error);`,
                 `    return "Error al obtener la respuesta";`,
@@ -2211,7 +2247,43 @@ const generateCodeForIntentions = async () => {
             `  };`,
             `  try {`,
             `    responseGpt = await axios.post(url, payload, { headers });`,
-            `    return responseGpt.data.choices[0].message.content.trim();`,
+            `    const resultado = responseGpt.data.choices[0].message.content.trim();`,
+            ` // Obtener los tokens de entrada y salida
+            const usage = responseGpt.data.usage;
+            const inputTokens = usage.prompt_tokens;
+            const outputTokens = usage.completion_tokens;
+            
+            // URL del backend
+            const backendUrl = "${process.env.REACT_APP_API_URL}/api/consumptions";
+
+            // Enviar al backend el consumo de la API en el input
+            const backendPayloadInput = {
+              api_name: "GPT",
+              model: "${gptModel}",
+              unit_type: "input_token",
+              unit_count: inputTokens,
+              query_details: "${assistantName}",
+              company_id: integrationDetails.company_id,
+              user_id: responsibleUserId,
+              conversationId: conversationId
+            };
+
+            await axios.post(backendUrl, backendPayloadInput);
+
+            // Enviar al backend el consumo de la API en el output
+            const backendPayloadOutput = {
+              api_name: "GPT",
+              model: "${gptModel}",
+              unit_type: "output_token",
+              unit_count: outputTokens,
+              query_details: "${assistantName}",
+              company_id: integrationDetails.company_id,
+              user_id: responsibleUserId,
+              conversationId: conversationId
+            };
+
+            await axios.post(backendUrl, backendPayloadOutput);
+            return resultado`,
             `  } catch (error) {`,
             `    console.error("Error al obtener respuesta de GPT:", error);`,
             `    return "Error al obtener la respuesta";`,
