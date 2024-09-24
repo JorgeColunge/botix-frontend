@@ -1,11 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Google, Facebook } from 'react-bootstrap-icons';
 import CustomModal from './CustomModal';
 import "./Login.css";
+import { AppContext } from "./context";
 
 const Login = () => {
+  const {setUsuario} = useContext(AppContext)
   const [email, setEmail] = useState("");
   const [contraseña, setContraseña] = useState("");
   const [error, setError] = useState("");
@@ -39,7 +41,7 @@ const Login = () => {
       localStorage.setItem("userName", user.nombre);
       localStorage.setItem("company_id", user.company_id);
       localStorage.setItem("department_id", user.department_id);
-      
+      setUsuario(user)
       navigate('/chats'); // Redirige al usuario después de iniciar sesión
     } catch (error) {
       if (error.response) {
