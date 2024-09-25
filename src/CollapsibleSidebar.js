@@ -9,7 +9,7 @@ import {Button,
 } from "./components"
 
 const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
-  const {setConversacionActual, setUsuario, setCompania} = useContext(AppContext);
+  const {setConversacionActual, setUsuario, setCompania, state} = useContext(AppContext);
   const {
     setCurrentConversation,
   } = useConversations();
@@ -63,6 +63,12 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
     }
   }, [userData.rol]);
 
+  useEffect(() => {
+  if (state.usuario) {
+       setUserData(state.usuario)
+  }
+  }, [state.usuario])
+  
   const userPhoto = userData.link_foto ? `${process.env.REACT_APP_API_URL}${userData.link_foto}` : "/icono WA.png";
 
   const handleLogout = () => {

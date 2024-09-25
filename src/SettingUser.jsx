@@ -104,7 +104,6 @@ export const SettingUser = () => {
                 'Content-Type': 'multipart/form-data'
               }
             });
-             console.log("datos de pendido,",uploadResponse.data.profileUrl)
             updateUser.link_foto = uploadResponse.data.profileUrl;
           } catch (error) {
             Swal.fire({
