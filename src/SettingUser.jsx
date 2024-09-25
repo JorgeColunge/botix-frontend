@@ -20,24 +20,56 @@ import React, { useState, useEffect, useContext } from 'react';
   } from "./components"
 import { AppContext } from './context';
 import { Pencil } from 'lucide-react';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 export const SettingUser = () => {
-    const { state } = useContext(AppContext);
-    const { nombre, apellido, telefono, email, rol, link_foto } = state?.usuario;
+    const { state, setUsers, setUsuario } = useContext(AppContext);
+    const { nombre, apellido, telefono, email, rol, link_foto, id_usuario, company_id } = state?.usuario;
     const [isEditing, setIsEditing] = useState(false);
     const [userData, setUserData] = useState({
       nombre,
       apellido,
       telefono,
       email,
-      link_foto
+      link_foto,
+      rol,
+      company_id,
+      id_usuario,
+      profile : null,
     } || {
         nombre: '',
         apellido: '',
         telefono: 0,
         email: '',
-        link_foto: ''
+        link_foto: '',
+        profile : null,
     });
-     const rolUser = state.roles.find(rl => rl.id == rol)
+
+    useEffect(() => {
+       const loadingDates = async() => {
+       await setUserData({
+            nombre,
+            apellido,
+            telefono,
+            email,
+            link_foto,
+            rol,
+            company_id,
+            id_usuario,
+            profile : null,
+          } || {
+              nombre: '',
+              apellido: '',
+              telefono: 0,
+              email: '',
+              link_foto: '',
+              profile : null,
+          })
+       }
+       loadingDates()
+    }, [state?.usuario])
+
+    const rolUser = state?.roles?.find(rl => rl.id == rol)
      const empresa = state.compania;
 
     // Función para habilitar/deshabilitar modo edición
@@ -53,11 +85,56 @@ export const SettingUser = () => {
       const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-          const imageUrl = URL.createObjectURL(file);
-          setUserData({ ...userData, link_foto: imageUrl });
+          setUserData({ ...userData, profile: file });
         }
       };
     
+      const handleUserFormSubmit = async (e) => {
+        e.preventDefault();
+    
+        const {profile, ...updateUser} = userData;
+    
+        if (profile) {
+          const formData = new FormData();
+          formData.append('profile', profile);
+    
+          try {
+            const uploadResponse = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-profile`, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            });
+             console.log("datos de pendido,",uploadResponse.data.profileUrl)
+            updateUser.link_foto = uploadResponse.data.profileUrl;
+          } catch (error) {
+            Swal.fire({
+                title: "Error",
+                text: `Error al procesar la Foto. Error: ${error.data}`,
+                icon: "error"
+              });
+            return;
+          }
+        }
+    
+        axios.put(`${process.env.REACT_APP_API_URL}/api/auth/users/${updateUser.id_usuario}`, updateUser)
+          .then(response => {
+            setUsers(state.usuarios.map(user => user.id_usuario === updateUser.id_usuario ? response.data : user));
+            setUsuario(response.data)
+            Swal.fire({
+                title: "Perfecto",
+                text: `Tus datos de usuario fueron actualizados.`,
+                icon: "success"
+              });
+          })
+          .catch(error => {
+            Swal.fire({
+                title: "Error",
+                text: `Error al modificar datos del perfil: ${error.response.data}`,
+                icon: "error"
+              });
+          });
+      };
+
       return (
         <section className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-[90%] md:w-[50%]">
@@ -87,8 +164,8 @@ export const SettingUser = () => {
                     {/* Componente Avatar */}
                     <Avatar className="relative w-[7em] h-[7em] cursor-pointer">
                     <label htmlFor="link_foto" className="absolute inset-0 z-10 cursor-pointer">
-                        <AvatarImage src={`${process.env.REACT_APP_API_URL}${userData.link_foto}`} alt={`${userData.nombre} ${userData.apellido}`} />
-                        <AvatarFallback>{userData.nombre?.charAt(0)}{userData.apellido?.charAt(0)}</AvatarFallback>
+                        <AvatarImage src={`${process.env.REACT_APP_API_URL}${userData?.link_foto}`} alt={`${userData?.nombre} ${userData?.apellido}`} />
+                        <AvatarFallback>{userData?.nombre?.charAt(0)}{userData?.apellido?.charAt(0)}</AvatarFallback>
                     </label>
                     {isEditing && (
                         <Input
@@ -105,7 +182,7 @@ export const SettingUser = () => {
                     <Label htmlFor="nombre">Nombre</Label>
                     <Input 
                         id="nombre" 
-                        value={userData.nombre} 
+                        value={userData?.nombre} 
                         onChange={handleInputChange} 
                         disabled={!isEditing} 
                     />
@@ -125,7 +202,7 @@ export const SettingUser = () => {
                     <Label htmlFor="telefono">Teléfono</Label>
                     <Input 
                     id="telefono" 
-                    value={userData.telefono} 
+                    value={userData?.telefono} 
                     onChange={handleInputChange} 
                     disabled={!isEditing} 
                     />
@@ -135,7 +212,7 @@ export const SettingUser = () => {
                     <Label htmlFor="email">Correo</Label>
                     <Input 
                     id="email" 
-                    value={userData.email} 
+                    value={userData?.email} 
                     onChange={handleInputChange} 
                     disabled={!isEditing} 
                     />
@@ -143,12 +220,12 @@ export const SettingUser = () => {
                 {/* Campo de Rol */}
                 <div className="flex flex-col space-y-1.5">
                     <Label htmlFor="rol">Rol</Label>
-                    <Input id="rol" value={rolUser.name} readOnly />
+                    <Input id="rol" value={rolUser?.name} readOnly />
                 </div>
                 {/* Campo de Compañía */}
                 <div className="flex flex-col space-y-1.5">
                     <Label htmlFor="compania">Compañía</Label>
-                    <Input id="compania" value={empresa.name} readOnly />
+                    <Input id="compania" value={empresa?.name} readOnly />
                 </div>
                 </div>
             </form>
@@ -157,7 +234,7 @@ export const SettingUser = () => {
             {isEditing && (
                 <>
                 <Button variant="outline" onClick={handleEditToggle}>Cancelar</Button>
-                <Button>Guardar</Button>
+                <Button onClick={handleUserFormSubmit} >Guardar</Button>
                 </>
             )}
             </CardFooter>
