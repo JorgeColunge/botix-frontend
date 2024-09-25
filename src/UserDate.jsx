@@ -468,7 +468,6 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
       rowSelection,
     },
   });
-
   
   return (
     <div className="w-full">

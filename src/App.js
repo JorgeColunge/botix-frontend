@@ -23,6 +23,7 @@ import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';
 import { Campaigns } from './Campaigns';
 import axios from 'axios';
+import { SettingUser } from './SettingUser';
 
 
 function App() {
@@ -195,13 +196,14 @@ function App() {
 
         setRoles(rolesResponse.data);
         setDepartments(departmentsResponse.data);
-        setUsers(usersResponse.data); 
+        setUsers(usersResponse.data);
 
       } catch (error) {
         console.error('Error fetching users:', error);
       }
     };
-
+    
+    
     fetchTemplates();
     fetchCampaigns();
     fetchContacts();
@@ -282,7 +284,7 @@ function App() {
             <Route path="/campaigns" element={<PrivateRoute><Campaigns /></PrivateRoute>} />
             <Route path="/consumption" element={<PrivateRoute><Consumption /></PrivateRoute>} />
             <Route path="/calendar" element={<PrivateRoute><EntitySelector /></PrivateRoute>} />
-            <Route path="/settings" element={<PrivateRoute><div>Settings</div></PrivateRoute>} />
+            <Route path="/settings" element={<PrivateRoute><SettingUser/></PrivateRoute>} />
             <Route path="/company" element={<PrivateRoute><CompanyInfo /></PrivateRoute>} />
             <Route path="/create-template" element={<PrivateRoute><CreateTemplate /></PrivateRoute>} />
             <Route path="/edit-template/:id_plantilla" element={<PrivateRoute><CreateTemplate /></PrivateRoute>} />

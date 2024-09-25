@@ -9,7 +9,7 @@ import {Button,
 } from "./components"
 
 const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
-  const {setConversacionActual} = useContext(AppContext);
+  const {setConversacionActual, setUsuario, setCompania, state} = useContext(AppContext);
   const {
     setCurrentConversation,
   } = useConversations();
@@ -36,11 +36,13 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
       .then(response => {
         setUserData(response.data);
         console.log('User data:', response.data); // Log de datos del usuario
+        setUsuario(response.data)
         return axios.get(`${process.env.REACT_APP_API_URL}/api/company/${response.data.company_id}`);
       })
       .then(response => {
         setCompanyData(response.data);
         console.log('Company data:', response.data); // Log de datos de la empresa
+        setCompania(response.data)
       })
       .catch(error => {
         console.error('Error fetching data:', error);
@@ -61,6 +63,12 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
     }
   }, [userData.rol]);
 
+  useEffect(() => {
+  if (state.usuario) {
+       setUserData(state.usuario)
+  }
+  }, [state.usuario])
+  
   const userPhoto = userData.link_foto ? `${process.env.REACT_APP_API_URL}${userData.link_foto}` : "/icono WA.png";
 
   const handleLogout = () => {

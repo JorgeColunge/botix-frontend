@@ -107,12 +107,25 @@ const DraggableConversation = ({ conversation, phaseId, moveConversation, handle
               : conversation.phone_number}
           </strong>
           {conversation.label && (
-            <OverlayTrigger placement="top" overlay={<Tooltip>{phases[conversation.label]?.name}</Tooltip>}>
-              <span className="badge-label" style={{ color: phases[conversation.label]?.color }}>
-                <BookmarkFill />
-              </span>
-            </OverlayTrigger>
-          )}
+          (() => {
+            // Buscar la fase que coincida con el phaseId
+            const matchingPhase = phases.find(phase => phase.id === phaseId);
+            
+            // Si encuentra la fase, usa su color y nombre
+            if (matchingPhase) {
+              return (
+                <OverlayTrigger placement="top" overlay={<Tooltip>{matchingPhase.name}</Tooltip>}>
+                  <span className="badge-label" style={{ color: matchingPhase.color }}>
+                    <BookmarkFill />
+                  </span>
+                </OverlayTrigger>
+              );
+            }
+            
+            // Si no encuentra la fase, no muestra nada o puedes manejarlo como prefieras
+            return null;
+          })()
+        )}
         </div>
         <div className="d-flex justify-content-between">
           <span className="text-muted">{getMessagePreview(conversation.last_message)}</span>
@@ -139,18 +152,22 @@ const DroppableColumn = ({ phaseId, phase, groupedConversations, moveConversatio
     }),
   });
 
+  const filteredConversations = groupedConversations[phaseId]
+    ? groupedConversations[phaseId].filter(convo => convo.label === phase.id) 
+    : [];
+
   return (
     <div ref={drop} className="funnel-column">
       <div className="funnel-column-header" style={{ backgroundColor: phase.color }}>
         <h5 className="text-white text-center">{phase.name}</h5>
       </div>
       <ListGroup>
-        {groupedConversations[phaseId] ? (
-          groupedConversations[phaseId].map(convo => (
+        {filteredConversations.length > 0 ? (
+          filteredConversations.map(convo => (
             <DraggableConversation
               key={convo.conversation_id}
               conversation={convo}
-              phaseId={phaseId}
+              phaseId={phase.id}
               moveConversation={moveConversation}
               handleConversationDrop={handleConversationDrop}
               phases={phases}
@@ -165,92 +182,79 @@ const DroppableColumn = ({ phaseId, phase, groupedConversations, moveConversatio
 };
 
 const FunnelGraph = ({ phases, groupedConversations }) => {
-  const totalConversations = Object.values(groupedConversations).reduce((acc, phase) => acc + phase.length, 0);
-  const calculateVisitors = (phaseCount) => (phaseCount / totalConversations) * 100;
 
-  const phasesArray = Object.values(phases).filter((phase) => {
-    const phaseId = Object.keys(phases).find((key) => phases[key] === phase);
-    const phaseCount = groupedConversations[phaseId]?.length || 0;
-    
-    return phaseCount > 0;
-  }).map((phase) => {
-    const phaseId = Object.keys(phases).find((key) => phases[key] === phase);
-    const phaseCount = groupedConversations[phaseId]?.length || 0;
-    
+  const phasesArray = phases
+  .filter((phase) => {
+    const phaseId = phase.id;
+    const conversations = groupedConversations[phaseId] || [];
+
+    return conversations.some(convo => convo.label === phaseId);
+  })
+  .map((phase) => {
+    const phaseId = phase.id;
+    const conversations = groupedConversations[phaseId] || [];
+
+    const phaseCount = conversations.length;
+
     return {
       name: phase.name,
-      fill: phase.color, // Asegúrate de que el color esté presente
-      Cantidad: groupedConversations[phaseId] ? groupedConversations[phaseId].length : 0,
+      fill: phase.color,
+      Cantidad: phaseCount,
     };
   });
-  
-  const calculateWidth = (phaseCount) => (phaseCount / totalConversations) * 100;
+
 
   const chartConfig = {
     ...Object.entries(phases).reduce((acc, [key, fas], index) => {
-      // Usamos el nombre de la fase como clave del objeto
       acc[fas.name] = {
         label: fas.name,
-        color: fas.color , // Usar color de fase o un valor por defecto
+        color: fas.color ,
       };
       return acc;
     }, {}),
   }
 
   return (
-    // <div className="funnel-graph">
-    //   {Object.entries(phases).map(([phaseId, phase]) => {
-    //     const phaseCount = groupedConversations[phaseId] ? groupedConversations[phaseId].length : 0;
-    //     const width = totalConversations === 0 ? 100 : calculateWidth(phaseCount);
-    //     return (
-    //       <div key={phaseId} className="funnel-graph-segment" style={{ width: `${width}%`, backgroundColor: phase.color }}>
-    //         {phase.name} ({phaseCount})
-    //       </div>
-    //     );
-    //   })}
-    // </div>
-
     <Card className='w-full h-[100%] mb-5'>
       <CardHeader>
         <CardTitle>Descripción de Fases</CardTitle>
       </CardHeader>
       <CardContent>
       <CardContent>
-  <ChartContainer className='h-[20vh]' config={chartConfig}>
-    <BarChart
-      accessibilityLayer
-      data={phasesArray}
-      layout="vertical"
-      margin={{
-        top: 0,
-        right: 5,
-        bottom: 0,
-        left: 115,
-      }}
-    >
-      <YAxis
-        dataKey="name" 
-        type="category"
-        tickLine={false}
-        tickMargin={10}
-        axisLine={false}
-        tick={{ fontSize: 15, width: 150, wordBreak: "break-word" }}
-        tickFormatter={(name) => name} 
-        margin={{
-          top: 0,
-          botton: 0
-        }}
-      />
-      <XAxis dataKey="Cantidad" type="number" hide />
-      <ChartTooltip
-        cursor={false}
-        content={<ChartTooltipContent hideLabel />}
-      />
-      <Bar dataKey="Cantidad" layout="vertical" radius={6} barSize={30} minPointSize={15}/>
-    </BarChart>
-  </ChartContainer>
-</CardContent>
-
+        <ChartContainer className='h-[20vh]' config={chartConfig}>
+        <BarChart
+          accessibilityLayer
+          data={phasesArray}
+          layout="vertical"
+          margin={{
+            top: 0,
+            right: 5,
+            bottom: 0,
+            left: 115,
+          }}
+        >
+          <YAxis
+            dataKey="name" 
+            type="category"
+            tickLine={false}
+            tickMargin={10}
+            axisLine={false}
+            tick={{ fontSize: 15, width: 150, wordBreak: "break-word" }}
+            tickFormatter={(name) => name} 
+            margin={{
+              top: 0,
+              botton: 0
+            }}
+          />
+          <XAxis dataKey="Cantidad" type="number" hide />
+          <ChartTooltip
+            cursor={false}
+            content={<ChartTooltipContent hideLabel />}
+          />
+          <Bar dataKey="Cantidad" layout="vertical" radius={6} barSize={30} minPointSize={15}/>
+        </BarChart>
+          </ChartContainer>
+        </CardContent>
       </CardContent>
     </Card>
   );
@@ -280,7 +284,8 @@ function FunnelComponent() {
   .map(fase => ({
     phase_id: fase.department_id,
     name: fase.name,
-    color: fase.color
+    color: fase.color,
+    id: fase.id
   }))
 
   const handleConversationDrop = async (conversation, newPhaseId) => {
@@ -397,10 +402,10 @@ function FunnelComponent() {
     </div>
       <div className="funnel-container">
         <div className="funnel-columns">
-          {Object.entries(filterPhases).map(([phaseId, phase]) => (
+          {Object.entries(filterPhases).map(([phase_id, phase]) => (
             <DroppableColumn
-              key={phaseId}
-              phaseId={phaseId}
+              key={phase_id}
+              phaseId={phase.id}
               phase={phase}
               groupedConversations={groupedConversations}
               moveConversation={moveConversation}

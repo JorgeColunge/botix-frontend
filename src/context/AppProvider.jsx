@@ -16,6 +16,8 @@ export const AppProvider = ({ children }) => {
     fases: [],
     roles: [],
     departamentos: [],
+    usuario: {},
+    compania: {}
   });
 
   const setConversacionActual = (conversacion_Actual) => {setState((prevState) => ({ ...prevState, conversacion_Actual }));};
@@ -27,9 +29,11 @@ export const AppProvider = ({ children }) => {
   const setUsers = (usuarios) => setState((prevState) => ({ ...prevState, usuarios }));
   const setRoles = (roles) => setState((prevState) => ({ ...prevState, roles }));
   const setPhases = (fases) => setState((prevState) => ({ ...prevState, fases }));
+  const setUsuario = (usuario) => setState((prevState) => ({ ...prevState, usuario }));
+  const setCompania = (compania) => setState((prevState) => ({ ...prevState, compania }));
 
   return (
-    <AppContext.Provider value={{ state, setConversacionActual, setStatus, setCampaigns, setTemplates, setContacts, setUsers, setPhases, setRoles, setDepartments }}>
+    <AppContext.Provider value={{ state, setConversacionActual, setStatus, setCampaigns, setCompania, setTemplates, setContacts, setUsers, setPhases, setRoles, setDepartments, setUsuario }}>
       {children}
     </AppContext.Provider>
   );
