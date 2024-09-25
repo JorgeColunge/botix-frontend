@@ -7,6 +7,9 @@ import Sidebar from './Sidebar';
 import ChatWindow from './ChatWindow';
 import CompanyInfo from './CompanyInfo';
 import Consumption from './Consumption';
+import Calendar from './Calendar';
+import ScheduleManager from './ScheduleManager';
+import EntitySelector from './EntitySelector';
 import ContactsTable from './ContactsTable';
 import UsersTable from './UsersTable';
 import FunnelComponent from './Funnel';
@@ -278,6 +281,7 @@ function App() {
             <Route path="/inspection" element={<PrivateRoute><div>Inspection</div></PrivateRoute>} />
             <Route path="/campaigns" element={<PrivateRoute><Campaigns /></PrivateRoute>} />
             <Route path="/consumption" element={<PrivateRoute><Consumption /></PrivateRoute>} />
+            <Route path="/calendar" element={<PrivateRoute><EntitySelector /></PrivateRoute>} />
             <Route path="/settings" element={<PrivateRoute><div>Settings</div></PrivateRoute>} />
             <Route path="/company" element={<PrivateRoute><CompanyInfo /></PrivateRoute>} />
             <Route path="/create-template" element={<PrivateRoute><CreateTemplate /></PrivateRoute>} />

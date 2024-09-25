@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import './CollapsibleSidebar.css';
-import { List, ChatLeftDots, People, Person, Funnel, FileBarGraph, Search, Megaphone, CurrencyDollar, Gear, Building, BoxArrowLeft } from 'react-bootstrap-icons';
+import { List, ChatLeftDots, People, Person, Funnel, FileBarGraph, Search, Megaphone, CurrencyDollar, Gear, Building, BoxArrowLeft, Calendar, Calendar3 } from 'react-bootstrap-icons';
 import axios from 'axios';
 import { useMediaQuery } from 'react-responsive';
 import { AppContext } from './context';
@@ -114,6 +114,10 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
                   <div className="nav-item" onClick={() => onSelectOption('campaigns')}>
                     <Megaphone color="white" size={20} />
                     {!isCollapsed && <span>Campañas</span>}
+                  </div>
+                  <div className="nav-item" onClick={() => onSelectOption('calendar')}>
+                    <Calendar3 color="white" size={20} />
+                    {!isCollapsed && <span>Calendario</span>}
                   </div>
                   <div className="nav-item" onClick={() => onSelectOption('consumption')}>
                     <CurrencyDollar color="white" size={20} />
