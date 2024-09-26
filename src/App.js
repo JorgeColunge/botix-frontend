@@ -7,8 +7,7 @@ import Sidebar from './Sidebar';
 import ChatWindow from './ChatWindow';
 import CompanyInfo from './CompanyInfo';
 import Consumption from './Consumption';
-import Calendar from './Calendar';
-import ScheduleManager from './ScheduleManager';
+import ColaboradoresTable from './ColaboradoresTable';
 import EntitySelector from './EntitySelector';
 import ContactsTable from './ContactsTable';
 import UsersTable from './UsersTable';
@@ -27,7 +26,7 @@ import { SettingUser } from './SettingUser';
 
 
 function App() {
-  const {state, setStatus, setCampaigns: addCampaigns, setTemplates: addTemplates, setContacts, setUsers, setPhases, setRoles, setDepartments } = useContext(AppContext)
+  const {state, setStatus, setCampaigns: addCampaigns, setTemplates: addTemplates, setContacts, setUsers, setPhases, setRoles, setDepartments, setColaboradores } = useContext(AppContext)
   const isMobile = useMediaQuery({ maxWidth: 767 });
 
   const [socket, setSocket] = useState(null);
@@ -190,13 +189,27 @@ function App() {
       }
 
       try {
-        const usersResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/users?company_id=${companyId}`);
-        const rolesResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/roles/${companyId}`);
-        const departmentsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/departments/${companyId}`);
+        const usersResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/users?company_id=${companyId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        const collaboratorsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/colaboradores`, {
+          params: { company_id: companyId }, // Se asegura que se esté enviando el parámetro `company_id`
+          headers: { Authorization: `Bearer ${token}` }
+        });
+    
+        const rolesResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/roles/${companyId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+    
+        const departmentsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/departments/${companyId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
         setRoles(rolesResponse.data);
         setDepartments(departmentsResponse.data);
         setUsers(usersResponse.data);
+        setColaboradores(collaboratorsResponse.data);
 
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -278,6 +291,7 @@ function App() {
             } />
             <Route path="/contacts" element={<PrivateRoute><ContactsTable /></PrivateRoute>} />
             <Route path="/users" element={<PrivateRoute><UsersTable /></PrivateRoute>} />
+            <Route path="/colaboradores" element={<PrivateRoute><ColaboradoresTable /></PrivateRoute>} />
             <Route path="/funnel" element={<PrivateRoute><FunnelComponent /></PrivateRoute>} />
             <Route path="/statistics" element={<PrivateRoute><div>Statistics</div></PrivateRoute>} />
             <Route path="/inspection" element={<PrivateRoute><div>Inspection</div></PrivateRoute>} />

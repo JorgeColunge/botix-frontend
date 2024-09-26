@@ -1,4 +1,4 @@
-import  React, { createContext, useState } from 'react';
+import React, { createContext, useState } from 'react';
 
 export const AppContext = createContext();
 
@@ -16,6 +16,7 @@ export const AppProvider = ({ children }) => {
     fases: [],
     roles: [],
     departamentos: [],
+    colaboradores: [],
     usuario: {},
     compania: {}
   });
@@ -29,11 +30,26 @@ export const AppProvider = ({ children }) => {
   const setUsers = (usuarios) => setState((prevState) => ({ ...prevState, usuarios }));
   const setRoles = (roles) => setState((prevState) => ({ ...prevState, roles }));
   const setPhases = (fases) => setState((prevState) => ({ ...prevState, fases }));
+  const setColaboradores = (colaboradores) => setState((prevState) => ({ ...prevState, colaboradores })); 
   const setUsuario = (usuario) => setState((prevState) => ({ ...prevState, usuario }));
   const setCompania = (compania) => setState((prevState) => ({ ...prevState, compania }));
 
   return (
-    <AppContext.Provider value={{ state, setConversacionActual, setStatus, setCampaigns, setCompania, setTemplates, setContacts, setUsers, setPhases, setRoles, setDepartments, setUsuario }}>
+    <AppContext.Provider value={{
+      state,
+      setConversacionActual,
+      setStatus,
+      setCampaigns,
+      setCompania,
+      setTemplates,
+      setContacts,
+      setUsers,
+      setPhases,
+      setRoles,
+      setDepartments,
+      setColaboradores,
+      setUsuario
+    }}>
       {children}
     </AppContext.Provider>
   );

@@ -232,7 +232,7 @@ const UsersTable = () => {
           />
           <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="departamento" />
+              <SelectValue placeholder="Departamento" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
