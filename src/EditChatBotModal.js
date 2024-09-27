@@ -307,7 +307,7 @@ const EditChatBotModal = ({ show, handleClose, bot }) => {
   const [selectedVariables, setSelectedVariables] = useState([]);
   const [showGptAssistantModal, setShowGptAssistantModal] = useState(false);
   const [assistantName, setAssistantName] = useState('');
-  const [gptModel, setGptModel] = useState('gpt-3.5');
+  const [gptModel, setGptModel] = useState('gpt-3.5-turbo');
   const [personality, setPersonality] = useState('');
   const [assistants, setAssistants] = useState([{ name: 'Seleccionar asistente', displayName: 'Seleccionar asistente' }]);
   const [showGptQueryModal, setShowGptQueryModal] = useState(false);
@@ -500,6 +500,23 @@ const closeToolModal = () => {
       }
     }
   }, [bot, setNodes]); // Asegúrate de que setNodes y editarNodo sean dependencias
+  
+  const randomId = () => {
+    // Recoger los ids existentes de los nodos
+    const existingIds = nodes.map(node => node.id);
+  
+    // Función para generar un ID numérico aleatorio
+    const generateRandomId = () => Math.floor(Math.random() * 1000000); // Genera un número aleatorio entre 0 y 999999
+  
+    let newId = generateRandomId();
+  
+    // Asegurarse de que el nuevo ID no esté en la lista de IDs existentes
+    while (existingIds.includes(newId)) {
+      newId = generateRandomId(); // Generar un nuevo ID si hay coincidencias
+    }
+  
+    return newId.toString();
+  };
   
 
   const editarNodo = useCallback((id, tipo, datos, setNodes) => {
@@ -790,6 +807,7 @@ const generateCodeForIntentions = async () => {
   let updatedNodes, updatedEdges;
 
   if (currentEditingNodeId) {
+    console.log("editando nodo");
       // Si estamos editando un nodo existente
       updatedNodes = nodes.map(node => {
           if (node.id === currentEditingNodeId) {
@@ -807,7 +825,9 @@ const generateCodeForIntentions = async () => {
           return node;
       });
       updatedEdges = edges; // Mantén las aristas actuales
+      setCurrentEditingNodeId(null);
   } else {
+    console.log("creando nuevo nodo");
       // Si estamos creando un nuevo nodo
       const newNode = {
           id: `${nodes.length + 1}`,
@@ -829,9 +849,9 @@ const generateCodeForIntentions = async () => {
       let newEdge;
       if (isInternal) {
           newEdge = {
-              id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-              source: currentParentId || `${nodes.length}`,
-              target: `${nodes.length + 1}`,
+              id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+              source: newNode.parentId || `${nodes.length}`,
+              target: newNode.id,
               animated: true,
               style: { stroke: '#d033b9' },
               zIndex: 10,
@@ -842,9 +862,9 @@ const generateCodeForIntentions = async () => {
           };
       } else {
           newEdge = {
-              id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-              source: currentParentId || `${nodes.length}`,
-              target: `${nodes.length + 1}`,
+              id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+              source: newNode.parentId || `${nodes.length}`,
+              target: newNode.id,
               animated: true,
               sourceHandle: 'b',
               style: { stroke: '#d033b9' },
@@ -862,12 +882,7 @@ const generateCodeForIntentions = async () => {
 
   setNodes(updatedNodes);
   setEdges(updatedEdges);
-
-  // Imprimir el código generado para verificación
-  console.log(codeArray.join(''));
 };
-
-
 
 
     const handleAddExternalData = () => {
@@ -900,9 +915,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -913,9 +928,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -1031,6 +1046,7 @@ const generateCodeForIntentions = async () => {
           return node;
         });
         updatedEdges = edges; // Mantén las aristas actuales
+        setCurrentEditingNodeId(null);
       } else {
         // Si estamos creando un nuevo nodo
         const newNode = {
@@ -1055,9 +1071,9 @@ const generateCodeForIntentions = async () => {
         let newEdge;
         if (isInternal) {
           newEdge = {
-            id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-            source: currentParentId || `${nodes.length}`,
-            target: `${nodes.length + 1}`,
+            id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+            source: newNode.parentId || `${nodes.length}`,
+            target: newNode.id,
             animated: true,
             style: { stroke: '#d033b9' },
             zIndex: 10,
@@ -1068,9 +1084,9 @@ const generateCodeForIntentions = async () => {
           };
         } else {
           newEdge = {
-            id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-            source: currentParentId || `${nodes.length}`,
-            target: `${nodes.length + 1}`,
+            id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+            source: newNode.parentId || `${nodes.length}`,
+            target: newNode.id,
             animated: true,
             sourceHandle: 'b',
             style: { stroke: '#d033b9' },
@@ -1115,9 +1131,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -1128,9 +1144,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -1191,6 +1207,7 @@ const generateCodeForIntentions = async () => {
   };
 
   const handleEdgeUpdate = (oldEdge, newConnection) => {
+    console.log("acualizando lineas")
     setEdges((eds) => eds.map((edge) => {
       if (edge.id === oldEdge?.id) {
         return newConnection;
@@ -1211,19 +1228,34 @@ const generateCodeForIntentions = async () => {
   };
 
   const handleEdgeDelete = (edgeToDelete) => {
+    console.log(`Nodos:`, nodes);
+  
+    // Eliminar el edge seleccionado
     setEdges((eds) => eds.filter((edge) => edge.id !== edgeToDelete.id));
-
-    // Eliminar el parentId del nodo hijo que estaba conectado, si existía una conexión previa
-    setNodes((nds) => nds.map((node) => {
-      if (node.id === edgeToDelete.target) {
-        return {
-          ...node,
-          parentId: null,
-        };
+  
+    // Actualizar los nodos después de la eliminación del edge
+    setNodes((nds) => {
+      // Si el nodo hijo está conectado por el edge eliminado
+      const updatedNodes = nds.map((node) => {
+        if (node.id === edgeToDelete.target) {
+          return {
+            ...node,
+            parentId: null, // Restablecer parentId a null si el edge es eliminado
+          };
+        }
+        return node;
+      });
+  
+      // Verificar si solo queda un nodo o si el currentNodeId está en el nodo eliminado
+      if (updatedNodes.length === 1 || currentNodeId === edgeToDelete.target) {
+        setCurrentNodeId(null); // Restablecer currentNodeId a null si es necesario
       }
-      return node;
-    }));
+  
+      return updatedNodes;
+    });
   };
+  
+  
 
   const onConnect = (params) => {
     const newEdge = {
@@ -1275,9 +1307,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -1288,9 +1320,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -1353,6 +1385,7 @@ const generateCodeForIntentions = async () => {
         return node;
       });
       updatedEdges = edges; // Mantén las aristas actuales
+      setCurrentEditingNodeId(null);
     } else {
       // Si estamos creando un nuevo nodo
       const newNode = {
@@ -1414,9 +1447,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -1427,9 +1460,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -1601,6 +1634,7 @@ const generateCodeForIntentions = async () => {
             return node;
         });
         updatedEdges = edges; // Mantén las aristas actuales
+        setCurrentEditingNodeId(null);
     } else {
         // Si estamos creando un nuevo nodo
         const newNode = {
@@ -1627,9 +1661,9 @@ const generateCodeForIntentions = async () => {
         let newEdge;
         if (isInternal) {
             newEdge = {
-                id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-                source: currentParentId || `${nodes.length}`,
-                target: `${nodes.length + 1}`,
+                id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+                source: newNode.parentId || `${nodes.length}`,
+                target: newNode.id,
                 animated: true,
                 style: { stroke: '#d033b9' },
                 zIndex: 10,
@@ -1640,9 +1674,9 @@ const generateCodeForIntentions = async () => {
             };
         } else {
             newEdge = {
-                id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-                source: currentParentId || `${nodes.length}`,
-                target: `${nodes.length + 1}`,
+                id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+                source: newNode.parentId || `${nodes.length}`,
+                target: newNode.id,
                 animated: true,
                 sourceHandle: 'b',
                 style: { stroke: '#d033b9' },
@@ -1704,9 +1738,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -1717,9 +1751,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -1781,9 +1815,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -1794,9 +1828,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -1856,9 +1890,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -1869,9 +1903,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -1929,9 +1963,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -1942,9 +1976,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -1990,9 +2024,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -2003,9 +2037,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -2208,6 +2242,7 @@ const generateCodeForIntentions = async () => {
       // Actualiza el estado con los nodos editados
       setNodes(updatedNodes);
       generateCodeFromNodes(updatedNodes, edges);
+      setCurrentEditingNodeId(null);
     } else {
       console.log("estas creandolo");
       // Verifica si ya existe un asistente con el mismo nombre
@@ -2299,9 +2334,9 @@ const generateCodeForIntentions = async () => {
       let newEdge;
       if (isInternal) {
         newEdge = {
-          id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-          source: currentParentId || `${nodes.length}`,
-          target: `${nodes.length + 1}`,
+          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+          source: newNode.parentId || `${nodes.length}`,
+          target: newNode.id,
           animated: true,
           style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
           zIndex: 10, // Ajusta el zIndex si es necesario
@@ -2312,9 +2347,9 @@ const generateCodeForIntentions = async () => {
         };
       } else {
         newEdge = {
-          id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-          source: currentParentId || `${nodes.length}`,
-          target: `${nodes.length + 1}`,
+          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+          source: newNode.parentId || `${nodes.length}`,
+          target: newNode.id,
           animated: true,
           sourceHandle: 'b',
           style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -2450,9 +2485,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -2463,9 +2498,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -2507,9 +2542,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -2520,9 +2555,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -2579,9 +2614,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -2592,9 +2627,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -2644,9 +2679,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -2657,9 +2692,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -2700,9 +2735,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -2713,9 +2748,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -2763,6 +2798,7 @@ const generateCodeForIntentions = async () => {
         });
         updatedEdges = edges;  // Mantén las aristas actuales
         newNodeId = currentEditingNodeId; // Usar el ID del nodo que se está editando
+        setCurrentEditingNodeId(null);
     } else {
         // Si estamos creando un nuevo nodo
         const newNode = {
@@ -2795,8 +2831,8 @@ const generateCodeForIntentions = async () => {
         if (isInternal) {
             newEdges = [
                 {
-                    id: `e${currentParentId || nodes.length}-${newNode.id}`,
-                    source: currentParentId || `${nodes.length}`,
+                    id: `e${newNode.parentId || nodes.length}-${newNode.id}`,
+                    source: newNode.parentId || `${nodes.length}`,
                     target: newNode.id,
                     animated: true,
                     style: { stroke: '#d033b9' },
@@ -2823,8 +2859,8 @@ const generateCodeForIntentions = async () => {
         } else {
             newEdges = [
                 {
-                    id: `e${currentParentId || nodes.length}-${newNode.id}`,
-                    source: currentParentId || `${nodes.length}`,
+                    id: `e${newNode.parentId || nodes.length}-${newNode.id}`,
+                    source: newNode.parentId || `${nodes.length}`,
                     target: newNode.id,
                     animated: true,
                     sourceHandle: 'b',
@@ -2936,9 +2972,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -2949,9 +2985,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -2976,7 +3012,7 @@ const generateCodeForIntentions = async () => {
     const finalResponseText = `\`${responseText.replace(/\${([^}]+)}/g, '${$1}')}\``;
   
     if (currentEditingNodeId) {
-      console.log("Editando enviar texto");
+      console.log("Editando enviar texto",currentEditingNodeId);
   
       const tipo = 'sendText';
   
@@ -2999,16 +3035,19 @@ const generateCodeForIntentions = async () => {
         }
         return node;
       });
-  
       setNodes(updatedNodes);
       generateCodeFromNodes(updatedNodes, edges);
+      setCurrentEditingNodeId(null);
     } else {
       console.log("Creando nuevo enviar texto");
   
       const tipo = 'sendText';
+      
+      const newId = randomId();
+      console.log(`new id `, newId);
   
       const newNode = {
-        id: `${nodes.length + 1}`,
+        id: newId,
         type: 'custom',
         position: { x: Math.random() * 250, y: Math.random() * 250 },
         data: {
@@ -3026,13 +3065,15 @@ const generateCodeForIntentions = async () => {
         },
         parentId: isInternal ? currentNodeId : null,
       };
+
+      console.log("nodo nuevo", newNode);
   
       let newEdge;
       if (isInternal) {
         newEdge = {
-          id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-          source: currentParentId || `${nodes.length}`,
-          target: `${nodes.length + 1}`,
+          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+          source: newNode.parentId || `${nodes.length}`,
+          target: newNode.id,
           animated: true,
           style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
           zIndex: 10, // Ajusta el zIndex si es necesario
@@ -3043,9 +3084,9 @@ const generateCodeForIntentions = async () => {
         };
       } else {
         newEdge = {
-          id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-          source: currentParentId || `${nodes.length}`,
-          target: `${nodes.length + 1}`,
+          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+          source: newNode.parentId || `${nodes.length}`,
+          target: newNode.id,
           animated: true,
           sourceHandle: 'b',
           style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -3105,6 +3146,7 @@ const generateCodeForIntentions = async () => {
             return node;
         });
         updatedEdges = edges; // Mantén las aristas actuales
+        setCurrentEditingNodeId(null);
     } else {
         // Si estamos creando un nuevo nodo
         const newNode = {
@@ -3143,8 +3185,8 @@ const generateCodeForIntentions = async () => {
         if (isInternal) {
             newEdges = [
                 {
-                    id: `e${currentParentId || nodes.length}-${newNode.id}`,
-                    source: currentParentId || `${nodes.length}`,
+                    id: `e${newNode.parentId || nodes.length}-${newNode.id}`,
+                    source: newNode.parentId || `${nodes.length}`,
                     target: newNode.id,
                     animated: true,
                     style: { stroke: '#d033b9' },
@@ -3184,8 +3226,8 @@ const generateCodeForIntentions = async () => {
         } else {
             newEdges = [
                 {
-                    id: `e${currentParentId || nodes.length}-${newNode.id}`,
-                    source: currentParentId || `${nodes.length}`,
+                    id: `e${newNode.parentId || nodes.length}-${newNode.id}`,
+                    source: newNode.parentId || `${nodes.length}`,
                     target: newNode.id,
                     animated: true,
                     sourceHandle: 'b',
@@ -3270,6 +3312,7 @@ const generateCodeForIntentions = async () => {
 
         setNodes(updatedNodes);
         generateCodeFromNodes(updatedNodes, edges);
+        setCurrentEditingNodeId(null);
     } else {
         console.log("Creando nueva consulta GPT");
 
@@ -3298,9 +3341,9 @@ const generateCodeForIntentions = async () => {
         let newEdge;
         if (isInternal) {
             newEdge = {
-                id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-                source: currentParentId || `${nodes.length}`,
-                target: `${nodes.length + 1}`,
+                id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+                source: newNode.parentId || `${nodes.length}`,
+                target: newNode.id,
                 animated: true,
                 style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
                 zIndex: 10, // Ajusta el zIndex si es necesario
@@ -3311,9 +3354,9 @@ const generateCodeForIntentions = async () => {
             };
         } else {
             newEdge = {
-                id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-                source: currentParentId || `${nodes.length}`,
-                target: `${nodes.length + 1}`,
+                id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+                source: newNode.parentId || `${nodes.length}`,
+                target: newNode.id,
                 animated: true,
                 sourceHandle: 'b',
                 style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -3371,9 +3414,9 @@ const generateCodeForIntentions = async () => {
     let newEdge
     if(isInternal){
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
         zIndex: 10, // Ajusta el zIndex si es necesario
@@ -3384,9 +3427,9 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${currentParentId || nodes.length}-${nodes.length + 1}`,
-        source: currentParentId || `${nodes.length}`,
-        target: `${nodes.length + 1}`,
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
         animated: true,
         sourceHandle: 'b',
         style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
@@ -4001,11 +4044,12 @@ const generateNodeCode = (node, indent = '') => {
                 value={gptModel}
                 onChange={(e) => setGptModel(e.target.value)}
               >
-                <option value="gpt-3.5">gpt-3.5</option>
                 <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
                 <option value="gpt-4">gpt-4</option>
                 <option value="gpt-4-turbo">gpt-4-turbo</option>
+                <option value="gpt-4-32k">gpt-4-32k</option>
                 <option value="gpt-4o">gpt-4o</option>
+                <option value="gpt-4o-mini">gpt-4o-mini</option>
               </Form.Control>
             </Form.Group>
             <Form.Group controlId="formPersonality">
