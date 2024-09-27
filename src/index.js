@@ -9,6 +9,9 @@ import { AppProvider } from './context';
 
 const container = document.getElementById('root');
 const root = createRoot(container);
+// index.js o App.js
+console.warn = () => {};
+console.error = () => {};
 
 root.render(
   <React.StrictMode>

@@ -17,6 +17,8 @@ import { useMediaQuery } from 'react-responsive';
 
 function ChatWindow() {
   const { currentConversation, messages, loadMessages, socket, isConnected, setMessages, setCurrentConversation, updateContact, allUsers, handleResponsibleChange, handleEndConversation, phases } = useConversations();
+  const {state, setConversacionActual} = useContext(AppContext)
+
   const messagesEndRef = useRef(null);
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState(null);
@@ -25,14 +27,12 @@ function ChatWindow() {
   const [offset, setOffset] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastMessageId, setLastMessageId] = useState(null);
-  const [isRecording, setIsRecording] = useState(false);
+  const [firstMessageId, setFirstMessageId] = useState(null);
   const [updateMoreMsj, setUpdateMoreMsj] = useState(null);
-  const [audioBlob, setAudioBlob] = useState(null);
   const [isScrolledToEnd, setIsScrolledToEnd] = useState(true); 
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [cursorPosition, setCursorPosition] = useState(null);
-  const {state, setConversacionActual} = useContext(AppContext)
 
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const isTable = useMediaQuery({ maxWidth: 1240 });
@@ -44,7 +44,6 @@ function ChatWindow() {
     if (target.scrollTop === 0 && messages[currentConversation.conversation_id].length) {
       setIsLoadingMore(true);
       const moreMessages = await loadMessages(currentConversation.conversation_id, offset + 50);
-      //console.log('Loaded mekssages IDs:', moreMessages.map(m => m.id));
       if (moreMessages.length) {
         setMessages(prevMessages => ({
           ...prevMessages,
@@ -53,10 +52,12 @@ function ChatWindow() {
         setOffset(prevOffset => prevOffset + 50);
         console.log("redireccion a :",new Date(moreMessages[0].timestamp).getTime() )
         setLastMessageId(new Date(moreMessages[0].timestamp).getTime());
-
         console.log('Last message ID for scroll:', moreMessages[0].id);
         setUpdateMoreMsj(moreMessages[0].id)
         setIsLoadingMore(false);
+        setTimeout(() => {
+           setFirstMessageId(new Date(moreMessages[moreMessages.length - 1].timestamp).getTime())
+        }, 2000);
       } else {
         setIsLoadingMore(false);
       }
@@ -79,7 +80,6 @@ function ChatWindow() {
  
     if (!socket) return;
     const newMessageHandler = (newMessage) => {
-      console.log('Nuevo mensaje recibido:', newMessage);
       if (['image', 'video', 'audio'].includes(newMessage.message_type)) {
         newMessage.url = ensureFullUrl(newMessage.url);
       }
@@ -694,34 +694,45 @@ function ChatWindow() {
     } else {
       console.log("ingresa en el segundo")
 
-      if (lastMessageId && messagesEndRef.current && (isScrolledToEnd || updateMoreMsj != null)) {
+      if (firstMessageId && messagesEndRef.current && (isScrolledToEnd || updateMoreMsj != null)) {
         requestAnimationFrame(() => {
-          setTimeout(() => {
-            const element = document.getElementById(`msg-${lastMessageId}`);
+       
+            const element = document.getElementById(`msg-${firstMessageId}`);
             if (element) {
               const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
               if (scrollPosition !== undefined) {
                 messagesEndRef.current.scrollTop = scrollPosition;
                 console.log("Posición del scroll", scrollPosition);
               }
-              console.log('Redirigiendo al mensaje con ID:', lastMessageId);
+              console.log('Redirigiendo al mensaje con ID:', firstMessageId);
             } else {
               console.log("Elemento no encontrado, intentar nuevamente");
             }
-          }, 200);
         });
         
         setUpdateMoreMsj(null)
       }
     }
-  }, [lastMessageId, messages]);
-
+  }, [firstMessageId, messages]);
+ 
+  // useEffect(() => {
+  //     const msjChat = messages[currentConversation?.conversation_id]
+  //     if (msjChat){
+  //       console.log("muestro los msj", messages[currentConversation?.conversation_id])
+  //       console.log("muesto el id,", firstMessageId)
+  //       setFirstMessageId(new Date(msjChat[0]?.timestamp)?.getTime())
+  //       console.log("nuevo id", new Date(msjChat[0]?.timestamp)?.getTime())
+  //     }
+  // }, [messages[currentConversation?.conversation_id]])
+  
   useEffect(() => {
     if (currentConversation && currentConversation.conversation_id) {
       if (!messages[currentConversation.conversation_id]) {
         loadMessages(currentConversation.conversation_id).then(initialMessages => {
           if (initialMessages.length) {
             setLastMessageId(new Date(initialMessages[0].timestamp).getTime());
+            setFirstMessageId(new Date(initialMessages[initialMessages.length - 1].timestamp).getTime())
+            
             console.log('Initial last message ID:', initialMessages[0].timestamp);
           }
         });
@@ -729,6 +740,7 @@ function ChatWindow() {
         const initialMessages = messages[currentConversation.conversation_id];
         if (initialMessages.length) {
           setLastMessageId(new Date(initialMessages[0].timestamp).getTime());
+          setFirstMessageId(new Date(initialMessages[initialMessages.length - 1].timestamp).getTime())
           console.log('Initial loaded conversation last message ID:', initialMessages[0].timestamp);
         }
       }
