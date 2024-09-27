@@ -307,7 +307,7 @@ const EditChatBotModal = ({ show, handleClose, bot }) => {
   const [selectedVariables, setSelectedVariables] = useState([]);
   const [showGptAssistantModal, setShowGptAssistantModal] = useState(false);
   const [assistantName, setAssistantName] = useState('');
-  const [gptModel, setGptModel] = useState('gpt-3.5');
+  const [gptModel, setGptModel] = useState('gpt-3.5-turbo');
   const [personality, setPersonality] = useState('');
   const [assistants, setAssistants] = useState([{ name: 'Seleccionar asistente', displayName: 'Seleccionar asistente' }]);
   const [showGptQueryModal, setShowGptQueryModal] = useState(false);
@@ -4044,11 +4044,12 @@ const generateNodeCode = (node, indent = '') => {
                 value={gptModel}
                 onChange={(e) => setGptModel(e.target.value)}
               >
-                <option value="gpt-3.5">gpt-3.5</option>
                 <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
                 <option value="gpt-4">gpt-4</option>
                 <option value="gpt-4-turbo">gpt-4-turbo</option>
+                <option value="gpt-4-32k">gpt-4-32k</option>
                 <option value="gpt-4o">gpt-4o</option>
+                <option value="gpt-4o-mini">gpt-4o-mini</option>
               </Form.Control>
             </Form.Group>
             <Form.Group controlId="formPersonality">
