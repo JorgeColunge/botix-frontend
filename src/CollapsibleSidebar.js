@@ -103,7 +103,7 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
       </div>
  { !isMobile && (
             <>
-            <div className="nav-item" onClick={() => onSelectOption('users')}>
+            <div className="nav-item" onClick={() => onSelectOption('allentities')}>
                     <Person color="white" size={20} />
                     {!isCollapsed && <span>Usuarios</span>}
                   </div>

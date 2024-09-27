@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { Table, Modal, Form, FormControl, InputGroup } from 'react-bootstrap';
 import { Telephone, Envelope, PencilSquare, Trash, PlusCircle } from 'react-bootstrap-icons';
 import Swal from 'sweetalert2';
 import { Button, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from './components';
-import './UsersTable.css'; // Usamos el mismo archivo de estilos para mantener la coherencia
+import { Table, Modal, Form, FormControl, InputGroup } from 'react-bootstrap';
+import './UsersTable.css'; // Mantener el mismo archivo de estilos para coherencia
 import { AppContext } from './context';
+import { ColaboradoresDate } from './ColaboradoresDate';
 
 const ColaboradoresTable = () => {
   const { state } = useContext(AppContext); // Obtener el estado global del contexto
@@ -165,55 +166,15 @@ const ColaboradoresTable = () => {
       </div>
 
       <div className="table-responsive">
-        <Table striped bordered hover>
-          <thead>
-            <tr>
-              <th>Foto</th>
-              <th>Nombre</th>
-              <th>Apellido</th>
-              <th>Teléfono</th>
-              <th>Email</th>
-              <th>Rol</th>
-              <th>Departamento</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredColaboradores.map(colaborador => (
-              <tr key={colaborador.id_colaborador}>
-                <td>
-                  <img 
-                    src={`${process.env.REACT_APP_API_URL}${colaborador.link_foto}`} 
-                    alt="Profile" 
-                    className="profile-user-img"
-                  />
-                </td>
-                <td>{colaborador.nombre}</td>
-                <td>{colaborador.apellido}</td>
-                <td>
-                  <a href={`tel:${colaborador.telefono}`}>
-                    <Telephone /> {colaborador.telefono}
-                  </a>
-                </td>
-                <td>
-                  <a href={`mailto:${colaborador.email}`}>
-                    <Envelope /> {colaborador.email}
-                  </a>
-                </td>
-                <td>{getRoleName(colaborador.rol)}</td>
-                <td>{getDepartmentName(colaborador.department_id)}</td>
-                <td>
-                  <Button variant="link" onClick={() => handleEditColaboradorClick(colaborador)}>
-                    <PencilSquare />
-                  </Button>
-                  <Button variant="link" onClick={() => handleDeleteColaboradorClick(colaborador.id_colaborador)} className="text-danger">
-                    <Trash />
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
+        <ColaboradoresDate
+          colaboradores={filteredColaboradores}
+          roles={roles}
+          departments={departments}
+          getRoleName={getRoleName}
+          getDepartmentName={getDepartmentName}
+          handleEditColaboradorClick={handleEditColaboradorClick}
+          handleDeleteColaboradorClick={handleDeleteColaboradorClick}
+        />
       </div>
 
       {/* Modales para crear/editar colaboradores */}

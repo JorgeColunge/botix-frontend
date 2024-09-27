@@ -259,69 +259,6 @@ const UsersTable = () => {
         tipo_tabla={'usuarios'}
         handleSelectContactChat={handleSelectContactChat}
       />
-        {/* <Table className="custom-table" bordered hover>
-          <thead>
-            <tr>
-              <th>Foto</th>
-              <th>Nombre</th>
-              <th>Apellido</th>
-              <th>Teléfono</th>
-              <th>Email</th>
-              <th>Rol</th>
-              <th>Departamento</th>
-              <th>Conversaciones Asignadas</th>
-              <th>Conversaciones Pendientes</th>
-              <th>Conversaciones Atendidas</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {regularUsers.map(user => {
-              const stats = getConversationStats(user.id_usuario);
-              return (
-                <tr key={user.id_usuario}>
-                  <td>
-                    <img 
-                      src={`${process.env.REACT_APP_API_URL}${user.link_foto}`} 
-                      alt="Profile" 
-                      className="profile-user-img"
-                    />
-                  </td>
-                  <td>{user.nombre}</td>
-                  <td>{user.apellido}</td>
-                  <td>
-                    <a href={`tel:${user.telefono}`}>
-                      <Telephone /> {user.telefono}
-                    </a>
-                  </td>
-                  <td>
-                    <a href={`mailto:${user.email}`}>
-                      <Envelope /> {user.email}
-                    </a>
-                  </td>
-                  <td>{getRoleName(user.rol)}</td>
-                  <td>{getDepartmentName(user.department_id)}</td>
-                  <td>{stats.total_conversations}</td>
-                  <td>{stats.pending_conversations}</td>
-                  <td>{stats.attended_conversations}</td>
-                  <td>
-                    <Button variant="link" size="sm" disabled={!hasPrivilege('Send message')}>
-                      <Chat />
-                    </Button>
-                    <Button variant="link" size="sm" onClick={() => handleEditUserClick(user)} disabled={!hasPrivilege('Edit users')}>
-                      <PencilSquare />
-                    </Button>
-                    {(hasPrivilege('Delete users') || hasPrivilege('Admin')) && (
-                      <Button variant="link" size="sm" onClick={() => handleDeleteUserClick(user.id_usuario)}>
-                        <Trash style={{ color: 'red' }} />
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </Table> */}
       </div>
 
       <Modal show={showUserModal} onHide={() => setShowUserModal(false)}>

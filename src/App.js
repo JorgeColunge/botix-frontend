@@ -9,6 +9,7 @@ import CompanyInfo from './CompanyInfo';
 import Consumption from './Consumption';
 import ColaboradoresTable from './ColaboradoresTable';
 import EntitySelector from './EntitySelector';
+import AllEntities from './AllEntities';
 import ContactsTable from './ContactsTable';
 import UsersTable from './UsersTable';
 import FunnelComponent from './Funnel';
@@ -291,6 +292,7 @@ function App() {
             } />
             <Route path="/contacts" element={<PrivateRoute><ContactsTable /></PrivateRoute>} />
             <Route path="/users" element={<PrivateRoute><UsersTable /></PrivateRoute>} />
+            <Route path="/allentities" element={<PrivateRoute><AllEntities /></PrivateRoute>} />
             <Route path="/colaboradores" element={<PrivateRoute><ColaboradoresTable /></PrivateRoute>} />
             <Route path="/funnel" element={<PrivateRoute><FunnelComponent /></PrivateRoute>} />
             <Route path="/statistics" element={<PrivateRoute><div>Statistics</div></PrivateRoute>} />
