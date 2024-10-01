@@ -9,7 +9,8 @@ export default [
       globals: globals.browser,
     },
     rules: {
-      // Puedes agregar reglas personalizadas aquí si lo necesitas
+      "react/no-deprecated": "off",
+      "no-console": "off"
     },
     settings: {
       react: {
