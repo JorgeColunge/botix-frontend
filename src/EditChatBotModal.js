@@ -388,8 +388,38 @@ const EditChatBotModal = ({ show, handleClose, bot }) => {
   const [editMode, setEditMode] = useState(false); // Nuevo estado para editar
   const [selectedIntentionIndex, setSelectedIntentionIndex] = useState(null); // Índice de la intención seleccionada para edición
   const [selectedStateIndex, setSelectedStateIndex] = useState(null); // Índice del estado seleccionado para edición
+  const [showAgendaModal, setShowAgendaModal] = useState(false);
+  const [agenda, setAgenda] = useState(null);
+  const [selectedEntityType, setSelectedEntityType] = useState([]); // Almacena las selecciones de "Tipo de entidad"
+  const [selectedQueryParams, setSelectedQueryParams] = useState([]); // Almacena las selecciones de "Parámetro de consulta"
+  const [searchData, setSearchData] = useState({}); // Almacena los datos de búsqueda
+  const [roles, setRoles] = useState([]); // Almacena los roles consultados
+  const [selectedRole, setSelectedRole] = useState(''); // Almacena el rol seleccionado
+  const [startDate, setStartDate] = useState({ type: '', value: '' });
+  const [endDate, setEndDate] = useState({ type: '', value: '' });
+  const [customStartDays, setCustomStartDays] = useState('');
+  const [customEndDays, setCustomEndDays] = useState('');
+  const [customStartMonths, setCustomStartMonths] = useState('');
+  const [customEndMonths, setCustomEndMonths] = useState('');
+  const [customStartYears, setCustomStartYears] = useState('');
+  const [customEndYears, setCustomEndYears] = useState('');
+  const [selectedStartVariable, setSelectedStartVariable] = useState('');
+  const [selectedEndVariable, setSelectedEndVariable] = useState('');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [showGetRequestModal, setShowGetRequestModal] = useState(false);
+  const [getRequestType, setGetRequestType] = useState('');
+  const [getRequestStatus, setGetRequestStatus] = useState('');
+  const [getValidationConditions, setGetValidationConditions] = useState([{ key: '', value: '' }]);
+  const [getRequestDataKeys, setGetRequestDataKeys] = useState([{ key: '' }]);
+  // Controla la visibilidad del modal del nuevo elemento Crear Retardo
+  const [showDelayModal, setShowDelayModal] = useState(false);
 
+  // Almacena el valor del tiempo del retardo
+  const [delayTime, setDelayTime] = useState(0);
 
+  // Almacena la unidad de medida (Segundos, Minutos, Horas)
+  const [delayUnit, setDelayUnit] = useState('Segundos');
+  
 
 
 const openToolModal = (nodeId, isInternal) => {
@@ -613,6 +643,37 @@ const closeToolModal = () => {
                 setCurrentEditingNodeId(id);
                 break;
 
+                case 'agenda':
+                  const agendaData = nodoActual.data.agenda || {};
+                  console.log('Editando agenda con los siguientes datos:', agendaData);
+              
+                  if (agendaData) {
+                      setAgenda(agendaData);
+                      setShowAgendaModal(true);
+                      setCurrentEditingNodeId(id);
+                  } else {
+                      console.warn('Datos de agenda faltantes o inválidos en el nodo:', nodoActual);
+                  }
+                  break;
+
+            case 'delay':
+                setDelayTime(nodoActual.data.delayTime || 0);  // Recupera el tiempo almacenado en el nodo
+                setDelayUnit(nodoActual.data.delayUnit || 'Segundos');  // Recupera la unidad de medida
+                setShowDelayModal(true);  // Abre el modal de edición
+                setCurrentEditingNodeId(id);  // Almacena el ID del nodo que se está editando
+                break;
+  
+
+            case 'getRequest':
+                setGetRequestType(nodoActual.data.getRequestType || '');
+                setGetRequestStatus(nodoActual.data.getRequestStatus || '');
+                setGetValidationConditions(nodoActual.data.getValidationConditions || [{ key: '', value: '' }]);
+                setGetRequestDataKeys(nodoActual.data.getRequestDataKeys || [{ key: '' }]);
+                setShowGetRequestModal(true); // Abre el modal de edición
+                setCurrentEditingNodeId(id); // Almacena el ID del nodo que se está editando
+                break;
+              
+
             default:
                 console.warn(`Tipo de nodo no soportado para edición: ${tipo}`);
         }
@@ -795,7 +856,14 @@ const generateCodeForIntentions = async () => {
       console.log(\`Nueva intención: \${Intent}, Nuevo estado: \${conversationState}\`);
   }
 
-  let messageText = messageData.text;
+  let messageText;
+
+  // Verificar si lastMessages está vacía, no existe o es null
+  if (!lastMessages || lastMessages.length === 0) {
+      messageText = messageData.text;  // Usa messageText si lastMessages no existe, está vacía o es null
+  } else {
+      messageText = lastMessages[lastMessages.length - 1];  // Usa el último mensaje en lastMessages
+  }
 
   // Esperar a que se complete la evaluación de intenciones antes de proceder
   await evaluateIntentions(conversationState, messageText);
@@ -829,8 +897,9 @@ const generateCodeForIntentions = async () => {
   } else {
     console.log("creando nuevo nodo");
       // Si estamos creando un nuevo nodo
+      const newId = randomId();
       const newNode = {
-          id: `${nodes.length + 1}`,
+          id: newId,
           type: 'custom',
           position: { x: Math.random() * 250, y: Math.random() * 250 },
           data: {
@@ -899,10 +968,10 @@ const generateCodeForIntentions = async () => {
       const variablesToAdd = externalDataItems.map(item => {
         return `const ${item.variableName} = externalData.${item.dataPath};`;
       }).join('\n');
-
+      const newId = randomId();
       // Crear el nuevo nodo y actualizar el flujo
       const newNode = {
-        id: `${nodes.length + 1}`,
+        id: newId,
         type: 'custom',
         position: { x: Math.random() * 250, y: Math.random() * 250 },
         data: {
@@ -1049,8 +1118,9 @@ const generateCodeForIntentions = async () => {
         setCurrentEditingNodeId(null);
       } else {
         // Si estamos creando un nuevo nodo
+        const newId = randomId();
         const newNode = {
-          id: `${nodes.length + 1}`,
+          id: newId,
           type: 'custom',
           position: { x: Math.random() * 250, y: Math.random() * 250 },
           data: {
@@ -1121,8 +1191,9 @@ const generateCodeForIntentions = async () => {
       if (!selectedService) return;
 
       const functionName = `sendRequestTo${selectedService}`;
+      const newId = randomId();
       const newNode = {
-        id: `${nodes.length + 1}`,
+        id: newId,
         type: 'custom',
         position: { x: Math.random() * 250, y: Math.random() * 250 },
         data: { label: `Enviar Solicitud a: ${selectedService}`, code: [`await ${functionName}(requestId);`], onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false) },
@@ -1297,8 +1368,9 @@ const generateCodeForIntentions = async () => {
   const addConsoleLogNode = () => {
     const message = prompt("Enter the message to print:");
     if (!message) return;
+    const newId = randomId();
     const newNode = {
-      id: `${nodes.length + 1}`,
+      id: newId,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
       data: { label: `Imprimir: ${message}`, code: [`console.log('${message}');`], onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false) },
@@ -1387,9 +1459,10 @@ const generateCodeForIntentions = async () => {
       updatedEdges = edges; // Mantén las aristas actuales
       setCurrentEditingNodeId(null);
     } else {
+      const newId = randomId();
       // Si estamos creando un nuevo nodo
       const newNode = {
-        id: `${nodes.length + 1}`,
+        id: newId,
         type: 'custom',
         position: { x: Math.random() * 250, y: Math.random() * 250 },
         data: {
@@ -1405,19 +1478,36 @@ const generateCodeForIntentions = async () => {
         parentId: null, // Ajusta según sea necesario
       };
   
-      // Crear el edge si es necesario
-      const newEdge = {
-        id: `e${nodes.length}-${nodes.length + 1}`,
-        source: `${nodes.length}`,
-        target: `${nodes.length + 1}`,
-        animated: true,
-        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-        zIndex: 10, // Ajusta el zIndex si es necesario
-        markerEnd: {
-          type: MarkerType.ArrowClosed, // Flecha al final de la línea
-          color: '#d033b9', // Ajusta el color de la flecha aquí
-        },
-      };
+      // Crear el edge
+      let newEdge
+      if(isInternal){
+        newEdge = {
+          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+          source: newNode.parentId || `${nodes.length}`,
+          target: newNode.id,
+          animated: true,
+          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+          zIndex: 10, // Ajusta el zIndex si es necesario
+          markerEnd: {
+            type: MarkerType.ArrowClosed, // Flecha al final de la línea
+            color: '#d033b9', // Ajusta el color de la flecha aquí
+          },
+        };
+      }else{
+        newEdge = {
+          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+          source: newNode.parentId || `${nodes.length}`,
+          target: newNode.id,
+          animated: true,
+          sourceHandle: 'b',
+          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+          zIndex: 10, // Ajusta el zIndex si es necesario
+          markerEnd: {
+            type: MarkerType.ArrowClosed, // Flecha al final de la línea
+            color: '#d033b9', // Ajusta el color de la flecha aquí
+          },
+        };
+      }
   
       updatedNodes = [...nodes, newNode];
       updatedEdges = [...edges, newEdge];
@@ -1436,9 +1526,9 @@ const generateCodeForIntentions = async () => {
       .join(' ');
 
     const concatCode = `const ${concatResultName} = \`${variablesStr}\`;`;
-
+    const newId = randomId();
     const newNode = {
-      id: `${nodes.length + 1}`,
+      id: newId,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
       data: { label: 'Concatenar Variables', code: [concatCode], onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false) },
@@ -1555,10 +1645,15 @@ const generateCodeForIntentions = async () => {
         ? ` AND ${validationConditionsArray.join(' AND ')}`
         : '';
 
+    // Cambiar JSON.stringify para usar comillas invertidas en requestData
+    const requestDataString = Object.entries(requestDataObject)
+    .map(([key, value]) => `"${key}": \`${value}\``)
+    .join(', ');
+
     let code = `requestType = "${requestType}";\n`;
     code += `requestStatus = "${requestStatus}";\n`;
     code += `nuevoStatus = "${nuevoStatus}";\n`;
-    code += `requestData = ${JSON.stringify(requestDataObject)};\n`;
+    code += `requestData = {${requestDataString}};\n`;
 
     if (validateExistence) {
         code += `
@@ -1636,9 +1731,10 @@ const generateCodeForIntentions = async () => {
         updatedEdges = edges; // Mantén las aristas actuales
         setCurrentEditingNodeId(null);
     } else {
+      const newId = randomId();
         // Si estamos creando un nuevo nodo
         const newNode = {
-            id: `${nodes.length + 1}`,
+            id: newId,
             type: 'custom',
             position: { x: Math.random() * 250, y: Math.random() * 250 },
             data: {
@@ -1720,9 +1816,9 @@ const generateCodeForIntentions = async () => {
 
       const imageUrl = uploadResponse.data.imageUrl;
       const uniqueResponseImageName = `responseImage_${nodes.length + 1}`;
-
+      const newId = randomId();
       const newNode = {
-        id: `${nodes.length + 1}`,
+        id: newId,
         type: 'custom',
         position: { x: Math.random() * 250, y: Math.random() * 250 },
         data: {
@@ -1795,9 +1891,9 @@ const generateCodeForIntentions = async () => {
       const videoDuration = uploadResponse.data.videoDuration;
       const videoThumbnail = uploadResponse.data.videoThumbnail;
       const uniqueResponseVideoName = `responseVideo_${nodes.length + 1}`;
-
+      const newId = randomId();
       const newNode = {
-        id: `${nodes.length + 1}`,
+        id: newId,
         type: 'custom',
         position: { x: Math.random() * 250, y: Math.random() * 250 },
         data: {
@@ -1872,9 +1968,9 @@ const generateCodeForIntentions = async () => {
 
       const documentUrl = uploadResponse.data.documentUrl;
       const uniqueResponseDocumentName = `responseDocument_${nodes.length + 1}`;
-
+      const newId = randomId();
       const newNode = {
-        id: `${nodes.length + 1}`,
+        id: newId,
         type: 'custom',
         position: { x: Math.random() * 250, y: Math.random() * 250 },
         data: {
@@ -1945,9 +2041,9 @@ const generateCodeForIntentions = async () => {
 
       const audioUrl = uploadResponse.data.audioUrl;
       const uniqueResponseAudioName = `responseAudio_${nodes.length + 1}`;
-
+      const newId = randomId();
       const newNode = {
-        id: `${nodes.length + 1}`,
+        id: newId,
         type: 'custom',
         position: { x: Math.random() * 250, y: Math.random() * 250 },
         data: {
@@ -2004,9 +2100,845 @@ const generateCodeForIntentions = async () => {
     }
   };
 
-  const handleResponseLocationModalSave = () => {
+  const generateCodeForAgenda = async () => {
+    let codeArray = [];
+
+// Inicio del periodo
+if (startDate.type === 'day') {
+  if (startDate.value === 'today') {
+    // Caso para "Hoy" (Inicio con la hora actual del cliente)
+    codeArray.push(`const startDate = moment.tz('clientTimezone');\n`);
+  } else if (startDate.value === 'inDays') {
+    // Caso para "En [X] días" (Inicio con 00:00:00 AM)
+    codeArray.push(`const startDate = moment.tz('clientTimezone').add(${customStartDays}, 'days').startOf('day');\n`);
+  } else if (startDate.value === 'variable') {
+    // Caso para "Variable"
+    codeArray.push(`const startDate = ${selectedStartVariable};\n`);
+  }
+}
+
+if (startDate.type === 'month') {
+  if (startDate.value === 'thisMonth') {
+    // Caso para "Este mes" (Inicio con la hora actual del cliente)
+    codeArray.push(`const startDate = moment.tz('clientTimezone');\n`);
+  } else if (startDate.value === 'inMonths') {
+    // Caso para "En [X] meses" (Primer día del mes actual más X meses con 00:00:00 AM)
+    codeArray.push(`const startDate = moment.tz('clientTimezone').add(${customStartMonths}, 'months').startOf('month');\n`);
+  } else if (startDate.value === 'variable') {
+    // Caso para "Variable"
+    codeArray.push(`const startDate = ${selectedStartVariable};\n`);
+  }
+}
+
+if (startDate.type === 'year') {
+  if (startDate.value === 'thisYear') {
+    // Caso para "Este año" (Inicio con la hora actual del cliente)
+    codeArray.push(`const startDate = moment.tz('clientTimezone');\n`);
+  } else if (startDate.value === 'inYears') {
+    // Caso para "En [X] años" (Primer día del año actual más X años con 00:00:00 AM)
+    codeArray.push(`const startDate = moment.tz('clientTimezone').add(${customStartYears}, 'years').startOf('year');\n`);
+  } else if (startDate.value === 'variable') {
+    // Caso para "Variable"
+    codeArray.push(`const startDate = ${selectedStartVariable};\n`);
+  }
+}
+
+// Fin del periodo
+if (endDate.type === 'day') {
+  if (endDate.value === 'today') {
+    // Caso para "Hoy" (Fin con las 11:59:59 PM)
+    codeArray.push(`const endDate = moment.tz('clientTimezone').endOf('day');\n`);
+  } else if (endDate.value === 'inDays') {
+    // Caso para "En [X] días" (Fin con las 11:59:59 PM)
+    codeArray.push(`const endDate = moment.tz('clientTimezone').add(${customEndDays}, 'days').endOf('day');\n`);
+  } else if (endDate.value === 'variable') {
+    // Caso para "Variable"
+    codeArray.push(`const endDate = ${selectedEndVariable};\n`);
+  }
+}
+
+if (endDate.type === 'month') {
+  if (endDate.value === 'thisMonth') {
+    // Caso para "Este mes" (Último día del mes actual con 11:59:59 PM)
+    codeArray.push(`const endDate = moment.tz('clientTimezone').endOf('month');\n`);
+  } else if (endDate.value === 'inMonths') {
+    // Caso para "En [X] meses" (Último día del mes actual más X meses con 11:59:59 PM)
+    codeArray.push(`const endDate = moment.tz('clientTimezone').add(${customEndMonths}, 'months').endOf('month');\n`);
+  } else if (endDate.value === 'variable') {
+    // Caso para "Variable"
+    codeArray.push(`const endDate = ${selectedEndVariable};\n`);
+  }
+}
+
+if (endDate.type === 'year') {
+  if (endDate.value === 'thisYear') {
+    // Caso para "Este año" (Último día del año actual con 11:59:59 PM)
+    codeArray.push(`const endDate = moment.tz('clientTimezone').endOf('year');\n`);
+  } else if (endDate.value === 'inYears') {
+    // Caso para "En [X] años" (Último día del año actual más X años con 11:59:59 PM)
+    codeArray.push(`const endDate = moment.tz('clientTimezone').add(${customEndYears}, 'years').endOf('year');\n`);
+  } else if (endDate.value === 'variable') {
+    // Caso para "Variable"
+    codeArray.push(`const endDate = ${selectedEndVariable};\n`);
+  }
+}
+
+if (startDate.type === 'custom') {
+  codeArray.push(`
+  const dateArray = [${customStartDate}];
+  `);
+} else {
+  // Generar arreglo de todas las fechas entre inicio y fin
+  codeArray.push(`
+  const generateDateArray = (startDate, endDate) => {
+    const dateArray = [];
+    let currentDate = moment(startDate).startOf('day');
+  
+    while (currentDate.isSameOrBefore(endDate, 'day')) {
+      dateArray.push(currentDate.format('YYYY-MM-DD'));
+      currentDate.add(1, 'day');
+    }
+  
+    return dateArray;
+  };
+  
+  const dateArray = generateDateArray(startDate, endDate);
+  console.log(dateArray);
+  `);
+}
+
+
+//Variable para almacenar entidades
+codeArray.push(`
+  const entityArray = [];
+  `);
+
+// Si se selecciona 'Usuario' como tipo de entidad
+if (selectedEntityType.includes('Usuario')) {
+
+  // Si se selecciona "Id" como parámetro de búsqueda
+  if (selectedQueryParams.includes('Id') && searchData.id) {
+    codeArray.push(`
+    // Buscar por Id de usuario
+    const userById = await pool.query("SELECT id_usuario, nombre, apellido, telefono FROM users WHERE id_usuario = $1", [${searchData.id}]);
+    entityArray.push(...userById.rows.map(user => ({ 
+      id: user.id_usuario, 
+      nombre: user.nombre, 
+      apellido: user.apellido, 
+      telefono: user.telefono,
+      tipoEntidad: 'usuario'
+    })));
+    `);
+  }
+
+  // Si se selecciona "Departamento" como parámetro de búsqueda
+  if (selectedQueryParams.includes('Departamento') && selectedDepartment) {
+    codeArray.push(`
+    // Buscar por Departamento
+    const usersByDepartment = await pool.query("SELECT id_usuario, nombre, apellido, telefono FROM users WHERE department_id = $1", [${selectedDepartment}]);
+    entityArray.push(...usersByDepartment.rows.map(user => ({
+      id: user.id_usuario,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      telefono: user.telefono,
+      tipoEntidad: 'usuario'
+    })));
+    `);
+  }
+
+  // Si se selecciona "Rol" como parámetro de búsqueda
+  if (selectedQueryParams.includes('Rol') && selectedRole) {
+    codeArray.push(`
+    // Buscar por Rol
+    const usersByRole = await pool.query("SELECT id_usuario, nombre, apellido, telefono FROM users WHERE rol = $1", [${selectedRole}]);
+    entityArray.push(...usersByRole.rows.map(user => ({
+      id: user.id_usuario,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      telefono: user.telefono,
+      tipoEntidad: 'usuario'
+    })));
+    `);
+  }
+
+  // Si se selecciona tanto "Departamento" como "Rol"
+  if (selectedQueryParams.includes('Departamento') && selectedQueryParams.includes('Rol') && selectedDepartment && selectedRole) {
+    codeArray.push(`
+    // Buscar por Departamento y Rol
+    const usersByDeptAndRole = await pool.query("SELECT id_usuario, nombre, apellido, telefono FROM users WHERE department_id = $1 AND rol = $2", [${selectedDepartment}, ${selectedRole}]);
+    entityArray.push(...usersByDeptAndRole.rows.map(user => ({
+      id: user.id_usuario,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      telefono: user.telefono,
+      tipoEntidad: 'usuario'
+    })));
+    `);
+  }
+}
+
+// Si se selecciona 'Colaborador' como tipo de entidad
+if (selectedEntityType.includes('Colaborador')) {
+  // Si se selecciona "Id" como parámetro de búsqueda
+  if (selectedQueryParams.includes('Id') && searchData.id) {
+    codeArray.push(`
+    // Buscar por Id de colaborador
+    const collaboratorById = await pool.query("SELECT id_colaborador, nombre, apellido, telefono FROM colaboradores WHERE id_colaborador = $1", [${searchData.id}]);
+    entityArray.push(...collaboratorById.rows.map(collaborator => ({ 
+      id: collaborator.id_colaborador, 
+      nombre: collaborator.nombre, 
+      apellido: collaborator.apellido, 
+      telefono: collaborator.telefono,
+      tipoEntidad: 'colaborador'
+    })));
+    `);
+  }
+
+  // Si se selecciona "Departamento" como parámetro de búsqueda
+  if (selectedQueryParams.includes('Departamento') && selectedDepartment) {
+    codeArray.push(`
+    // Buscar por Departamento
+    const collaboratorsByDepartment = await pool.query("SELECT id_colaborador, nombre, apellido, telefono FROM colaboradores WHERE department_id = $1", [${selectedDepartment}]);
+    entityArray.push(...collaboratorsByDepartment.rows.map(collaborator => ({
+      id: collaborator.id_colaborador,
+      nombre: collaborator.nombre,
+      apellido: collaborator.apellido,
+      telefono: collaborator.telefono,
+      tipoEntidad: 'colaborador'
+    })));
+    `);
+  }
+
+  // Si se selecciona "Rol" como parámetro de búsqueda
+  if (selectedQueryParams.includes('Rol') && selectedRole) {
+    codeArray.push(`
+    // Buscar por Rol
+    const collaboratorsByRole = await pool.query("SELECT id_colaborador, nombre, apellido, telefono FROM colaboradores WHERE rol = $1", [${selectedRole}]);
+    entityArray.push(...collaboratorsByRole.rows.map(collaborator => ({
+      id: collaborator.id_colaborador,
+      nombre: collaborator.nombre,
+      apellido: collaborator.apellido,
+      telefono: collaborator.telefono,
+      tipoEntidad: 'colaborador'
+    })));
+    `);
+  }
+
+  // Si se selecciona tanto "Departamento" como "Rol"
+  if (selectedQueryParams.includes('Departamento') && selectedQueryParams.includes('Rol') && selectedDepartment && selectedRole) {
+    codeArray.push(`
+    // Buscar por Departamento y Rol
+    const collaboratorsByDeptAndRole = await pool.query("SELECT id_colaborador, nombre, apellido, telefono FROM colaboradores WHERE department_id = $1 AND rol = $2", [${selectedDepartment}, ${selectedRole}]);
+    entityArray.push(...collaboratorsByDeptAndRole.rows.map(collaborator => ({
+      id: collaborator.id_colaborador,
+      nombre: collaborator.nombre,
+      apellido: collaborator.apellido,
+      telefono: collaborator.telefono,
+      tipoEntidad: 'colaborador'
+    })));
+    `);
+  }
+}
+
+// Si se selecciona 'Instalación' como tipo de entidad
+if (selectedEntityType.includes('Instalación')) {
+  // Si se selecciona "Id" como parámetro de búsqueda
+  if (selectedQueryParams.includes('Id') && searchData.id) {
+    codeArray.push(`
+    // Buscar por Id de instalación
+    const installationById = await pool.query("SELECT id_instalacion, descripcion FROM instalaciones WHERE id_instalacion = $1", [${searchData.id}]);
+    entityArray.push(...installationById.rows.map(installation => ({ 
+      id: installation.id_instalacion, 
+      nombre: installation.descripcion,
+      tipoEntidad: 'instalacion'
+    })));
+    `);
+  }
+
+  // Si se selecciona "Departamento" como parámetro de búsqueda
+  if (selectedQueryParams.includes('Departamento') && selectedDepartment) {
+    codeArray.push(`
+    // Buscar por Departamento
+    const installationsByDepartment = await pool.query("SELECT id_instalacion, descripcion FROM instalaciones WHERE department_id = $1", [${selectedDepartment}]);
+    entityArray.push(...installationsByDepartment.rows.map(installation => ({
+      id: installation.id_instalacion,
+      nombre: installation.descripcion,
+      tipoEntidad: 'instalacion'
+    })));
+    `);
+  }
+}
+
+codeArray.push(`
+  // Array para almacenar los horarios de las entidades por fecha
+  const scheduleArray = [];
+  
+  for (const date of dateArray) {
+    // Obtener el día de la semana en español (Lunes, Martes, etc.)
+    const dayOfWeek = moment(date).locale('es').format('dddd');
+    const capitalizedDayOfWeek = dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1);
+  
+    for (const entity of entityArray) {
+      const { id, tipoEntidad } = entity;
+  
+      // Consultar los horarios de la entidad para el día de la semana actual
+      const scheduleQuery = \`
+        SELECT hora_inicio, hora_fin
+        FROM horarios
+        WHERE id_asignacion = $1
+        AND tipo_asignacion = $2
+        AND dia = $3
+      \`;
+      const schedule = await pool.query(scheduleQuery, [id, tipoEntidad, capitalizedDayOfWeek]);
+  
+      // Agregar los horarios al array de horarios con formato adecuado
+      scheduleArray.push({
+        date: date,
+        entity: {
+          id: entity.id,
+          tipoEntidad: entity.tipoEntidad,
+          nombre: entity.nombre,
+          apellido: entity.apellido
+        },
+        horarios: schedule.rows.map(horario => ({
+          hora_inicio: moment(horario.hora_inicio, 'HH:mm:ss').format('hh:mm A'),
+          hora_fin: moment(horario.hora_fin, 'HH:mm:ss').format('hh:mm A')
+        }))
+      });
+    }
+  }
+  
+  // Imprimir el array de horarios con formato JSON
+  console.log(JSON.stringify(scheduleArray, null, 2));
+  
+  // Array para almacenar los eventos de las entidades por fecha
+  const eventsArray = [];
+  
+  for (const date of dateArray) {
+    for (const entity of entityArray) {
+      const { id, tipoEntidad } = entity;
+  
+      // Consultar los eventos de la entidad para la fecha actual
+      const eventsQuery = \`
+        SELECT fecha_inicio, fecha_fin, titulo, descripcion
+        FROM eventos
+        WHERE id_asignacion = $1
+        AND tipo_asignacion = $2
+        AND fecha_inicio::date <= $3
+        AND fecha_fin::date >= $3
+      \`;
+      const events = await pool.query(eventsQuery, [id, tipoEntidad, date]);
+  
+      // Agregar los eventos al array de eventos con formato adecuado (solo hora de inicio y fin)
+      eventsArray.push({
+        date: date,
+        entity: {
+          id: entity.id,
+          tipoEntidad: entity.tipoEntidad,
+          nombre: entity.nombre,
+          apellido: entity.apellido
+        },
+        eventos: events.rows.map(evento => ({
+          titulo: evento.titulo,
+          descripcion: evento.descripcion,
+          hora_inicio: moment(evento.fecha_inicio, 'YYYY-MM-DD HH:mm:ss').format('hh:mm A'),
+          hora_fin: moment(evento.fecha_fin, 'YYYY-MM-DD HH:mm:ss').format('hh:mm A')
+        }))
+      });
+    }
+  }
+  
+  // Imprimir el array de eventos con formato JSON
+  console.log(JSON.stringify(eventsArray, null, 2));
+  
+  // Array para almacenar los resultados de espacios disponibles
+const availableSlotsArray = [];
+
+for (const date of dateArray) {
+  for (const entity of entityArray) {
+    const { id, tipoEntidad, nombre, apellido } = entity;
+
+    // Obtener los horarios correspondientes a la fecha y entidad
+    const horariosEntity = scheduleArray.find(horario => 
+      horario.date === date && horario.entity.id === id && horario.entity.tipoEntidad === tipoEntidad
+    )?.horarios || [];
+
+    // Obtener los eventos correspondientes a la fecha y entidad
+    const eventosEntity = eventsArray.find(evento => 
+      evento.date === date && evento.entity.id === id && evento.entity.tipoEntidad === tipoEntidad
+    )?.eventos || [];
+
+    // Variable para almacenar los slots disponibles después de comparar con los eventos
+    const availableSlots = [];
+
+    // Iterar sobre los horarios y compararlos con los eventos
+    for (const horario of horariosEntity) {
+      let slotStart = moment(horario.hora_inicio, 'HH:mm A');
+      let slotEnd = moment(horario.hora_fin, 'HH:mm A');
+
+      // Iterar sobre los eventos ordenados por hora de inicio
+      const sortedEvents = eventosEntity.sort((a, b) => 
+        moment(a.hora_inicio, 'HH:mm A').diff(moment(b.hora_inicio, 'HH:mm A'))
+      );
+
+      for (const evento of sortedEvents) {
+        let eventStart = moment(evento.hora_inicio, 'HH:mm A');
+        let eventEnd = moment(evento.hora_fin, 'HH:mm A');
+
+        // Verificar si el evento cae dentro del horario
+        if (eventStart.isBetween(slotStart, slotEnd, null, '[)') || eventEnd.isBetween(slotStart, slotEnd, null, '(]')) {
+          // Si el evento comienza después del inicio del slot, añadimos el espacio disponible antes del evento
+          if (eventStart.isAfter(slotStart)) {
+            availableSlots.push({
+              hora_inicio: slotStart.format('HH:mm A'),
+              hora_fin: eventStart.format('HH:mm A')
+            });
+          }
+
+          // Ajustamos el slotStart para que comience después de que finalice el evento
+          slotStart = eventEnd.isAfter(slotStart) ? eventEnd : slotStart;
+        }
+      }
+
+      // Si queda un espacio disponible después del último evento, lo añadimos
+      if (slotStart.isBefore(slotEnd)) {
+        availableSlots.push({
+          hora_inicio: slotStart.format('HH:mm A'),
+          hora_fin: slotEnd.format('HH:mm A')
+        });
+      }
+    }
+
+    // Agregar los resultados al array final de espacios disponibles
+    availableSlotsArray.push({
+      date: date,
+      entity: {
+        id: id,
+        tipoEntidad: tipoEntidad,
+        nombre: nombre,
+        apellido: apellido
+      },
+      availableSlots: availableSlots
+    });
+  }
+}
+
+// Imprimir el array de espacios disponibles
+console.log(JSON.stringify(availableSlotsArray, null, 2));
+`);
+
+codeArray.push(`
+  // Función para convertir el array de espacios disponibles en un formato de texto
+  const generateAvailabilityText = (availableSlotsArray) => {
+    let message = '';
+  
+    availableSlotsArray.forEach(slotInfo => {
+      const { date, entity, availableSlots } = slotInfo;
+  
+      // Solo incluir entidades que tienen horarios disponibles
+      if (availableSlots.length > 0) {
+        // Formatear la fecha en dd/mm/yyyy
+        const formattedDate = moment(date).format('DD/MM/YYYY');
+  
+        // Agregar la información de la entidad y los espacios disponibles
+        message += \`📅 \${formattedDate}\\n\`;
+        message += \`  *\${entity.nombre} \${entity.apellido}*\\n\`;
+  
+        availableSlots.forEach(slot => {
+          message += \`   •\${slot.hora_inicio} - \${slot.hora_fin}\\n\`;
+        });
+  
+        message += '\\n'; // Separar por línea para la próxima entidad
+      }
+    });
+  
+    return message;
+  };
+  
+  // Llamar a la función y generar el mensaje
+  let availabilityMessage = generateAvailabilityText(availableSlotsArray);
+  
+  // Mostrar el mensaje generado
+  console.log(availabilityMessage);
+
+  let allAvailabilityMessage = JSON.stringify(availableSlotsArray, null, 2);
+  
+  `);
+  
+      
+  
+    let updatedNodes, updatedEdges;
+  
+    const newVariables = [{
+      name: 'availabilityMessage',
+      displayName: 'Agenda Mensaje',
+      nodeId: currentEditingNodeId || `${nodes.length + 1}`,  // ID del nodo actual o el nuevo
+    },{
+      name: 'allAvailabilityMessage',
+      displayName: 'Toda la  Agenda',
+      nodeId: currentEditingNodeId || `${nodes.length + 1}`,  // ID del nodo actual o el nuevo
+    }
+  ];
+  
+    setVariables((vars) => [...vars, ...newVariables]);  // Actualiza las variables en el estado
+  
+    if (currentEditingNodeId) {
+      // Editar nodo existente
+      updatedNodes = nodes.map(node => {
+        if (node.id === currentEditingNodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label: `Consultar Agenda`,
+              code: codeArray,
+              tipo: 'agenda',
+              onAddClick: (id) => openToolModal(id, true),  // Permite agregar nodos hijos
+              editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),  // Permite editar el nodo
+            },
+          };
+        }
+        return node;
+      });
+      updatedEdges = edges;
+      setCurrentEditingNodeId(null);
+    } else {
+      const newId = randomId();
+      // Crear nuevo nodo
+      const newNode = {
+        id: newId,
+        type: 'custom',
+        position: { x: Math.random() * 250, y: Math.random() * 250 },
+        data: {
+          label: `Consultar Agenda`,
+          code: codeArray,
+          tipo: 'agenda',
+          onAddClick: (id) => openToolModal(id, true),  // Permite agregar nodos hijos
+          editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),  // Permite editar el nodo
+        },
+        parentId: isInternal ? currentNodeId : null,
+      };
+  
+      let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
+  
+      updatedNodes = [...nodes, newNode];
+      updatedEdges = [...edges, newEdge];
+    }
+  
+    setNodes(updatedNodes);
+    setEdges(updatedEdges);
+  };  
+  
+  const handleSaveAgendaModal = () => {
+    setShowAgendaModal(false);  // Cierra el modal
+    generateCodeForAgenda();    // Genera el código para la consulta de agenda
+    
+  };
+
+  const generateCodeForAgendar = async () => {
+    let codeArray = [];
+  
+    codeArray.push(`
+      // Consulta la request para obtener el company_id y el request_data
+      existingRequestQuery = \`
+        SELECT request_id, request_data, company_id
+        FROM requests
+        WHERE conversation_id = $1
+          AND request_type = $2
+          AND status = $3
+          AND company_id = $4
+      \`;
+      
+      existingRequestResult = await pool.query(existingRequestQuery, [conversationId, "agenda", "datosCompletos", integrationDetails.company_id]);
+    
+      if (existingRequestResult.rows.length > 0) {
+        const requestId = existingRequestResult.rows[0].request_id;
+        const requestData = existingRequestResult.rows[0].request_data;
+        const companyId = existingRequestResult.rows[0].company_id;
+    
+        // Extraer la información del request_data que será usada para agendar el evento
+        const titulo = (requestData.titulo && requestData.titulo !== 'null' && requestData.titulo.trim() !== '') ? requestData.titulo : 'Evento sin título';
+        const descripcion = (requestData.descripcion && requestData.descripcion !== 'null' && requestData.descripcion.trim() !== '') ? requestData.descripcion : 'Descripción no disponible';
+        
+        // Obtener fechas y horas independientes de requestData
+        const fechaInicio = (requestData.fecha_inicio && requestData.fecha_inicio !== 'null' && requestData.fecha_inicio.trim() !== '') ? requestData.fecha_inicio.trim() : null;
+        const horaInicio = (requestData.hora_inicio && requestData.hora_inicio !== 'null' && requestData.hora_inicio.trim() !== '') ? requestData.hora_inicio.trim() : null;
+    
+        const fechaFin = (requestData.fecha_fin && requestData.fecha_fin !== 'null' && requestData.fecha_fin.trim() !== '') ? requestData.fecha_fin.trim() : null;
+        const horaFin = (requestData.hora_fin && requestData.hora_fin !== 'null' && requestData.hora_fin.trim() !== '') ? requestData.hora_fin.trim() : null;
+    
+        const allDay = (requestData.all_day && requestData.all_day !== 'null' && requestData.all_day.trim() !== '') ? requestData.all_day.toLowerCase() === 'true' : false;
+        const tipoAsignacion = (requestData.tipo_asignacion && requestData.tipo_asignacion !== 'null' && requestData.tipo_asignacion.trim() !== '') ? requestData.tipo_asignacion : null;
+        const idAsignacion = (requestData.id_asignacion && requestData.id_asignacion !== 'null' && requestData.id_asignacion.trim() !== '') ? requestData.id_asignacion : null;
+    
+        // Validar formato de fecha y hora
+        const esFechaValida = (fecha) => /^\\d{4}-\\d{2}-\\d{2}$/.test(fecha);
+        const esHoraValida = (hora) => /^\\d{2}:\\d{2}:\\d{2}$/.test(hora);
+    
+        // Validar las fechas y horas basadas en el valor de all_day
+        if (allDay) {
+          // Si es un evento de todo el día, solo se validan las fechas
+          if (!esFechaValida(fechaInicio) || !esFechaValida(fechaFin)) {
+            console.log("Error: Las fechas de inicio y fin deben tener el formato 'YYYY-MM-DD' para eventos de todo el día.");
+            return;
+          }
+        } else {
+          // Si no es un evento de todo el día, se validan tanto las fechas como las horas
+          if (!esFechaValida(fechaInicio) || !esFechaValida(fechaFin) || !esHoraValida(horaInicio) || !esHoraValida(horaFin)) {
+            console.log("Error: Las fechas y horas de inicio y fin deben tener el formato 'YYYY-MM-DD HH:MM:SS' para eventos con hora.");
+            return;
+          }
+        }
+    
+        // Verificar que los campos obligatorios existan y no estén vacíos
+        if (!fechaInicio || !fechaFin || (!horaInicio && !allDay) || (!horaFin && !allDay) || !tipoAsignacion || !idAsignacion) {
+          console.log("Faltan datos obligatorios para agendar el evento: fecha_inicio, fecha_fin, hora_inicio, hora_fin, tipo_asignacion, id_asignacion.");
+        } else {
+          // Formatear fecha completa para la inserción en la tabla eventos
+          const fechaHoraInicio = allDay ? fechaInicio : \`\${fechaInicio} \${horaInicio}\`;
+          const fechaHoraFin = allDay ? fechaFin : \`\${fechaFin} \${horaFin}\`;
+    
+          // Insertar el evento en la tabla 'eventos'
+          const insertEventoQuery = \`
+            INSERT INTO eventos (titulo, descripcion, fecha_inicio, fecha_fin, all_day, tipo_asignacion, id_asignacion, company_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id_evento;
+          \`;
+    
+          const eventoResult = await pool.query(insertEventoQuery, [titulo, descripcion, fechaHoraInicio, fechaHoraFin, allDay, tipoAsignacion, idAsignacion, companyId]);
+    
+          // Si el evento fue insertado correctamente, actualizar el estado de la request a 'agendado'
+          if (eventoResult.rows.length > 0) {
+            const eventoId = eventoResult.rows[0].id_evento;
+    
+            const updateRequestQuery = \`
+              UPDATE requests
+              SET request_data = request_data || $1::jsonb,
+                  request_type = $2,
+                  status = $3
+              WHERE request_id = $4;
+            \`;
+    
+            await pool.query(updateRequestQuery, [JSON.stringify(requestData), "agenda", "agendado", requestId]);
+            console.log("Evento agendado con éxito: ID del evento", eventoId);
+          } else {
+            console.log("Error al agendar el evento.");
+          }
+        }
+      } else {
+        console.log("Datos incompletos o la solicitud no existe.");
+      }
+    `);                  
+  
+    let updatedNodes, updatedEdges;
+
+    const newId = randomId();
     const newNode = {
-      id: `${nodes.length + 1}`,
+      id: newId,
+      type: 'custom',
+      position: { x: Math.random() * 250, y: Math.random() * 250 },
+      data: {
+        label: `Agendar`,
+        code: codeArray,
+        onAddClick: (id) => openToolModal(id, true),
+        onAddExternalClick: (id) => openToolModal(id, false),
+      },
+      parentId: isInternal ? currentNodeId : null,
+    };
+
+    let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
+
+    updatedNodes = [...nodes, newNode];
+    updatedEdges = [...edges, newEdge];
+
+  setNodes(updatedNodes);
+  setEdges(updatedEdges);
+  };
+
+  const generateCodeForExtractRequest = async () => {
+    let codeArray = [];
+  
+    codeArray.push(`
+      // Consulta la request para obtener el company_id y el request_data
+      existingRequestQuery = \`
+        SELECT request_id, request_data, company_id
+        FROM requests
+        WHERE conversation_id = $1
+          AND request_type = $2
+          AND status = $3
+          AND company_id = $4
+      \`;
+  
+      existingRequestResult = await pool.query(existingRequestQuery, [conversationId, "tipo_solicitud", "estatus_solicitud", integrationDetails.company_id]);
+  
+      if (existingRequestResult.rows.length > 0) {
+        const requestId = existingRequestResult.rows[0].request_id;
+        const requestData = existingRequestResult.rows[0].request_data;
+        const companyId = existingRequestResult.rows[0].company_id;
+  
+        // Variables extraídas de request_data
+    `);
+  
+    // Suponiendo que selectedFields contiene los nombres de los campos a extraer
+    const selectedFields = ['nombre_campo1', 'nombre_campo2']; // Reemplazar con campos reales
+  
+    selectedFields.forEach((field) => {
+      codeArray.push(`
+        const ${field} = requestData['${field}'] || null;
+      `);
+    });
+  
+    codeArray.push(`
+        // Comprobación de que los campos obligatorios no estén vacíos
+        if (!${selectedFields.join(' || !')}) {
+          console.log("Faltan datos obligatorios para continuar: ${selectedFields.join(', ')}");
+        } else {
+          // Aquí se puede continuar con la lógica deseada, como insertar o actualizar en otras tablas
+          console.log("Datos obtenidos correctamente:", ${selectedFields.join(', ')});
+        }
+      } else {
+        console.log("Datos incompletos o la solicitud no existe.");
+      }
+    `);
+  
+    let updatedNodes, updatedEdges;
+  
+    if (currentEditingNodeId) {
+      // Editar nodo existente
+      updatedNodes = nodes.map(node => {
+        if (node.id === currentEditingNodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label: `Extract Request`,
+              code: codeArray,
+              tipo: 'extract_request',
+              onAddClick: (id) => openToolModal(id, true),
+              onAddExternalClick: (id) => openToolModal(id, false),
+              editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+            },
+          };
+        }
+        return node;
+      });
+      setCurrentEditingNodeId(null);
+    } else {
+      const newId = randomId();
+      // Crear nuevo nodo
+      const newNode = {
+        id: newId,
+        type: 'custom',
+        position: { x: Math.random() * 250, y: Math.random() * 250 },
+        data: {
+          label: `Extract Request`,
+          code: codeArray,
+          tipo: 'extract_request',
+          onAddClick: (id) => openToolModal(id, true),
+          onAddExternalClick: (id) => openToolModal(id, false),
+          editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+        },
+      };
+  
+      let newEdge;
+      if (isInternal) {
+        newEdge = {
+          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+          source: newNode.parentId || `${nodes.length}`,
+          target: newNode.id,
+          animated: true,
+          style: { stroke: '#d033b9' },
+          zIndex: 10,
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#d033b9',
+          },
+        };
+      } else {
+        newEdge = {
+          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+          source: newNode.parentId || `${nodes.length}`,
+          target: newNode.id,
+          animated: true,
+          sourceHandle: 'b',
+          style: { stroke: '#d033b9' },
+          zIndex: 10,
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#d033b9',
+          },
+        };
+      }
+  
+      updatedNodes = [...nodes, newNode];
+      updatedEdges = [...edges, newEdge];
+    }
+  
+    setNodes(updatedNodes);
+    setEdges(updatedEdges);
+  };
+  
+  
+  const handleResponseLocationModalSave = () => {
+    const newId = randomId();
+    const newNode = {
+      id: newId,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
       data: {
@@ -2254,9 +3186,9 @@ const generateCodeForIntentions = async () => {
       // Si estás creando un nuevo nodo
       const newAssistant = { name: assistantName, displayName: assistantName, model: gptModel, personality };
       const  tipo = 'gptAssistant';
-  
+      const newId = randomId();
       const newNode = {
-        id: `${nodes.length + 1}`,
+        id: newId,
         type: 'custom',
         position: { x: Math.random() * 250, y: Math.random() * 250 },
         data: {
@@ -2470,9 +3402,9 @@ const generateCodeForIntentions = async () => {
 
       ${payloadCode}
     `;
-
+    const newId = randomId();
     const newNode = {
-      id: `${nodes.length + 1}`,
+      id: newId,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
       data: {
@@ -2524,9 +3456,9 @@ const generateCodeForIntentions = async () => {
   const handleChangeResponsibleModalSave = () => {
     const selectedResponsibleObject = responsibles.find(r => r.id_usuario === parseInt(selectedResponsible));
     const fullName = `${selectedResponsibleObject.nombre} ${selectedResponsibleObject.apellido}`;
-
+    const newId = randomId();
     const newNode = {
-      id: `${nodes.length + 1}`,
+      id: newId,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
       data: {
@@ -2579,8 +3511,9 @@ const generateCodeForIntentions = async () => {
   };
 
   const handleUpdateContactInitializerModalSave = () => {
+    const newId = randomId();
     const newNode = {
-      id: `${nodes.length + 1}`,
+      id: newId,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
       data: {
@@ -2662,9 +3595,9 @@ const generateCodeForIntentions = async () => {
     }
 
     const contactFieldDisplay = contactFields.find((f) => f.name === contactField)?.displayName;
-
+    const newId = randomId();
     const newNode = {
-      id: `${nodes.length + 1}`,
+      id: newId,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
       data: {
@@ -2719,8 +3652,9 @@ const generateCodeForIntentions = async () => {
   };
 
   const handleUpdateContactNameModalSave = () => {
+    const newId = randomId();
     const newNode = {
-      id: `${nodes.length + 1}`,
+      id: newId,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
       data: {
@@ -2800,9 +3734,10 @@ const generateCodeForIntentions = async () => {
         newNodeId = currentEditingNodeId; // Usar el ID del nodo que se está editando
         setCurrentEditingNodeId(null);
     } else {
+      const newId = randomId();
         // Si estamos creando un nuevo nodo
         const newNode = {
-            id: `${nodes.length + 1}`,
+            id: newId,
             type: 'switch',
             position: { x: 250, y: 55 + 75 * nodes.length },
             data: {
@@ -2905,8 +3840,9 @@ const generateCodeForIntentions = async () => {
   const handleCaseModalSave = () => {
     const variable = variables.find(v => v.name === selectedVariable);
     const variableName = variable ? variable.name : selectedVariable;
+    const newId = randomId();
     const newNode = {
-      id: `${nodes.length + 1}`,
+      id: newId,
       type: 'caseNode',
       position: { x: 250, y: 55 + 75 * nodes.length },
       data: { label: `Caso (${comparisonValue})`, code: [`case '${comparisonValue}':`], onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false), setNodes, addCaseNode: (id) => addCaseNode(id) },
@@ -2956,8 +3892,9 @@ const generateCodeForIntentions = async () => {
   };
 
   const handleUpdateStateModalSave = () => {
+    const newId = randomId();
     const newNode = {
-      id: `${nodes.length + 1}`,
+      id: newId,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
       data: {
@@ -3148,9 +4085,10 @@ const generateCodeForIntentions = async () => {
         updatedEdges = edges; // Mantén las aristas actuales
         setCurrentEditingNodeId(null);
     } else {
+        const newId = randomId();
         // Si estamos creando un nuevo nodo
         const newNode = {
-            id: `${nodes.length + 1}`,
+            id: newId,
             type: 'conditional',
             position: { x: 250, y: 55 + 75 * nodes.length },
             data: {
@@ -3317,9 +4255,10 @@ const generateCodeForIntentions = async () => {
         console.log("Creando nueva consulta GPT");
 
         const tipo = 'queryGpt';
+        const newId = randomId();
 
         const newNode = {
-            id: `${nodes.length + 1}`,
+            id: newId,
             type: 'custom',
             position: { x: Math.random() * 250, y: Math.random() * 250 },
             data: {
@@ -3387,7 +4326,7 @@ const generateCodeForIntentions = async () => {
 
   const handleSplitVariableModalSave = () => {
     const resultNamesStr = splitResultNames.join(', ');
-    const splitCode = `const [${resultNamesStr}] = ${splitVariable}.split('${splitParameter}');`;
+    const splitCode = `const [${resultNamesStr}] = ${splitVariable}.split('${splitParameter}').map(item => item.trim());`;
 
     // Validación manual
   if (!splitVariable) {
@@ -3399,9 +4338,9 @@ const generateCodeForIntentions = async () => {
     alert('Debe ingresar un parámetro para dividir.');
     return;
   }
-
+  const newId = randomId();
     const newNode = {
-      id: `${nodes.length + 1}`,
+      id: newId,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
       data: {
@@ -3457,8 +4396,638 @@ const generateCodeForIntentions = async () => {
     setSplitResultNames(['']);
   };
 
+  const handleEntityTypeChange = (option) => {
+    if (option === "Instalación") {
+      if (selectedEntityType.includes("Instalación")) {
+        setSelectedEntityType([]);
+      } else {
+        setSelectedEntityType(["Instalación"]);
+      }
+    } else {
+      if (selectedEntityType.includes(option)) {
+        setSelectedEntityType((prev) => prev.filter((item) => item !== option));
+      } else {
+        if (!selectedEntityType.includes("Instalación")) {
+          setSelectedEntityType((prev) => [...prev, option]);
+        }
+      }
+    }
+  };
+  
+  
+  const handleQueryParamsChange = (option) => {
+    if (option === "Id") {
+      if (selectedQueryParams.includes("Id")) {
+        setSelectedQueryParams([]);
+      } else {
+        setSelectedQueryParams(["Id"]);
+      }
+    } else {
+      if (selectedQueryParams.includes(option)) {
+        setSelectedQueryParams((prev) => prev.filter((item) => item !== option));
+      } else {
+        if (!selectedQueryParams.includes("Id")) {
+          setSelectedQueryParams((prev) => [...prev, option]);
+        }
+      }
+    }
+  };  
+  
+  const renderSearchFields = () => {
+    const fields = [];
+  
+    if (selectedQueryParams.includes("Id")) {
+      fields.push(
+        <div key="id">
+          <label htmlFor="id">Ingrese el Id</label>
+          <input type="text" id="id" onChange={(e) => setSearchData({ ...searchData, id: e.target.value })} />
+        </div>
+      );
+    }
+  
+    if (selectedQueryParams.includes("Departamento")) {
+      fields.push(
+        <div key="departamento">
+          <Form.Group controlId="formDepartment">
+            <Form.Label>Departamento</Form.Label>
+            <Form.Control
+              as="select"
+              value={selectedDepartment}
+              onChange={(e) => {
+                setSelectedDepartment(e.target.value);
+                setSearchData({ ...searchData, departamento: e.target.value });
+              }}
+            >
+              <option value="">Seleccione un departamento</option>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+        </div>
+      );
+    }
+  
+    if (selectedQueryParams.includes("Rol")) {
+      fields.push(
+        <div key="rol">
+          <Form.Group controlId="formRole">
+            <br></br>
+            <Form.Label>Rol</Form.Label>
+            <Form.Control
+              as="select"
+              value={selectedRole}
+              onChange={(e) => {
+                setSelectedRole(e.target.value);
+                setSearchData({ ...searchData, rol: e.target.value });
+              }}
+            >
+              <option value="">Seleccione un rol</option>
+              {roles.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+        </div>
+      );
+    }
+  
+    return fields;
+  };
+   
+
+  useEffect(() => {
+    if (showAgendaModal) {
+      const fetchDepartments = async () => {
+        const companyId = localStorage.getItem("company_id");
+        try {
+          const departmentsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/departments/${companyId}`);
+          setDepartments(departmentsResponse.data);
+        } catch (error) {
+          console.error('Error fetching departments:', error);
+        }
+      };
+  
+      const fetchRoles = async () => {
+        const companyId = localStorage.getItem("company_id");
+        try {
+          const rolesResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/roles/${companyId}`);
+          setRoles(rolesResponse.data);
+        } catch (error) {
+          console.error('Error fetching roles:', error);
+        }
+      };
+  
+      fetchDepartments();  // Llama a la función para consultar los departamentos
+      fetchRoles();        // Llama a la función para consultar los roles
+    }
+  }, [showAgendaModal]);
+  
+  const handleCustomPeriodChange = (type, periodType, value) => {
+    if (periodType === 'days') {
+      if (type === 'start') setCustomStartDays(value);
+      else setCustomEndDays(value);
+    } else if (periodType === 'months') {
+      if (type === 'start') setCustomStartMonths(value);
+      else setCustomEndMonths(value);
+    } else if (periodType === 'years') {
+      if (type === 'start') setCustomStartYears(value);
+      else setCustomEndYears(value);
+    }
+  };
+
+  const handleDateChange = (type, period, value) => {
+    if (type === 'start') {
+      setStartDate({ type: period, value });
+      if (period === 'custom') {
+        // Borrar los datos del periodo final si se selecciona "Custom"
+        setEndDate({ type: '', value: '' });
+      }
+    } else {
+      setEndDate({ type: period, value });
+    }
+  };
+  
+  const handleCustomStartDateChange = (e) => {
+    setCustomStartDate(e.target.value);
+  };
+  
+  const renderPeriodSelector = (type) => {
+    return (
+      <>
+        <Form.Group controlId={`formPeriod${type}`} className="mb-3">
+          <Form.Label>{type === 'start' ? 'Inicio del Periodo' : 'Fin del Periodo'}</Form.Label>
+          <Form.Control
+            as="select"
+            value={type === 'start' ? startDate.type : endDate.type}
+            onChange={(e) => handleDateChange(type, e.target.value, '')}
+            disabled={type === 'end' && startDate.type === 'custom'}
+          >
+            <option value="">Seleccione un periodo</option>
+            <option value="day">Día</option>
+            <option value="month">Mes</option>
+            <option value="year">Año</option>
+            {type === 'start' && <option value="custom">Custom</option>} {/* Opción Custom solo para Inicio */}
+          </Form.Control>
+        </Form.Group>
+  
+        {/* Si el usuario selecciona 'custom', mostrar un input para la variable personalizada */}
+        {(type === 'start' ? startDate.type : endDate.type) === 'custom' && (
+        <Form.Group controlId={`formCustomStartDate${type}`} className="mb-3">
+          <Form.Label>Seleccione la variable</Form.Label>
+          <Form.Control
+            as="select"
+            value={customStartDate}
+            onChange={(e) => setCustomStartDate(e.target.value)}  // Actualiza el estado con la variable seleccionada
+          >
+            <option value="">Seleccione una variable</option>
+            {variables.map((variable) => (
+              <option key={variable.name} value={variable.name}>
+                {variable.displayName}
+              </option>
+            ))}
+          </Form.Control>
+        </Form.Group>
+      )}
+
+      {(type === 'start' ? startDate.type : endDate.type) === 'day' && (
+        <Form.Group controlId={`formCustomDays${type}`} className="mb-3">
+          <Form.Label>Selección de Día</Form.Label>
+          <Form.Control
+            as="select"
+            value={type === 'start' ? startDate.value : endDate.value}
+            onChange={(e) => handleDateChange(type, 'day', e.target.value)}
+          >
+            <option value="">Seleccione una opción</option>
+            <option value="today">Hoy</option>
+            <option value="inDays">En [X] días</option>
+            <option value="variable">Variable</option>
+          </Form.Control>
+
+          {(type === 'start' ? startDate.value : endDate.value) === 'inDays' && (
+            <Form.Group className="mt-3">
+              <Form.Label>Cantidad de días</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Número de días"
+                value={type === 'start' ? customStartDays: customEndDays}
+                onChange={(e) => handleCustomPeriodChange(type, 'days', e.target.value)}
+                className="mb-3"
+              />
+            </Form.Group>
+          )}
+
+          {(type === 'start' ? startDate.value : endDate.value) === 'variable' && (
+            <Form.Group className="mt-3">
+              <Form.Label>Seleccione una variable</Form.Label>
+              <Form.Control
+                as="select"
+                value={type === 'start' ? selectedStartVariable : selectedEndVariable}
+                onChange={(e) => type === 'start' ? setSelectedStartVariable(e.target.value) : setSelectedEndVariable(e.target.value)}
+                className="mb-3"
+              >
+                {variables.map((variable) => (
+                  <option key={variable.name} value={variable.name}>
+                    {variable.displayName}
+                  </option>
+                ))}
+              </Form.Control>
+            </Form.Group>
+          )}
+        </Form.Group>
+      )}
+
+      {(type === 'start' ? startDate.type : endDate.type) === 'month' && (
+        <Form.Group controlId={`formCustomMonths${type}`} className="mb-3">
+          <Form.Label>Selección de Mes</Form.Label>
+          <Form.Control
+            as="select"
+            value={type === 'start' ? startDate.value : endDate.value}
+            onChange={(e) => handleDateChange(type, 'month', e.target.value)}
+          >
+            <option value="">Seleccione una opción</option>
+            <option value="thisMonth">Este mes</option>
+            <option value="inMonths">En [X] meses</option>
+            <option value="variable">Variable</option>
+          </Form.Control>
+
+          {(type === 'start' ? startDate.value : endDate.value) === 'inMonths' && (
+            <Form.Group className="mt-3">
+              <Form.Label>Cantidad de meses</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Número de meses"
+                value={type === 'start' ? customStartMonths : customEndMonths}
+                onChange={(e) => handleCustomPeriodChange(type, 'months', e.target.value)}
+                className="mb-3"
+              />
+            </Form.Group>
+          )}
+
+          {(type === 'start' ? startDate.value : endDate.value) === 'variable' && (
+            <Form.Group className="mt-3">
+              <Form.Label>Seleccione una variable</Form.Label>
+              <Form.Control
+                as="select"
+                value={type === 'start' ? selectedStartVariable : selectedEndVariable}
+                onChange={(e) => type === 'start' ? setSelectedStartVariable(e.target.value) : setSelectedEndVariable(e.target.value)}
+                className="mb-3"
+              >
+                {variables.map((variable) => (
+                  <option key={variable.name} value={variable.name}>
+                    {variable.displayName}
+                  </option>
+                ))}
+              </Form.Control>
+            </Form.Group>
+          )}
+        </Form.Group>
+      )}
+
+      {(type === 'start' ? startDate.type : endDate.type) === 'year' && (
+        <Form.Group controlId={`formCustomYears${type}`} className="mb-3">
+          <Form.Label>Selección de Año</Form.Label>
+          <Form.Control
+            as="select"
+            value={type === 'start' ? startDate.value : endDate.value}
+            onChange={(e) => handleDateChange(type, 'year', e.target.value)}
+          >
+            <option value="">Seleccione una opción</option>
+            <option value="thisYear">Este año</option>
+            <option value="inYears">En [X] años</option>
+            <option value="variable">Variable</option>
+          </Form.Control>
+
+          {(type === 'start' ? startDate.value : endDate.value) === 'inYears' && (
+            <Form.Group className="mt-3">
+              <Form.Label>Cantidad de años</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Número de años"
+                value={type === 'start' ? customStartYears : customEndYears}
+                onChange={(e) => handleCustomPeriodChange(type, 'years', e.target.value)}
+                className="mb-3"
+              />
+            </Form.Group>
+          )}
+
+          {(type === 'start' ? startDate.value : endDate.value) === 'variable' && (
+            <Form.Group className="mt-3">
+              <Form.Label>Seleccione una variable</Form.Label>
+              <Form.Control
+                as="select"
+                value={type === 'start' ? selectedStartVariable : selectedEndVariable}
+                onChange={(e) => type === 'start' ? setSelectedStartVariable(e.target.value) : setSelectedEndVariable(e.target.value)}
+                className="mb-3"
+              >
+                {variables.map((variable) => (
+                  <option key={variable.name} value={variable.name}>
+                    {variable.displayName}
+                  </option>
+                ))}
+              </Form.Control>
+            </Form.Group>
+          )}
+        </Form.Group>
+      )}
+    </>
+  );
+}; 
+
+const addGetRequestDataKey = () => {
+  setGetRequestDataKeys([...getRequestDataKeys, { key: '' }]);
+};
+
+const removeGetRequestDataKey = (index) => {
+  setGetRequestDataKeys(getRequestDataKeys.filter((_, i) => i !== index));
+};
+
+const updateGetRequestDataKey = (index, field, value) => {
+  const newGetRequestDataKeys = [...getRequestDataKeys];
+  newGetRequestDataKeys[index][field] = value;
+  setGetRequestDataKeys(newGetRequestDataKeys);
+};
+
+const addGetValidationCondition = () => {
+  setGetValidationConditions([...getValidationConditions, { key: '', value: '' }]);
+};
+
+const removeGetValidationCondition = (index) => {
+  setGetValidationConditions(getValidationConditions.filter((_, i) => i !== index));
+};
+
+const updateGetValidationCondition = (index, field, value) => {
+  const newGetValidationConditions = [...getValidationConditions];
+  newGetValidationConditions[index][field] = value;
+  setGetValidationConditions(newGetValidationConditions);
+};
+
+const handleGetRequestModalSave = async () => {
+  const getValidationConditionsArray = getValidationConditions
+    .filter(condition => condition.key && condition.value)
+    .map(condition => `(request_data->>'${condition.key}') = '${condition.value}'`);
+
+  const getValidationConditionString = getValidationConditionsArray.length > 0
+    ? `AND ${getValidationConditionsArray.join(' AND ')}`
+    : '';
+
+  const getRequestDataKeysArray = getRequestDataKeys.map(data => data.key);
+
+  let code = `getRequestType = "${getRequestType}";\n`;
+  code += `getRequestStatus = "${getRequestStatus}";\n`;
+  code += `getRequestDataKeys = [${getRequestDataKeysArray.map(key => `"${key}"`).join(', ')}];\n`;
+
+  code += `
+    selectRequestQuery = \`
+      SELECT request_data
+      FROM requests
+      WHERE conversation_id = $1
+        AND request_type = $2
+        AND status = $3
+        AND company_id = $4
+        ${getValidationConditionString};
+    \`;
+    const requestResult = await pool.query(selectRequestQuery, [conversationId, getRequestType, getRequestStatus, integrationDetails.company_id]);
+
+    if (requestResult.rows.length > 0) {
+      const requestData = requestResult.rows[0].request_data;
+
+      ${getRequestDataKeysArray.map(key => `const ${key} = requestData['${key}'];`).join('\n')}
+      console.log(${getRequestDataKeysArray.map(key => `"${key}: " + ${key}`).join(', ')});
+
+      requestDataText = JSON.stringify(requestData, null, 2);
+    } else {
+      console.log("No se encontró la solicitud.");
+    }
+  `;
+
+  let updatedNodes, updatedEdges;
+
+  if (currentEditingNodeId) {
+    // Si estamos editando un nodo existente
+    updatedNodes = nodes.map(node => {
+      if (node.id === currentEditingNodeId) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            label: `Obtener Solicitud: ${getRequestType}`,
+            code: [code],
+            getRequestType,
+            getRequestStatus,
+            getValidationConditions,
+            getRequestDataKeys,
+            tipo: 'getRequest',
+            onAddClick: (id) => openToolModal(id, true), 
+            onAddExternalClick: (id) => openToolModal(id, false),  
+            editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+          },
+        };
+      }
+      return node;
+    });
+    updatedEdges = edges; // Mantén las aristas actuales
+    setCurrentEditingNodeId(null);
+  } else {
+    // Si estamos creando un nuevo nodo
+    const newNode = {
+      id: randomId(),
+      type: 'custom',
+      position: { x: Math.random() * 250, y: Math.random() * 250 },
+      data: {
+        label: `Obtener Solicitud: ${getRequestType}`,
+        code: [code],
+        getRequestType,
+        getRequestStatus,
+        getValidationConditions,
+        getRequestDataKeys,
+        tipo: 'getRequest',
+        onAddClick: (id) => openToolModal(id, true), 
+        onAddExternalClick: (id) => openToolModal(id, false),  
+        editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+      },
+    };
+
+    let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
+
+     // Agregar nuevas variables para cada dato extraído
+  const newVariables = getRequestDataKeysArray.map((name) => ({
+    name, 
+    displayName: name, 
+    nodeId: newNode.id 
+  }));
+
+  // Agregar la variable de la solicitud completa como texto
+  const requestDataTextVariable = {
+    name: 'requestDataText',
+    displayName: 'Datos de Solicitud Completa (Texto)',
+    nodeId: newNode.id,
+    value: 'requestDataText' // Será el nombre de la variable generada
+  };
+
+  // Actualizar el estado de variables
+  setVariables((vars) => [...vars, ...newVariables]);
+
+  // Actualizar el estado de variables con las variables extraídas y la solicitud completa en texto
+  setVariables((vars) => [...vars, ...newVariables, requestDataTextVariable]);
+
+    updatedNodes = [...nodes, newNode];
+    updatedEdges = [...edges, newEdge];
+  }
+
+  setNodes(updatedNodes);
+  setEdges(updatedEdges);
+  generateCodeFromNodes(updatedNodes, updatedEdges);
+
+  setShowGetRequestModal(false);
+  setGetRequestType('');
+  setGetRequestStatus('');
+  setGetValidationConditions([{ key: '', value: '' }]);
+  setGetRequestDataKeys([{ key: '' }]);
+};
+
+const handleSaveDelayModal = () => {
+  setShowDelayModal(false);  // Cierra el modal
+  generateCodeForDelay();    // Genera el código para el retardo
+};
+
+const generateCodeForDelay = async () => {
+  let codeArray = [];
+  let timeInMilliseconds;
+
+  // Convertir el tiempo a milisegundos según la unidad de medida
+  switch (delayUnit) {
+    case 'Segundos':
+      timeInMilliseconds = delayTime * 1000;
+      break;
+    case 'Minutos':
+      timeInMilliseconds = delayTime * 60 * 1000;
+      break;
+    case 'Horas':
+      timeInMilliseconds = delayTime * 60 * 60 * 1000;
+      break;
+    default:
+      timeInMilliseconds = delayTime * 1000;  // Por defecto segundos
+  }
+
+  // Código para implementar el retardo
+  codeArray.push(`// Retardo de ejecución por ${delayTime} ${delayUnit}\n`);
+  codeArray.push(`await new Promise(resolve => setTimeout(resolve, ${timeInMilliseconds}));\n`);
+
+  // Crear la nueva variable si es necesaria (en este caso no es necesario almacenar variables globales)
+
+  // Continuar con la creación o actualización del nodo
+  let updatedNodes, updatedEdges;
+
+  if (currentEditingNodeId) {
+    // Editar nodo existente
+    updatedNodes = nodes.map(node => {
+      if (node.id === currentEditingNodeId) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            label: `Retardo de ${delayTime} ${delayUnit}`,
+            code: codeArray,
+            tipo: 'delay',
+            onAddClick: (id) => openToolModal(id, true),  // Permite agregar nodos hijos
+            editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),  // Permite editar el nodo
+          },
+        };
+      }
+      return node;
+    });
+    setCurrentEditingNodeId(null);
+  } else {
+    const newId = randomId();
+    // Crear nuevo nodo
+    const newNode = {
+      id: newId,
+      type: 'custom',
+      position: { x: Math.random() * 250, y: Math.random() * 250 },
+      data: {
+        label: `Retardo de ${delayTime} ${delayUnit}`,
+        code: codeArray,
+        tipo: 'delay',
+        onAddClick: (id) => openToolModal(id, true),  // Permite agregar nodos hijos
+        editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),  // Permite editar el nodo
+      },
+    };
+
+    // Crear la nueva conexión (edge) con el estilo correcto
+    let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
+
+    updatedNodes = [...nodes, newNode];
+    updatedEdges = [...edges, newEdge];
+  }
+
+  setNodes(updatedNodes);
+  setEdges(updatedEdges);
+};
+
+
   const generateCodeFromNodes = (nodes, edges) => {
-    let initialDeclarations = 'let responseText;\nlet responseImage;\nlet responseVideo;\nlet responseDocument;\nlet responseAudio;\nlet latitude;\nlet longitude;\nlet streetName;\nlet videoDuration;\nlet videoThumbnail;\nlet payload;\nlet requestType;\nlet requestStatus;\nlet nuevoStatus;\nlet requestData;\nlet existingRequestQuery;\nlet existingRequestResult;\nlet requestId;\nlet updateRequestQuery;\nlet insertRequestQuery;\nlet headersRequest;\nlet requestQueryExternal;\nlet requestResultExternal;\nlet requestDataExternal;\nlet credentialsRequest;\nlet updateStatusQueryExternal;\nlet responseExternal;\nlet intentions;\nlet apiKey;\nlet url;\nlet headers;\nlet responseGpt;\nlet gptResponse;\n';
+    let initialDeclarations = 'let responseText;\nlet responseImage;\nlet responseVideo;\nlet responseDocument;\nlet responseAudio;\nlet latitude;\nlet longitude;\nlet streetName;\nlet videoDuration;\nlet videoThumbnail;\nlet payload;\nlet requestType;\nlet requestStatus;\nlet nuevoStatus;\nlet requestData;\nlet existingRequestQuery;\nlet existingRequestResult;\nlet requestId;\nlet updateRequestQuery;\nlet insertRequestQuery;\nlet headersRequest;\nlet requestQueryExternal;\nlet requestResultExternal;\nlet requestDataExternal;\nlet credentialsRequest;\nlet updateStatusQueryExternal;\nlet responseExternal;\nlet intentions;\nlet apiKey;\nlet url;\nlet headers;\nlet responseGpt;\nlet gptResponse;\nlet requestDataText;\n';
 
     initialDeclarations += `const queryConversation = \`
     SELECT
@@ -4816,11 +6385,39 @@ const generateNodeCode = (node, indent = '') => {
           </Form.Group>
           <Form.Group controlId={`formRequestDataValue${index}`}>
             <Form.Label>Valor del Dato</Form.Label>
+            <Form.Group>
+            <Form.Group>
+            <Form.Group className="mb-3">
+            <Form.Label>Seleccionar Variable o Escribir Texto</Form.Label>
+
+            <Form.Control
+              as="select"
+              value={requestData[index]?.value?.startsWith('${') ? requestData[index].value.slice(2, -1) : ''}
+              onChange={(e) => {
+                const selectedVariable = e.target.value;
+                updateRequestData(index, 'value', selectedVariable ? `\${${selectedVariable}}` : '');
+              }}
+              disabled={requestData[index]?.value && !requestData[index].value.startsWith('${')}
+              className="mb-2"
+            >
+              <option value="">Seleccionar una variable</option>
+              {variables.map((variable) => (
+                <option key={variable.name} value={variable.name}>
+                  {variable.displayName}
+                </option>
+              ))}
+            </Form.Control>
+
             <Form.Control
               type="text"
-              value={data.value}
+              value={requestData[index]?.value && !requestData[index].value.startsWith('${') ? requestData[index].value : ''}
               onChange={(e) => updateRequestData(index, 'value', e.target.value)}
+              placeholder="Escribir texto"
+              disabled={requestData[index]?.value?.startsWith('${')}
             />
+          </Form.Group>
+          </Form.Group>
+          </Form.Group>
           </Form.Group>
           <Button variant="danger" onClick={() => removeRequestData(index)}>Eliminar</Button>
         </div>
@@ -5135,6 +6732,9 @@ const generateNodeCode = (node, indent = '') => {
             <button className="tool-button" onClick={() => {addExternalRequestNode(currentNodeId);setShowToolModal(false);}}>Crear Solicitud Externa</button>
             <button className="tool-button" onClick={() => {setShowSendRequestModal(true);setShowToolModal(false);}} disabled={externalRequests.length === 0}>Agregar Solicitud Externa</button>
             <button className="tool-button" onClick={() => {setShowRequestModal(true);setShowToolModal(false);}}>Llenar Solicitud</button>
+            <button className="tool-button" onClick={() => {setShowGetRequestModal(true); setShowToolModal(false);}}>
+              Obtener Solicitud
+            </button>
             <button
               className="tool-button"
               onClick={() => {
@@ -5146,6 +6746,9 @@ const generateNodeCode = (node, indent = '') => {
               Crear Intenciones
             </button>
             <button className="tool-button" onClick={() => {setShowExternalDataModal(true);setShowToolModal(false);}}>Agregar Dato Externo</button>
+            <button className="tool-button" onClick={() => setShowDelayModal(true)}>
+              Crear Retardo
+            </button>
           </div>
 
           {/* Segunda columna */}
@@ -5155,6 +6758,12 @@ const generateNodeCode = (node, indent = '') => {
             <button className="tool-button" onClick={() => {addUpdateStateNode(currentNodeId);setShowToolModal(false);}}>Actualizar Estado</button>
             <button className="tool-button" onClick={() => {addConcatVariablesNode(currentNodeId);setShowToolModal(false);}}>Concatenar Variables</button>
             <button className="tool-button" onClick={() => {addSplitVariableNode(currentNodeId);setShowToolModal(false);}}>Dividir Variable</button>
+            <button className="tool-button" onClick={() => {setShowAgendaModal(true);setShowToolModal(false);}}>
+              Consultar Agenda
+            </button>
+            <button className="tool-button" onClick={() => {generateCodeForAgendar();setShowToolModal(false);}}>
+              Agendar
+            </button>
           </div>
 
           {/* Tercera columna */}
@@ -5189,6 +6798,224 @@ const generateNodeCode = (node, indent = '') => {
       </Modal.Footer>
     </Modal>
 
+    <Modal show={showAgendaModal} onHide={() => setShowAgendaModal(false)}>
+    <Modal.Header closeButton>
+        <Modal.Title>Consultar Agenda</Modal.Title>
+    </Modal.Header>
+    <Modal.Body>
+        {/* Tipo de entidad */}
+        <div className="mb-4">
+            <label className="form-label">Tipo de entidad</label>
+            <div className="form-check">
+                <input 
+                  className="form-check-input" 
+                  type="checkbox" 
+                  id="usuario" 
+                  checked={selectedEntityType.includes("Usuario")} 
+                  onChange={() => handleEntityTypeChange("Usuario")} 
+                  disabled={selectedEntityType.includes("Instalación")} 
+                />
+                <label className="form-check-label" htmlFor="usuario">Usuario</label>
+            </div>
+            <div className="form-check">
+                <input 
+                  className="form-check-input" 
+                  type="checkbox" 
+                  id="colaborador" 
+                  checked={selectedEntityType.includes("Colaborador")} 
+                  onChange={() => handleEntityTypeChange("Colaborador")} 
+                  disabled={selectedEntityType.includes("Instalación")} 
+                />
+                <label className="form-check-label" htmlFor="colaborador">Colaborador</label>
+            </div>
+            <div className="form-check">
+                <input 
+                  className="form-check-input" 
+                  type="checkbox" 
+                  id="instalacion" 
+                  checked={selectedEntityType.includes("Instalación")} 
+                  onChange={() => handleEntityTypeChange("Instalación")} 
+                  disabled={selectedEntityType.includes("Usuario") || selectedEntityType.includes("Colaborador")} 
+                />
+                <label className="form-check-label" htmlFor="instalacion">Instalación</label>
+            </div>
+        </div>
+
+        {/* Parámetro de consulta */}
+        <div className="mb-4">
+            <label className="form-label">Parámetro de consulta</label>
+            <div className="form-check">
+                <input 
+                  className="form-check-input" 
+                  type="checkbox" 
+                  id="id" 
+                  checked={selectedQueryParams.includes("Id")} 
+                  onChange={() => handleQueryParamsChange("Id")} 
+                />
+                <label className="form-check-label" htmlFor="id">Id</label>
+            </div>
+            <div className="form-check">
+                <input 
+                  className="form-check-input" 
+                  type="checkbox" 
+                  id="departamento" 
+                  checked={selectedQueryParams.includes("Departamento")} 
+                  onChange={() => handleQueryParamsChange("Departamento")} 
+                  disabled={selectedQueryParams.includes("Id")} 
+                />
+                <label className="form-check-label" htmlFor="departamento">Departamento</label>
+            </div>
+            <div className="form-check">
+                <input 
+                  className="form-check-input" 
+                  type="checkbox" 
+                  id="rol" 
+                  checked={selectedQueryParams.includes("Rol")} 
+                  onChange={() => handleQueryParamsChange("Rol")} 
+                  disabled={selectedQueryParams.includes("Id") || selectedEntityType.includes("Instalación")} 
+                />
+                <label className="form-check-label" htmlFor="rol">Rol</label>
+            </div>
+        </div>
+
+        {/* Campos de búsqueda dinámicos */}
+        <div>
+            {renderSearchFields()}
+        </div>
+
+        {/* Inicio del Periodo */}
+  {renderPeriodSelector('start')}
+
+{/* Fin del Periodo */}
+{renderPeriodSelector('end')}
+    </Modal.Body>
+    <Modal.Footer>
+        <Button variant="secondary" onClick={() => setShowAgendaModal(false)}>
+            Cancelar
+        </Button>
+        <Button variant="primary" onClick={handleSaveAgendaModal}>
+            Crear
+        </Button>
+    </Modal.Footer>
+</Modal>
+
+<Modal show={showGetRequestModal} onHide={() => setShowGetRequestModal(false)}>
+  <Modal.Header closeButton>
+    <Modal.Title>Obtener Solicitud</Modal.Title>
+  </Modal.Header>
+  <Modal.Body>
+    <Form>
+      <Form.Group controlId="formGetRequestType">
+        <Form.Label>Tipo de Solicitud</Form.Label>
+        <Form.Control
+          type="text"
+          value={getRequestType}
+          onChange={(e) => setGetRequestType(e.target.value)}
+        />
+      </Form.Group>
+
+      <Form.Group controlId="formGetRequestStatus">
+        <Form.Label>Estatus de la Solicitud</Form.Label>
+        <Form.Control
+          type="text"
+          value={getRequestStatus}
+          onChange={(e) => setGetRequestStatus(e.target.value)}
+        />
+      </Form.Group>
+
+      <hr />
+
+      <h5>Condiciones de Validación (Opcional)</h5>
+      {getValidationConditions.map((condition, index) => (
+        <div key={index} style={{ marginBottom: '10px' }}>
+          <Form.Group controlId={`formGetValidationConditionKey${index}`}>
+            <Form.Label>Clave de Validación</Form.Label>
+            <Form.Control
+              type="text"
+              value={condition.key}
+              onChange={(e) => updateGetValidationCondition(index, 'key', e.target.value)}
+            />
+          </Form.Group>
+          <Form.Group controlId={`formGetValidationConditionValue${index}`}>
+            <Form.Label>Valor de Validación</Form.Label>
+            <Form.Control
+              type="text"
+              value={condition.value}
+              onChange={(e) => updateGetValidationCondition(index, 'value', e.target.value)}
+            />
+          </Form.Group>
+          <Button variant="danger" onClick={() => removeGetValidationCondition(index)}>Eliminar</Button>
+        </div>
+      ))}
+      <Button variant="primary" onClick={addGetValidationCondition}>Agregar Condición de Validación</Button>
+
+      <hr />
+
+      <h5>Datos a Extraer</h5>
+      {getRequestDataKeys.map((data, index) => (
+        <div key={index} style={{ marginBottom: '10px' }}>
+          <Form.Group controlId={`formGetRequestDataKey${index}`}>
+            <Form.Label>Nombre del Dato</Form.Label>
+            <Form.Control
+              type="text"
+              value={data.key}
+              onChange={(e) => updateGetRequestDataKey(index, 'key', e.target.value)}
+            />
+          </Form.Group>
+          <Button variant="danger" onClick={() => removeGetRequestDataKey(index)}>Eliminar</Button>
+        </div>
+      ))}
+      <Button variant="primary" onClick={addGetRequestDataKey}>Agregar Dato</Button>
+    </Form>
+  </Modal.Body>
+  <Modal.Footer>
+    <Button variant="secondary" onClick={() => setShowGetRequestModal(false)}>
+      Cancelar
+    </Button>
+    <Button variant="primary" onClick={handleGetRequestModalSave}>
+      Obtener
+    </Button>
+  </Modal.Footer>
+</Modal>
+
+<Modal show={showDelayModal} onHide={() => setShowDelayModal(false)}>
+  <Modal.Header closeButton>
+    <Modal.Title>Crear Retardo</Modal.Title>
+  </Modal.Header>
+  <Modal.Body>
+    <Form>
+      <Form.Group>
+        <Form.Label>Tiempo del Retardo</Form.Label>
+        <Form.Control
+          type="number"
+          value={delayTime}
+          onChange={(e) => setDelayTime(e.target.value)}
+          placeholder="Introduce el tiempo del retardo"
+        />
+      </Form.Group>
+      <Form.Group>
+        <Form.Label>Unidad de Medida</Form.Label>
+        <Form.Control
+          as="select"
+          value={delayUnit}
+          onChange={(e) => setDelayUnit(e.target.value)}
+        >
+          <option value="Segundos">Segundos</option>
+          <option value="Minutos">Minutos</option>
+          <option value="Horas">Horas</option>
+        </Form.Control>
+      </Form.Group>
+    </Form>
+  </Modal.Body>
+  <Modal.Footer>
+    <Button variant="secondary" onClick={() => setShowDelayModal(false)}>
+      Cancelar
+    </Button>
+    <Button variant="primary" onClick={handleSaveDelayModal}>
+      Crear
+    </Button>
+  </Modal.Footer>
+</Modal>
 
 
 
