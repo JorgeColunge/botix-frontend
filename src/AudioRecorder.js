@@ -102,7 +102,7 @@ export const AudioRecorder = ({ onSend, inactivo }) => {
   return (
     <div className="audio-recorder">
       {!isRecording && !audioUrl && (
-        <Button disabled={inactivo()} variant="light" onClick={startRecording}>
+        <Button disabled={!inactivo ? inactivo : inactivo() } variant="light" onClick={startRecording}>
           <MicFill />
         </Button>
       )}

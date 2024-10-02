@@ -10,6 +10,7 @@ import './ContactsTable.css'; // Import the CSS file
 import { AppContext } from './context';
 import { UserDate } from './UserDate';
 import { useConversations } from './ConversationsContext';
+import Swal from 'sweetalert2';
 
 const geoUrl = '/ne_110m_admin_0_countries.json'; // Ruta al archivo GeoJSON en la carpeta public
 
@@ -110,13 +111,38 @@ const ContactsTable = () => {
   };
 
   const handleDeleteContactClick = (id) => {
-    axios.delete(`${process.env.REACT_APP_API_URL}/api/contacts/${id}`)
-      .then(() => {
-        setContacts(contacts.filter(contact => contact.id !== id));
-      })
-      .catch(error => {
-        console.error('Error deleting contact:', error);
-      });
+
+    Swal.fire({
+      title: "Esta seguro que desea eliminar este Contacto?",
+      showDenyButton: true,
+      confirmButtonText: "Eliminar",
+    }).then(async (result) => { 
+      if (result.isConfirmed) {
+        try {
+          axios.delete(`${process.env.REACT_APP_API_URL}/api/contacts/${id}`)
+          .then(() => {
+            setContacts(contacts.filter(contact => contact.id !== id));
+          })
+          .catch(error => {
+            console.log('Error deleting contact:', error);
+          });
+          await Swal.fire({
+            title: "Perfecto",
+            text: `Plantilla Eliminada.`,
+            icon: "success"
+          });
+        } catch (error) {
+          console.log(error)
+          Swal.fire({
+            title: "Error",
+            text: `Error al eliminar Plantilla.
+            Error: ${error.response.data.error}`,
+            icon: "error"
+          });
+        }
+      } 
+    });
+
   };
 
   const handleCreateContactClick = () => {

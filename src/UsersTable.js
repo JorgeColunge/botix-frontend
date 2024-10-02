@@ -39,7 +39,7 @@ const UsersTable = () => {
     setSelectedDepartment('')
   }
  }, [selectedDepartment])
- 
+
  useEffect(() => {
   setUsers(state.usuarios)
   setRoles(state.roles)
@@ -126,16 +126,19 @@ const UsersTable = () => {
   };
 
   const handleSelectContactChat = async (contacto) => {
-    const conver = conversations.find(conv => conv.phone_number == contacto.telefono)
+    const integracion = state.integraciones.find( integ => integ.name == 'Interno')
+    const conver = conversations.find(conv => conv.id_contact == contacto.id_usuario && conv.integration_id === integracion.id)
     if (conver) {
       await resetUnreadMessages(conver.conversation_id);
       setCurrentConversation(conver);
       setConversacionActual({...conver, position_scroll: false})
     }else{
-      const usuario = state.usuarios.find(us => us.id_usuario == Number(localStorage.getItem('user_id')))
-      const {nombre, apellido, telefono, direccion, correo, ciudad, ultimo_mensaje, tiempo_ultimo_mensaje, fase, conversacion, ...rest} = contacto
+      const usuario = state.usuario
+      const {nombre, apellido, telefono, direccion, correo, ciudad, ultimo_mensaje, tiempo_ultimo_mensaje, fase, conversacion, link_foto,...rest} = contacto
       let cont = {
         ...rest,
+        integration_id: integracion.id,
+        integration_name: integracion.name,
         first_name: nombre,
         last_name: apellido,
         phone_number: telefono,
@@ -149,6 +152,7 @@ const UsersTable = () => {
         id_usuario: usuario.id_usuario,
         responsable_nombre: usuario.nombre,
         responsable_apellido: usuario.apellido,
+        profile_url: link_foto
       }
       setCurrentConversation(cont);
       setConversacionActual({...cont, position_scroll: false})

@@ -22,7 +22,10 @@ import { Input,
     DropdownMenuRadioGroup,
     DropdownMenuRadioItem,
     ScrollArea,
-    Separator} from './components';
+    Separator,
+    Avatar,
+    AvatarImage,
+    AvatarFallback} from './components';
 import { ChevronDown, MessageSquareText , Pencil , Trash, Phone, Mail, MoreHorizontal } from 'lucide-react';
 import { Plus } from 'lucide-react';
 import { HardDriveUpload } from 'lucide-react';
@@ -182,13 +185,19 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
     {
       accessorKey: 'link_foto',
       header: 'Foto',
-      cell: info => (
-        <img 
-          src={`${process.env.REACT_APP_API_URL}${info.getValue()}`} 
-          alt="Profile" 
-          className="profile-user-img"
-        />
-      )
+      cell: ({row}) => {
+        const info = row.original;
+
+         console.log("informacion", info)
+        return  (
+         <Avatar className="w-[3.8em] h-[3.8em]">
+           <AvatarImage src={`${process.env.REACT_APP_API_URL}${info?.link_foto}`} alt={`${info?.nombre}`} />
+           <AvatarFallback>{info.nombre}</AvatarFallback>
+         </Avatar>
+         )
+      }
+
+      
     },
     {
       accessorKey: 'nombre',
@@ -432,7 +441,7 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {
-                  <DropdownMenuItem onClick={() => handleDeleteContactClick(contact.id_usuario)}>
+                  <DropdownMenuItem onClick={() => handleDeleteContactClick(contact.id)}>
                     <Button variant="link" size="sm">
                       <Trash style={{ color: 'red' }} className="mr-2 h-6 w-6"/>
                       Eliminar

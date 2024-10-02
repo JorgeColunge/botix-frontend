@@ -486,6 +486,8 @@ function ChatWindow() {
     const [fileMenuVisible, setFileMenuVisible] = useState(false);
     const [fileInputType, setFileInputType] = useState('');
 
+    const integracion = state.integraciones.find(intr => intr.id == currentConversation.integration_id)
+
     useEffect(() => {
       if (textInputRef.current) {
         textInputRef.current.focus();
@@ -538,7 +540,11 @@ function ChatWindow() {
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-text`, {
           phone: currentSend.phone_number,
           messageText: textToSend,
-          conversationId: currentSend.conversation_id
+          conversationId: currentSend.conversation_id,
+          integration_name : currentSend.integration_name,
+          integration_id: currentSend.integration_id,
+          usuario_send: currentSend.contact_id,
+          id_usuario: currentSend.id_usuario
         });
     
         console.log('Respuesta recibida:', response);
@@ -557,7 +563,6 @@ function ChatWindow() {
       }
     };
     
-
     const handleKeyDown = (event) => {
       if (event.key === 'Enter' && event.shiftKey) {
         // Allow line break
@@ -600,10 +605,10 @@ function ChatWindow() {
       setMessageText(e.target.value);
       setCursorPosition(e.target.selectionStart);
     };
-
+   
     return (
       <div className="reply-bar-container">
-        {!isMobile && (
+        {!isMobile && integracion.name != 'Interno' && (
           <Button variant="light" className="reply-button p-0 m-0" onClick={handleOpenTemplateModal}>
             <i className="far fa-file-alt"></i> {/* Icono de la plantilla */}
           </Button>
@@ -613,12 +618,12 @@ function ChatWindow() {
 
         {showEmojiPicker && (
           <div style={styles.popper} {...attributes.popper}>
-            <EmojiPicker  disabled={isLastMessageOlderThan24Hours()} onEmojiClick={onEmojiClick} />
+            <EmojiPicker  disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onEmojiClick={onEmojiClick} />
           </div>
         )}
   
   
-  
+      
         <TextareaAutosize
           className="message-input"
           placeholder="Escribe un mensaje aquí..."
@@ -627,29 +632,29 @@ function ChatWindow() {
           onKeyDown={handleKeyDown}
           maxRows={4}
           ref={textInputRef}
-          disabled={isLastMessageOlderThan24Hours()}
+          disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()}
         />
         
         {fileMenuVisible && (
           <div ref={setPopperElement} style={styles.popper} {...attributes.popper}>
             <div className='d-flex flex-column'>
-              <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('image/*')}>Cargar Imagen</Button>
-              <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('video/*')}>Cargar Video</Button>
-              <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('.pdf,.doc,.docx,.txt')}>Cargar Documento</Button>
+              <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('image/*')}>Cargar Imagen</Button>
+              <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('video/*')}>Cargar Video</Button>
+              <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('.pdf,.doc,.docx,.txt')}>Cargar Documento</Button>
               {isMobile && (
                 <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleOpenTemplateModal()}>Cargar Plantillas</Button>
               )}
             </div>
           </div>
         )}
-        <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleAttachClick}>
+        <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleAttachClick}>
           <i className="fas fa-paperclip"></i> {/* Icono del clip */}
         </Button>
-        <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleEmojiClick} ref={setReferenceElement}>
+        <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleEmojiClick} ref={setReferenceElement}>
           <i className="far fa-smile"></i> {/* Icono de la cara feliz */}
         </Button>
         
-        <AudioRecorder  inactivo={isLastMessageOlderThan24Hours} onSend={handleSendAudio} />
+        <AudioRecorder inactivo={integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours} onSend={handleSendAudio} />
       </div>
     );
   }
@@ -714,17 +719,7 @@ function ChatWindow() {
       }
     }
   }, [firstMessageId, messages]);
- 
-  // useEffect(() => {
-  //     const msjChat = messages[currentConversation?.conversation_id]
-  //     if (msjChat){
-  //       console.log("muestro los msj", messages[currentConversation?.conversation_id])
-  //       console.log("muesto el id,", firstMessageId)
-  //       setFirstMessageId(new Date(msjChat[0]?.timestamp)?.getTime())
-  //       console.log("nuevo id", new Date(msjChat[0]?.timestamp)?.getTime())
-  //     }
-  // }, [messages[currentConversation?.conversation_id]])
-  
+
   useEffect(() => {
     if (currentConversation && currentConversation.conversation_id) {
       if (!messages[currentConversation.conversation_id]) {
