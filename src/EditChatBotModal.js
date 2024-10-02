@@ -5210,6 +5210,8 @@ const conversationStateQuery = 'SELECT state FROM conversations WHERE conversati
 const conversationStateResult = await pool.query(conversationStateQuery, [conversationId]);
 let conversationState = conversationStateResult.rows[0]?.state;\n\n`;
 
+initialDeclarations +=`const currentTime = moment.tz(clientTimezone);\n\n`;
+
 const generateNodeCode = (node, indent = '') => {
   let nodeCode = '';
 
