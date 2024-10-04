@@ -136,7 +136,6 @@ const UsersTable = () => {
       const usuario = state.usuario
       const {nombre, apellido, telefono, direccion, correo, ciudad, ultimo_mensaje, tiempo_ultimo_mensaje, fase, conversacion, link_foto, id_usuario,...rest} = contacto
 
-      console.log('usuario', contacto)
       let cont = {
         ...rest,
         integration_id: integracion.id,

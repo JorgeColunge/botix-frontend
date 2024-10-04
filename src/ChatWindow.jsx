@@ -545,7 +545,7 @@ function ChatWindow() {
           integration_id: currentSend?.integration_id,
           usuario_send: currentSend?.contact_id || currentSend?.contact_user_id,
           id_usuario: currentSend?.id_usuario,
-          companyId: state?.usuario?.company_id
+          companyId: state?.usuario?.company_id,
         });
     
         console.log('Respuesta recibida:', response);
