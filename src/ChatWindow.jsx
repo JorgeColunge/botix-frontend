@@ -540,11 +540,12 @@ function ChatWindow() {
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-text`, {
           phone: currentSend.phone_number,
           messageText: textToSend,
-          conversationId: currentSend.conversation_id,
-          integration_name : currentSend.integration_name,
-          integration_id: currentSend.integration_id,
-          usuario_send: currentSend.contact_id,
-          id_usuario: currentSend.id_usuario
+          conversationId: currentSend?.conversation_id || null,
+          integration_name : state.integraciones?.find(intra => intra.id == currentSend?.integration_id)?.type,
+          integration_id: currentSend?.integration_id,
+          usuario_send: currentSend?.contact_id || currentSend?.contact_user_id,
+          id_usuario: currentSend?.id_usuario,
+          companyId: state?.usuario?.company_id
         });
     
         console.log('Respuesta recibida:', response);

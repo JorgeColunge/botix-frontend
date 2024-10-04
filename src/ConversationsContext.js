@@ -404,7 +404,93 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
     };
   }, [socket, currentConversation, activeConversation, userHasInteracted, userPrivileges, state]);
   
+  useEffect(() => {
+    if (!socket) return;
+  
+    const newMessageHandler = async (newMessage) => {
 
+      const userId = localStorage.getItem("user_id");
+      const userCompanyId = localStorage.getItem("company_id");
+
+      // Validar si el mensaje pertenece a la empresa del usuario conectado
+      if (String(newMessage.company_id) !== userCompanyId) {
+        return;
+      }else{
+        const msj = { ...newMessage };
+        console.log("nuevo msj", msj)
+      const isResponsibleOrAdmin = String(newMessage.responsibleUserId) === userId;
+  
+      if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
+        const isCurrentActive = currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.contact_user_id == newMessage.senderId));
+  
+        if (isCurrentActive) {
+          resetUnreadMessages(newMessage.conversationId);
+          setCurrentConversation(prev => ({
+            ...prev,
+            conversation_id: newMessage.conversationId,
+            last_message: newMessage.text,
+            last_message_time:  msj.timestamp ? msj.timestamp : new Date().toISOString(),
+            unread_messages: newMessage.unread_messages,
+            phase_id: prev.phase_id
+          })
+        );
+        }
+
+        const conversationExists = conversations.some(convo => (convo.conversation_id === newMessage.conversationId || convo.contact_user_id === newMessage.senderId));
+  
+        if (!conversationExists) {
+          try {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/conversations/${newMessage.conversationId}`);
+            const newConversation = response.data;
+            if (newConversation) {
+              setConversations(prevConversations => {
+                const updatedConversations = [...prevConversations, newConversation];
+                return Array.from(new Set(updatedConversations.map(convo => convo.conversation_id)))
+                  .map(id => updatedConversations.find(convo => convo.conversation_id === id));
+              });
+            }
+          } catch (error) {
+            console.error('Error fetching new conversation:', error);
+          }
+        } else {
+          setConversations(prevConversations => prevConversations.map(convo => {
+            if (String(convo.conversation_id) === String(newMessage.conversationId)) {
+              return {
+                ...convo,
+                last_message: newMessage.text,
+                last_message_time: newMessage.timestamp ? newMessage.timestamp : new Date().toISOString(),
+                unread_messages: newMessage.unread_messages
+              };
+            }
+            return convo;
+          }));
+        }
+            
+        setMessages(prevMessages => {
+          const updatedMessages = { ...prevMessages };
+          const messagesForConversation = updatedMessages[newMessage.conversationId] || [];
+          updatedMessages[newMessage.conversationId] = [...messagesForConversation, newMessage];
+          return updatedMessages;
+        });
+  
+        if (activeConversation !== newMessage.conversationId && newMessage.type === 'message') {
+          if (userHasInteracted) {
+            const audio = new Audio('/whistle-campana-whatsapp.mp3');
+            audio.play().catch(error => console.error('Error playing sound:', error));
+            console.log('reproduciendo audio');
+          }
+        }
+      }
+    }
+   };
+  
+    socket.on('internalMessage', newMessageHandler);
+  
+    return () => {
+      socket.off('internalMessage', newMessageHandler);
+    };
+  }, [socket, currentConversation, activeConversation, userHasInteracted, userPrivileges, state]);
+  
   const messageStatusUpdateHandler = ({ messageId, status }) => {
       console.log(`nuevo estado recibido ${status} para el mensaje ${messageId}`);
       setMessages(prevMessages => {

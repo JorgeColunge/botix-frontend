@@ -187,8 +187,6 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
       header: 'Foto',
       cell: ({row}) => {
         const info = row.original;
-
-         console.log("informacion", info)
         return  (
          <Avatar className="w-[3.8em] h-[3.8em]">
            <AvatarImage src={`${process.env.REACT_APP_API_URL}${info?.link_foto}`} alt={`${info?.nombre}`} />

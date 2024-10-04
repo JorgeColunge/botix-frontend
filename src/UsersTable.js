@@ -134,7 +134,9 @@ const UsersTable = () => {
       setConversacionActual({...conver, position_scroll: false})
     }else{
       const usuario = state.usuario
-      const {nombre, apellido, telefono, direccion, correo, ciudad, ultimo_mensaje, tiempo_ultimo_mensaje, fase, conversacion, link_foto,...rest} = contacto
+      const {nombre, apellido, telefono, direccion, correo, ciudad, ultimo_mensaje, tiempo_ultimo_mensaje, fase, conversacion, link_foto, id_usuario,...rest} = contacto
+
+      console.log('usuario', contacto)
       let cont = {
         ...rest,
         integration_id: integracion.id,
@@ -150,6 +152,7 @@ const UsersTable = () => {
         phase_name: fase,
         has_conversation: conversacion,
         id_usuario: usuario.id_usuario,
+        contact_id: id_usuario,
         responsable_nombre: usuario.nombre,
         responsable_apellido: usuario.apellido,
         profile_url: link_foto
