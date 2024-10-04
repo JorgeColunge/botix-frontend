@@ -38,6 +38,7 @@ function ChatWindow() {
   const isTable = useMediaQuery({ maxWidth: 1240 });
 
   const [currentMessage, setCurrentMessage] = useState(messages);
+  const integration = state.integraciones.find(integ => integ?.id == currentConversation?.integration_id) 
 
   const handleScroll = useCallback(async (e) => {
     const target = e.target;
@@ -63,6 +64,20 @@ function ChatWindow() {
       }
     }
   }, [offset, isLoadingMore, loadMessages, setMessages, currentConversation, messages, state.conversacion_Actual]);
+
+  const typeMessageVerificad = useCallback((mensaje, integracion, usuario) => {
+    switch (integracion.type) {
+      case 'Interno':
+         if(usuario.id_usuario == mensaje.senderId || usuario.id_usuario == mensaje.sender_id){
+           return `message-bubble reply`
+         }else{
+           return `message-bubble message`
+         }
+
+      default:
+        return `message-bubble ${mensaje.type}`
+    }
+  },[])
 
   useEffect(() => {
     setCurrentMessage(messages);
@@ -546,6 +561,7 @@ function ChatWindow() {
           usuario_send: currentSend?.contact_id || currentSend?.contact_user_id,
           id_usuario: currentSend?.id_usuario,
           companyId: state?.usuario?.company_id,
+          remitent: state?.usuario?.id_usuario
         });
     
         console.log('Respuesta recibida:', response);
@@ -900,6 +916,7 @@ function ChatWindow() {
     messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
   }
  }
+
   return (
     <>
       <div className="chat-window-container">
@@ -912,7 +929,7 @@ function ChatWindow() {
               {groupedMessages[date].map((message, index) => {
                 const isDifferentTypePrevious = index > 0 && message.type !== groupedMessages[date][index - 1].type;
                 const isDifferentTypeNext = index < groupedMessages[date].length - 1 && message.type !== groupedMessages[date][index + 1].type;
-                let bubbleClass = `message-bubble ${message.type}`;
+                let bubbleClass = typeMessageVerificad(message, integration, state.usuario);
                 if (isDifferentTypePrevious) bubbleClass += ' different-type-previous';
                 if (isDifferentTypeNext) bubbleClass += ' different-type-next';
   
@@ -926,7 +943,9 @@ function ChatWindow() {
                     style={{ marginBottom: '20px', maxWidth: message.message_type === 'image' || message.message_type === 'video' ? 'none' : '70%' }}
                   >
                     {originalMessage && (
+                      
                       <>
+        
                         <div
                           className="reply-preview"
                           onClick={() => scrollToMessage(new Date(originalMessage.timestamp).getTime())}
@@ -964,6 +983,7 @@ function ChatWindow() {
                       </>
                     )}
                     {message.message_type === 'text' && (
+                      
                       <div className="message-content" style={{ whiteSpace: 'pre-wrap' }}>
                         {message.text}
                       </div>

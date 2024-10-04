@@ -194,7 +194,7 @@ function Sidebar() {
  const datesConversation = useCallback((conversacion, integraciones, usuarios, usuario) => {
     
      const integracion = integraciones.find( intr => intr.id === conversacion.integration_id)
-    console.log("usuario:", usuario)
+     
     switch (integracion?.type) {
       case 'Interno':    
       
