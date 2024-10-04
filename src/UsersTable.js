@@ -127,7 +127,7 @@ const UsersTable = () => {
 
   const handleSelectContactChat = async (contacto) => {
     const integracion = state.integraciones.find( integ => integ.name == 'Interno')
-    const conver = conversations.find(conv => conv.id_contact == contacto.id_usuario && conv.integration_id === integracion.id)
+    const conver = conversations.find(conv => conv.contact_user_id == contacto.id_usuario && conv.integration_id === integracion.id)
     if (conver) {
       await resetUnreadMessages(conver.conversation_id);
       setCurrentConversation(conver);
