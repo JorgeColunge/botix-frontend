@@ -169,19 +169,55 @@ function ChatWindow() {
     }
   }, [currentConversation]);
 
-  const ContactInfoBar = () => {
-    const getContactName = () => {
-      const { first_name, last_name, phone_number } = currentConversation;
-      if (first_name && last_name) {
-        return `${first_name} ${last_name}`;
-      } else if (first_name) {
-        return first_name;
-      } else if (last_name) {
-        return last_name;
-      } else {
-        return phone_number;
+  const ContactInfoBar = ({usuario, usuarios, conversacion}) => {
+
+    const usuario_remitente = usuarios.find(user => user.id_usuario === conversacion.contact_user_id);
+    const usuario_conversacion = usuarios.find(user => user.id_usuario === conversacion.id_usuario);
+    const getContactName = useCallback(() => {
+    
+      switch (integration.type) {
+        case 'Interno':
+          if (conversacion.id_usuario === usuario.id_usuario) {
+            return `${usuario_remitente?.nombre || ''} ${usuario_remitente?.apellido || ''}`;
+          } else {
+            return `${usuario_conversacion?.nombre || ''} ${usuario_conversacion?.apellido || ''}`;
+          }
+    
+        default:
+          const { first_name, last_name, phone_number } = currentConversation;
+          if (first_name && last_name) {
+            return `${first_name} ${last_name}`;
+          } else if (first_name) {
+            return first_name;
+          } else if (last_name) {
+            return last_name;
+          } else {
+            return phone_number;
+          }
       }
-    };
+    }, [usuarios, conversacion, integration.type, currentConversation, usuario]);
+
+    const  getImage = useCallback(() => {
+      if (conversacion.id_usuario === usuario.id_usuario) {
+        return (
+          <img
+          src={`${process.env.REACT_APP_API_URL}${usuario_remitente.link_foto}`}
+          alt="Profile"
+          className="rounded-circle"
+          style={{ width: 50, height: 50 }}
+        />
+        )        
+      } else {   
+        return (
+          <img
+          src={`${process.env.REACT_APP_API_URL}${usuario_conversacion.link_foto}`}
+          alt="Profile"
+          className="rounded-circle"
+          style={{ width: 50, height: 50 }}
+        />
+        )
+      }
+    },[usuarios, conversacion, integration.type, currentConversation, usuario])
 
     return (
       <div className="contact-info-bar d-flex align-items-center p-2 shadow-sm" style={{ gap: "10px" }}>
@@ -192,9 +228,12 @@ function ChatWindow() {
             className="rounded-circle"
             style={{ width: 50, height: 50 }}
           />
-        ) : (
-          <PersonCircle className='rounded-circle' size={50} />
-        )}
+        ) : integration.type == 'Interno' ?(
+            getImage()
+        ) :
+          (
+          <PersonCircle className='rounded-circle' size={50} />)
+              }
         <div style={{ flex: 1 }}>
           <div className="d-flex justify-content-between align-items-center">
             <div className="w[70%] d-flex align-items-center">
@@ -214,7 +253,7 @@ function ChatWindow() {
             <div className={isMobile ? `w-[40%] d-flex align-items-center` : `w-[55%] d-flex align-items-center mt-1`}>
             { !isMobile ? ( 
               <>
-              {!isTable ? (
+              {!isTable && integration.type !='Interno' ? (
               <article className="w-100 d-flex">
               <strong>Responsable: <span className='font-normal'>{`${currentConversation.responsable_nombre} ${currentConversation.responsable_apellido}` || 'No asignado'}</span></strong>  
               <DropdownButton className="custom-dropdown" variant="light">
@@ -233,10 +272,10 @@ function ChatWindow() {
                 </Dropdown.Item>
               </DropdownButton>
             </article>
-              ) : (
+              ) : integration.type !='Interno' ? (
                   <NavDropdown
                     id="nav-dropdown-dark-example"
-                    title="Responsable"
+                    title="Responsasble"
                     menuVariant="white"
                     className="ms-3"
                   >
@@ -258,7 +297,7 @@ function ChatWindow() {
                       Finalizar Conversación
                     </Dropdown.Item>
                   </NavDropdown>
-                )}
+                ): null}
                 {
                   !isTable ? (
                     <div className="icons-profile ml-2">
@@ -274,14 +313,14 @@ function ChatWindow() {
                   </div>
                   ) : null
                 }
-                  <Button variant="outline-secondary edit_profile" size="sm" onClick={() => {
+             { integration.type !='Interno' ?   (  <Button variant="outline-secondary edit_profile" size="sm" onClick={() => {
                         setEditContact(currentConversation);
                         setShowEditModal(true);
                       }}>
                         Más
-                   </Button>
+                   </Button>): null}
               </>
-               ) : (
+               ) : integration.type !='Interno' ? (
                  <div className="w-100 mb-3">
                   <NavDropdown
                     id="nav-dropdown-dark-example"
@@ -313,7 +352,7 @@ function ChatWindow() {
                         Más
                      </Button>
                 </div>
-              )}
+              ): null}
 
             </div>
           </div>
@@ -920,7 +959,7 @@ function ChatWindow() {
   return (
     <>
       <div className="chat-window-container">
-        <ContactInfoBar />
+        <ContactInfoBar usuarios={state.usuarios} usuario={state.usuario} conversacion={currentConversation} />
         <EditContactModal show={showEditModal} onHide={() => setShowEditModal(false)} contact={currentConversation} socket={socket} />
         <div className={isMobile ? `messages-container` : `messages-container`} ref={messagesEndRef} >
           {sortedDates.map((date) => (
