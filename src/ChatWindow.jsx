@@ -239,7 +239,7 @@ function ChatWindow() {
             <div className="w[70%] d-flex align-items-center">
               <strong>{getContactName()} </strong>
               <span className="ms-2">{currentConversation.label && renderLabelBadge(currentConversation.label)}</span>
-              <DropdownButton
+             { integration.type != 'Interno' ? (<DropdownButton
                 title=""
                 onSelect={handleSelectLabel}
                 className="ml-2 custom-dropdown"
@@ -248,7 +248,7 @@ function ChatWindow() {
                 {Object.entries(phases).map(([phaseId, phase]) => (
                   <Dropdown.Item key={phaseId} eventKey={phaseId}>{phase.name}</Dropdown.Item>
                 ))}
-              </DropdownButton>
+              </DropdownButton>): null}
             </div>
             <div className={isMobile ? `w-[40%] d-flex align-items-center` : `w-[55%] d-flex align-items-center mt-1`}>
             { !isMobile ? ( 
