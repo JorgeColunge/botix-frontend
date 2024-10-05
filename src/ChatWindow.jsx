@@ -178,7 +178,7 @@ function ChatWindow() {
       switch (integration.type) {
         case 'Interno':
           if (conversacion.id_usuario === usuario.id_usuario) {
-            return `${usuario_remitente?.nombre || ''} ${usuario_remitente?.apellido || ''}`;
+            return `${usuario_remitente?.nombre || conversacion.nombre || ''} ${usuario_remitente?.apellido || conversacion.apellido || ''}`;
           } else {
             return `${usuario_conversacion?.nombre || ''} ${usuario_conversacion?.apellido || ''}`;
           }
@@ -592,9 +592,9 @@ function ChatWindow() {
       try {
         setConversacionActual({...currentSend, position_scroll: true})
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-text`, {
-          phone: currentSend.phone_number,
+          phone: String(currentSend.phone_number),
           messageText: textToSend,
-          conversationId: currentSend?.conversation_id || null,
+          conversation_id: currentSend?.conversation_id || null,
           integration_name : state.integraciones?.find(intra => intra.id == currentSend?.integration_id)?.type,
           integration_id: currentSend?.integration_id,
           usuario_send: currentSend?.contact_id || currentSend?.contact_user_id,

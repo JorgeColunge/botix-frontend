@@ -138,10 +138,11 @@ const UsersTable = () => {
 
       let cont = {
         ...rest,
+        conversation_id: Math.floor(Math.random() * 100000),
         integration_id: integracion.id,
         integration_name: integracion.name,
-        first_name: nombre,
-        last_name: apellido,
+        nombre,
+        apellido,
         phone_number: telefono,
         direccion_completa: direccion,
         email: correo,
