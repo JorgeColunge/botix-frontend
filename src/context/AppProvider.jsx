@@ -18,7 +18,12 @@ export const AppProvider = ({ children }) => {
     departamentos: [],
     colaboradores: [],
     usuario: {},
-    compania: {}
+    compania: {},
+    privilegios: {},
+    licencias: {},
+    integraciones: [],
+    automatizaciones: [],
+    usuario_predefinido: {}
   });
 
   const setConversacionActual = (conversacion_Actual) => {setState((prevState) => ({ ...prevState, conversacion_Actual }));};
@@ -33,22 +38,32 @@ export const AppProvider = ({ children }) => {
   const setColaboradores = (colaboradores) => setState((prevState) => ({ ...prevState, colaboradores })); 
   const setUsuario = (usuario) => setState((prevState) => ({ ...prevState, usuario }));
   const setCompania = (compania) => setState((prevState) => ({ ...prevState, compania }));
+  const setPrivilegios = (privilegios) => setState((prevState) => ({ ...prevState, privilegios }));
+  const setLicences = (licencias) => setState((prevState) => ({ ...prevState, licencias }));
+  const setIntegrations = (integraciones) => setState((prevState) => ({ ...prevState, integraciones }));
+  const setAutomations = (automatizaciones) => setState((prevState) => ({ ...prevState, automatizaciones }));
+  const setDefaultUser = (usuario_predefinido) => setState((prevState) => ({ ...prevState, usuario_predefinido }));
 
   return (
     <AppContext.Provider value={{
-      state,
       setConversacionActual,
-      setStatus,
-      setCampaigns,
-      setCompania,
-      setTemplates,
-      setContacts,
-      setUsers,
-      setPhases,
-      setRoles,
-      setDepartments,
       setColaboradores,
-      setUsuario
+      setIntegrations,
+      setDepartments,
+      setDefaultUser,
+      setPrivilegios,
+      setAutomations,
+      setCampaigns,
+      setTemplates,
+      setCompania,
+      setContacts,
+      setLicences,
+      setUsuario,
+      setStatus,
+      setPhases,
+      setUsers,
+      setRoles,
+      state,
     }}>
       {children}
     </AppContext.Provider>

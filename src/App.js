@@ -27,7 +27,23 @@ import { SettingUser } from './SettingUser';
 
 
 function App() {
-  const {state, setStatus, setCampaigns: addCampaigns, setTemplates: addTemplates, setContacts, setUsers, setPhases, setRoles, setDepartments, setColaboradores } = useContext(AppContext)
+  const {state,
+     setStatus, 
+     setCampaigns: addCampaigns, 
+     setTemplates: addTemplates, 
+     setContacts, 
+     setUsers, 
+     setPhases, 
+     setRoles, 
+     setLicences,
+     setDepartments, 
+     setColaboradores,
+     setPrivilegios,
+     setIntegrations,
+     setDefaultUser,
+     setAutomations,
+     setCompania
+   } = useContext(AppContext)
   const isMobile = useMediaQuery({ maxWidth: 767 });
 
   const [socket, setSocket] = useState(null);
@@ -111,13 +127,12 @@ function App() {
       const token = localStorage.getItem('token');
       let campañas = []
       try {
-        console.log('Fetching campaigns');
+ 
         const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/campaigns`, {
           params: { company_id: companyId },
           headers: { Authorization: `Bearer ${token}` }
         });
         campañas = response.data
-        console.log('Fetched campaigns:', response.data);
         addCampaigns(response.data)
       } catch (error) {
         console.error('Error fetching campaigns:', error);
@@ -188,41 +203,131 @@ function App() {
         console.error('No company ID or token found');
         return;
       }
-
       try {
-        const usersResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/users?company_id=${companyId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        const collaboratorsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/colaboradores`, {
-          params: { company_id: companyId }, // Se asegura que se esté enviando el parámetro `company_id`
-          headers: { Authorization: `Bearer ${token}` }
-        });
-    
-        const rolesResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/roles/${companyId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-    
-        const departmentsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/departments/${companyId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        setRoles(rolesResponse.data);
-        setDepartments(departmentsResponse.data);
-        setUsers(usersResponse.data);
-        setColaboradores(collaboratorsResponse.data);
-
+        let usersResponse, collaboratorsResponse, rolesResponse, departmentsResponse;
+      
+        // Petición de usuarios
+        try {
+          usersResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/users?company_id=${companyId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+      
+          setUsers(usersResponse.data);
+        } catch (error) {
+          console.error('Error fetching users:', error);
+        }
+      
+        // Petición de colaboradores
+        try {
+          collaboratorsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/colaboradores`, {
+            params: { company_id: companyId },
+            headers: { Authorization: `Bearer ${token}` }
+          });
+         
+          setColaboradores(collaboratorsResponse.data);
+        } catch (error) {
+          console.error('Error fetching colaboradores:', error);
+        }
+      
+        // Petición de roles
+        try {
+          rolesResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/roles/${companyId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+         
+          setRoles(rolesResponse.data);
+        } catch (error) {
+          console.error('Error fetching roles:', error);
+        }
+      
+        // Petición de departamentos
+        try {
+          departmentsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/departments/${companyId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+  
+          setDepartments(departmentsResponse.data);
+        } catch (error) {
+          console.error('Error fetching departments:', error);
+        }
+      
       } catch (error) {
-        console.error('Error fetching users:', error);
-      }
+        console.error('General error:', error);
+      }      
     };
-    
     
     fetchTemplates();
     fetchCampaigns();
     fetchContacts();
     fetchPhases();
     fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    const companyId = localStorage.getItem('company_id');
+    const userId = localStorage.getItem('user_id');
+    const fetchCompanyData = async () => {
+      try {
+        // Petición para obtener la compañía
+        try {
+          const companyResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/company/${companyId}`);
+          setCompania(companyResponse.data);
+        } catch (error) {
+          console.error('Error fetching company:', error);
+        }
+      
+        // Petición para obtener los privilegios del usuario
+        try {
+          const privilegesResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/privileges/${userId}`);
+          setPrivilegios(privilegesResponse.data);
+        } catch (error) {
+          console.error('Error fetching privileges:', error);
+        }
+      
+        // Petición para obtener la licencia de la compañía
+        let licenseId;
+        try {
+          const licenseResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/license/${companyId}`);
+          setLicences(licenseResponse.data);
+          licenseId = licenseResponse.data.id;
+        } catch (error) {
+          console.error('Error fetching license:', error);
+        }
+      
+        // Petición para obtener las integraciones asociadas a la licencia
+        try {
+          if (licenseId) {
+            const integrationsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/integrations/${licenseId}`);
+            setIntegrations(integrationsResponse.data);
+          }
+        } catch (error) {
+          console.error('Error fetching integrations:', error);
+        }
+      
+        // Petición para obtener las automatizaciones asociadas a la licencia
+        try {
+          if (licenseId) {
+            const automationsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/automations/${licenseId}`);
+            setAutomations(automationsResponse.data);
+          }
+        } catch (error) {
+          console.error('Error fetching automations:', error);
+        }
+      
+        // Petición para obtener el usuario por defecto
+        try {
+          const defaultUserResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/default-user/${companyId}`);
+          setDefaultUser(defaultUserResponse.data.id_usuario);
+        } catch (error) {
+          console.error('Error fetching default user:', error);
+        }
+      
+      } catch (error) {
+        console.error('General error:', error);
+      }   
+    };
+
+    fetchCompanyData();
   }, []);
 
   const handleSidebarToggle = () => {

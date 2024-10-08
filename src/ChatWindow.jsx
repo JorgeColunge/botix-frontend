@@ -38,6 +38,7 @@ function ChatWindow() {
   const isTable = useMediaQuery({ maxWidth: 1240 });
 
   const [currentMessage, setCurrentMessage] = useState(messages);
+  const integration = state.integraciones.find(integ => integ?.id == currentConversation?.integration_id) 
 
   const handleScroll = useCallback(async (e) => {
     const target = e.target;
@@ -63,6 +64,20 @@ function ChatWindow() {
       }
     }
   }, [offset, isLoadingMore, loadMessages, setMessages, currentConversation, messages, state.conversacion_Actual]);
+
+  const typeMessageVerificad = useCallback((mensaje, integracion, usuario) => {
+    switch (integracion.type) {
+      case 'Interno':
+         if(usuario.id_usuario == mensaje.senderId || usuario.id_usuario == mensaje.sender_id){
+           return `message-bubble reply`
+         }else{
+           return `message-bubble message`
+         }
+
+      default:
+        return `message-bubble ${mensaje.type}`
+    }
+  },[])
 
   useEffect(() => {
     setCurrentMessage(messages);
@@ -154,19 +169,55 @@ function ChatWindow() {
     }
   }, [currentConversation]);
 
-  const ContactInfoBar = () => {
-    const getContactName = () => {
-      const { first_name, last_name, phone_number } = currentConversation;
-      if (first_name && last_name) {
-        return `${first_name} ${last_name}`;
-      } else if (first_name) {
-        return first_name;
-      } else if (last_name) {
-        return last_name;
-      } else {
-        return phone_number;
+  const ContactInfoBar = ({usuario, usuarios, conversacion}) => {
+
+    const usuario_remitente = usuarios.find(user => user.id_usuario === conversacion.contact_user_id);
+    const usuario_conversacion = usuarios.find(user => user.id_usuario === conversacion.id_usuario);
+    const getContactName = useCallback(() => {
+    
+      switch (integration.type) {
+        case 'Interno':
+          if (conversacion.id_usuario === usuario.id_usuario) {
+            return `${usuario_remitente?.nombre || conversacion.nombre || ''} ${usuario_remitente?.apellido || conversacion.apellido || ''}`;
+          } else {
+            return `${usuario_conversacion?.nombre || ''} ${usuario_conversacion?.apellido || ''}`;
+          }
+    
+        default:
+          const { first_name, last_name, phone_number } = currentConversation;
+          if (first_name && last_name) {
+            return `${first_name} ${last_name}`;
+          } else if (first_name) {
+            return first_name;
+          } else if (last_name) {
+            return last_name;
+          } else {
+            return phone_number;
+          }
       }
-    };
+    }, [usuarios, conversacion, integration.type, currentConversation, usuario]);
+
+    const  getImage = useCallback(() => {
+      if (conversacion.id_usuario === usuario.id_usuario) {
+        return (
+          <img
+          src={`${process.env.REACT_APP_API_URL}${usuario_remitente.link_foto}`}
+          alt="Profile"
+          className="rounded-circle"
+          style={{ width: 50, height: 50 }}
+        />
+        )        
+      } else {   
+        return (
+          <img
+          src={`${process.env.REACT_APP_API_URL}${usuario_conversacion.link_foto}`}
+          alt="Profile"
+          className="rounded-circle"
+          style={{ width: 50, height: 50 }}
+        />
+        )
+      }
+    },[usuarios, conversacion, integration.type, currentConversation, usuario])
 
     return (
       <div className="contact-info-bar d-flex align-items-center p-2 shadow-sm" style={{ gap: "10px" }}>
@@ -177,15 +228,18 @@ function ChatWindow() {
             className="rounded-circle"
             style={{ width: 50, height: 50 }}
           />
-        ) : (
-          <PersonCircle className='rounded-circle' size={50} />
-        )}
+        ) : integration.type == 'Interno' ?(
+            getImage()
+        ) :
+          (
+          <PersonCircle className='rounded-circle' size={50} />)
+              }
         <div style={{ flex: 1 }}>
           <div className="d-flex justify-content-between align-items-center">
             <div className="w[70%] d-flex align-items-center">
               <strong>{getContactName()} </strong>
               <span className="ms-2">{currentConversation.label && renderLabelBadge(currentConversation.label)}</span>
-              <DropdownButton
+             { integration.type != 'Interno' ? (<DropdownButton
                 title=""
                 onSelect={handleSelectLabel}
                 className="ml-2 custom-dropdown"
@@ -194,12 +248,12 @@ function ChatWindow() {
                 {Object.entries(phases).map(([phaseId, phase]) => (
                   <Dropdown.Item key={phaseId} eventKey={phaseId}>{phase.name}</Dropdown.Item>
                 ))}
-              </DropdownButton>
+              </DropdownButton>): null}
             </div>
             <div className={isMobile ? `w-[40%] d-flex align-items-center` : `w-[55%] d-flex align-items-center mt-1`}>
             { !isMobile ? ( 
               <>
-              {!isTable ? (
+              {!isTable && integration.type !='Interno' ? (
               <article className="w-100 d-flex">
               <strong>Responsable: <span className='font-normal'>{`${currentConversation.responsable_nombre} ${currentConversation.responsable_apellido}` || 'No asignado'}</span></strong>  
               <DropdownButton className="custom-dropdown" variant="light">
@@ -218,10 +272,10 @@ function ChatWindow() {
                 </Dropdown.Item>
               </DropdownButton>
             </article>
-              ) : (
+              ) : integration.type !='Interno' ? (
                   <NavDropdown
                     id="nav-dropdown-dark-example"
-                    title="Responsable"
+                    title="Responsasble"
                     menuVariant="white"
                     className="ms-3"
                   >
@@ -243,7 +297,7 @@ function ChatWindow() {
                       Finalizar Conversación
                     </Dropdown.Item>
                   </NavDropdown>
-                )}
+                ): null}
                 {
                   !isTable ? (
                     <div className="icons-profile ml-2">
@@ -259,14 +313,14 @@ function ChatWindow() {
                   </div>
                   ) : null
                 }
-                  <Button variant="outline-secondary edit_profile" size="sm" onClick={() => {
+             { integration.type !='Interno' ?   (  <Button variant="outline-secondary edit_profile" size="sm" onClick={() => {
                         setEditContact(currentConversation);
                         setShowEditModal(true);
                       }}>
                         Más
-                   </Button>
+                   </Button>): null}
               </>
-               ) : (
+               ) : integration.type !='Interno' ? (
                  <div className="w-100 mb-3">
                   <NavDropdown
                     id="nav-dropdown-dark-example"
@@ -298,7 +352,7 @@ function ChatWindow() {
                         Más
                      </Button>
                 </div>
-              )}
+              ): null}
 
             </div>
           </div>
@@ -486,6 +540,8 @@ function ChatWindow() {
     const [fileMenuVisible, setFileMenuVisible] = useState(false);
     const [fileInputType, setFileInputType] = useState('');
 
+    const integracion = state.integraciones.find(intr => intr.id == currentConversation.integration_id)
+
     useEffect(() => {
       if (textInputRef.current) {
         textInputRef.current.focus();
@@ -536,9 +592,15 @@ function ChatWindow() {
       try {
         setConversacionActual({...currentSend, position_scroll: true})
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-text`, {
-          phone: currentSend.phone_number,
+          phone: String(currentSend.phone_number),
           messageText: textToSend,
-          conversationId: currentSend.conversation_id
+          conversation_id: currentSend?.conversation_id || null,
+          integration_name : state.integraciones?.find(intra => intra.id == currentSend?.integration_id)?.type,
+          integration_id: currentSend?.integration_id,
+          usuario_send: currentSend?.contact_id || currentSend?.contact_user_id,
+          id_usuario: currentSend?.id_usuario,
+          companyId: state?.usuario?.company_id,
+          remitent: state?.usuario?.id_usuario
         });
     
         console.log('Respuesta recibida:', response);
@@ -557,7 +619,6 @@ function ChatWindow() {
       }
     };
     
-
     const handleKeyDown = (event) => {
       if (event.key === 'Enter' && event.shiftKey) {
         // Allow line break
@@ -600,10 +661,10 @@ function ChatWindow() {
       setMessageText(e.target.value);
       setCursorPosition(e.target.selectionStart);
     };
-
+   
     return (
       <div className="reply-bar-container">
-        {!isMobile && (
+        {!isMobile && integracion.name != 'Interno' && (
           <Button variant="light" className="reply-button p-0 m-0" onClick={handleOpenTemplateModal}>
             <i className="far fa-file-alt"></i> {/* Icono de la plantilla */}
           </Button>
@@ -613,12 +674,12 @@ function ChatWindow() {
 
         {showEmojiPicker && (
           <div style={styles.popper} {...attributes.popper}>
-            <EmojiPicker  disabled={isLastMessageOlderThan24Hours()} onEmojiClick={onEmojiClick} />
+            <EmojiPicker  disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onEmojiClick={onEmojiClick} />
           </div>
         )}
   
   
-  
+      
         <TextareaAutosize
           className="message-input"
           placeholder="Escribe un mensaje aquí..."
@@ -627,29 +688,29 @@ function ChatWindow() {
           onKeyDown={handleKeyDown}
           maxRows={4}
           ref={textInputRef}
-          disabled={isLastMessageOlderThan24Hours()}
+          disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()}
         />
         
         {fileMenuVisible && (
           <div ref={setPopperElement} style={styles.popper} {...attributes.popper}>
             <div className='d-flex flex-column'>
-              <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('image/*')}>Cargar Imagen</Button>
-              <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('video/*')}>Cargar Video</Button>
-              <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('.pdf,.doc,.docx,.txt')}>Cargar Documento</Button>
+              <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('image/*')}>Cargar Imagen</Button>
+              <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('video/*')}>Cargar Video</Button>
+              <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('.pdf,.doc,.docx,.txt')}>Cargar Documento</Button>
               {isMobile && (
                 <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleOpenTemplateModal()}>Cargar Plantillas</Button>
               )}
             </div>
           </div>
         )}
-        <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleAttachClick}>
+        <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleAttachClick}>
           <i className="fas fa-paperclip"></i> {/* Icono del clip */}
         </Button>
-        <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleEmojiClick} ref={setReferenceElement}>
+        <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleEmojiClick} ref={setReferenceElement}>
           <i className="far fa-smile"></i> {/* Icono de la cara feliz */}
         </Button>
         
-        <AudioRecorder  inactivo={isLastMessageOlderThan24Hours} onSend={handleSendAudio} />
+        <AudioRecorder inactivo={integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours} onSend={handleSendAudio} />
       </div>
     );
   }
@@ -714,17 +775,7 @@ function ChatWindow() {
       }
     }
   }, [firstMessageId, messages]);
- 
-  // useEffect(() => {
-  //     const msjChat = messages[currentConversation?.conversation_id]
-  //     if (msjChat){
-  //       console.log("muestro los msj", messages[currentConversation?.conversation_id])
-  //       console.log("muesto el id,", firstMessageId)
-  //       setFirstMessageId(new Date(msjChat[0]?.timestamp)?.getTime())
-  //       console.log("nuevo id", new Date(msjChat[0]?.timestamp)?.getTime())
-  //     }
-  // }, [messages[currentConversation?.conversation_id]])
-  
+
   useEffect(() => {
     if (currentConversation && currentConversation.conversation_id) {
       if (!messages[currentConversation.conversation_id]) {
@@ -904,10 +955,11 @@ function ChatWindow() {
     messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
   }
  }
+
   return (
     <>
       <div className="chat-window-container">
-        <ContactInfoBar />
+        <ContactInfoBar usuarios={state.usuarios} usuario={state.usuario} conversacion={currentConversation} />
         <EditContactModal show={showEditModal} onHide={() => setShowEditModal(false)} contact={currentConversation} socket={socket} />
         <div className={isMobile ? `messages-container` : `messages-container`} ref={messagesEndRef} >
           {sortedDates.map((date) => (
@@ -916,7 +968,7 @@ function ChatWindow() {
               {groupedMessages[date].map((message, index) => {
                 const isDifferentTypePrevious = index > 0 && message.type !== groupedMessages[date][index - 1].type;
                 const isDifferentTypeNext = index < groupedMessages[date].length - 1 && message.type !== groupedMessages[date][index + 1].type;
-                let bubbleClass = `message-bubble ${message.type}`;
+                let bubbleClass = typeMessageVerificad(message, integration, state.usuario);
                 if (isDifferentTypePrevious) bubbleClass += ' different-type-previous';
                 if (isDifferentTypeNext) bubbleClass += ' different-type-next';
   
@@ -930,7 +982,9 @@ function ChatWindow() {
                     style={{ marginBottom: '20px', maxWidth: message.message_type === 'image' || message.message_type === 'video' ? 'none' : '70%' }}
                   >
                     {originalMessage && (
+                      
                       <>
+        
                         <div
                           className="reply-preview"
                           onClick={() => scrollToMessage(new Date(originalMessage.timestamp).getTime())}
@@ -968,6 +1022,7 @@ function ChatWindow() {
                       </>
                     )}
                     {message.message_type === 'text' && (
+                      
                       <div className="message-content" style={{ whiteSpace: 'pre-wrap' }}>
                         {message.text}
                       </div>

@@ -1,8 +1,8 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { ListGroup, Tooltip, OverlayTrigger, Dropdown, InputGroup, FormControl, Form } from 'react-bootstrap';
 import { PlusSquare, Funnel, PersonCircle, BookmarkFill, List } from 'react-bootstrap-icons';
 import moment from 'moment';
-import { ConversationsProvider, useConversations } from './ConversationsContext';
+import { useConversations } from './ConversationsContext';
 import axios from 'axios';
 import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';
@@ -191,6 +191,126 @@ function Sidebar() {
     }
   }
  
+ const datesConversation = useCallback((conversacion, integraciones, usuarios, usuario) => {
+    
+     const integracion = integraciones.find( intr => intr.id === conversacion.integration_id)
+     
+    switch (integracion?.type) {
+      case 'Interno':    
+      
+       const usuario_conversacion = usuarios.find(usu => usu.id_usuario == conversacion.contact_user_id)
+       const usuario_remitente = usuarios.find(usu => usu.id_usuario == conversacion.id_usuario)
+          return (
+            <div className="d-flex justify-content-between align-items-center">
+              {conversacion.id_usuario == usuario.id_usuario ? (
+                <>
+                  <img
+                    src={`${process.env.REACT_APP_API_URL}${usuario_conversacion.link_foto}`}
+                    alt="Profile"
+                    className="rounded-circle"
+                    style={{ width: 50, height: 50 }}
+                  />
+                <div style={{ flex: 1, marginLeft: 10 }}>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <strong>
+                      {usuario_conversacion.nombre && usuario_conversacion.nombre
+                        ? `${usuario_conversacion.nombre} ${usuario_conversacion.apellido}`
+                        : usuario_conversacion.nombre
+                        ? usuario_conversacion.nombre
+                        : usuario_conversacion.apellido
+                        ? usuario_conversacion.apellido
+                        : null}
+                    </strong>
+                    {conversacion.label && renderLabelBadge(conversacion.label)}
+                  </div>
+                  <div className="d-flex justify-content-between">
+                    <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
+                    <div>
+                      {conversacion.unread_messages > 0 && (
+                        <span className="badge badge-pill badge-primary">{conversacion.unread_messages}</span>
+                      )}
+                      <small className="text-muted">{formatTime(conversacion.last_message_time)}</small>
+                    </div>
+                  </div>
+                </div>
+                </>
+              ) : (
+                <>
+                  <img
+                    src={`${process.env.REACT_APP_API_URL}${usuario_remitente.link_foto}`}
+                    alt="Profile"
+                    className="rounded-circle"
+                    style={{ width: 50, height: 50 }}
+                  />
+                <div style={{ flex: 1, marginLeft: 10 }}>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <strong>
+                      {usuario_remitente.nombre && usuario_remitente.nombre
+                        ? `${usuario_remitente.nombre} ${usuario_remitente.apellido}`
+                        : usuario_remitente.nombre
+                        ? usuario_remitente.nombre
+                        : usuario_remitente.apellido
+                        ? usuario_remitente.apellido
+                        : null}
+                    </strong>
+                    {conversacion.label && renderLabelBadge(conversacion.label)}
+                  </div>
+                  <div className="d-flex justify-content-between">
+                    <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
+                    <div>
+                      {conversacion.unread_messages > 0 && (
+                        <span className="badge badge-pill badge-primary">{conversacion.unread_messages}</span>
+                      )}
+                      <small className="text-muted">{formatTime(conversacion.last_message_time)}</small>
+                    </div>
+                  </div>
+                </div>
+                </>
+              )}
+            </div>
+          );
+    
+      default:
+       return (
+        <div className="d-flex justify-content-between align-items-center">
+        {conversacion.profile_url ? (
+          <img
+            src={`${process.env.REACT_APP_API_URL}${conversacion.profile_url}`}
+            alt="Profile"
+            className="rounded-circle"
+            style={{ width: 50, height: 50 }}
+          />
+        ) : (
+          <PersonCircle className='rounded-circle' size={50} />
+        )}
+        <div style={{ flex: 1, marginLeft: 10 }}>
+          <div className="d-flex justify-content-between align-items-center">
+            <strong>
+              {conversacion.first_name && conversacion.last_name
+                ? `${conversacion.first_name} ${conversacion.last_name}`
+                : conversacion.first_name
+                ? conversacion.first_name
+                : conversacion.last_name
+                ? conversacion.last_name
+                : conversacion.phone_number}
+            </strong>
+            {conversacion.label && renderLabelBadge(conversacion.label)}
+          </div>
+          <div className="d-flex justify-content-between">
+            <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
+            <div>
+              {conversacion.unread_messages > 0 && (
+                <span className="badge badge-pill badge-primary">{conversacion.unread_messages}</span>
+              )}
+              <small className="text-muted">{formatTime(conversacion.last_message_time)}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+       )
+    }
+ },[state.usuario, state.usuarios, conversations])
+  
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center p-3 shadow-sm">
@@ -278,41 +398,7 @@ function Sidebar() {
       <ListGroup>
         {filteredConversations.map(convo => (
           <ListGroup.Item key={convo.conversation_id} action onClick={() => handleConversationSelect(convo)}>
-            <div className="d-flex justify-content-between align-items-center">
-              {convo.profile_url ? (
-                <img
-                  src={`${process.env.REACT_APP_API_URL}${convo.profile_url}`}
-                  alt="Profile"
-                  className="rounded-circle"
-                  style={{ width: 50, height: 50 }}
-                />
-              ) : (
-                <PersonCircle className='rounded-circle' size={50} />
-              )}
-              <div style={{ flex: 1, marginLeft: 10 }}>
-                <div className="d-flex justify-content-between align-items-center">
-                  <strong>
-                    {convo.first_name && convo.last_name
-                      ? `${convo.first_name} ${convo.last_name}`
-                      : convo.first_name
-                      ? convo.first_name
-                      : convo.last_name
-                      ? convo.last_name
-                      : convo.phone_number}
-                  </strong>
-                  {convo.label && renderLabelBadge(convo.label)}
-                </div>
-                <div className="d-flex justify-content-between">
-                  <span className="text-muted">{convo.last_message ? convo.last_message.substring(0, 30) + '...' : 'No messages'}</span>
-                  <div>
-                    {convo.unread_messages > 0 && (
-                      <span className="badge badge-pill badge-primary">{convo.unread_messages}</span>
-                    )}
-                    <small className="text-muted">{formatTime(convo.last_message_time)}</small>
-                  </div>
-                </div>
-              </div>
-            </div>
+           {datesConversation(convo, state.integraciones, state.usuarios, state.usuario)}
           </ListGroup.Item>
         ))}
       </ListGroup>
