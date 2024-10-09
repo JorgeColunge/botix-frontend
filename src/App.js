@@ -364,11 +364,6 @@ function App() {
       <Row xs={isMobile ? 12 : (isSidebarCollapsed ? 11 : 10)} className={!isMobile ? `ms-5` : 'pe-0 scrollrender'}>
         <Row className={selectedSection == 'chats' ? `renderContent me-0 pe-0` : `renderContent `}>
           <Routes>
-            <Route path="/login" element={
-              <PublicRoute>
-                <div>Login Component</div>
-              </PublicRoute>
-            } />
             <Route path="/chats" element={
               <PrivateRoute>
                 <>
@@ -395,24 +390,28 @@ function App() {
                 </>
               </PrivateRoute>
             } />
+            {!isMobile ? (
+              <> 
+              <Route path="/funnel" element={<PrivateRoute><FunnelComponent /></PrivateRoute>} />
+              <Route path="/statistics" element={<PrivateRoute><div>Statistics</div></PrivateRoute>} />
+              <Route path="/inspection" element={<PrivateRoute><div>Inspection</div></PrivateRoute>} />
+              <Route path="/campaigns" element={<PrivateRoute><Campaigns /></PrivateRoute>} />
+              <Route path="/consumption" element={<PrivateRoute><Consumption /></PrivateRoute>} />
+              <Route path="/calendar" element={<PrivateRoute><EntitySelector /></PrivateRoute>} />
+              <Route path="/company" element={<PrivateRoute><CompanyInfo /></PrivateRoute>} />
+              <Route path="/create-template" element={<PrivateRoute><CreateTemplate /></PrivateRoute>} />
+              <Route path="/edit-template/:id_plantilla" element={<PrivateRoute><CreateTemplate /></PrivateRoute>} />
+              <Route path="/create-campaign" element={<PrivateRoute><CreateCampaign /></PrivateRoute>} />
+              <Route path="/create-campaign/:id_plantilla" element={<PrivateRoute><CreateCampaign /></PrivateRoute>} />
+              <Route path="/edit-campaign/:id_camp" element={<PrivateRoute><CreateCampaign /></PrivateRoute>} />
+              <Route path="*" element={<PrivateRoute><CompanyInfo /></PrivateRoute>} />
+              </>
+            ): null}
             <Route path="/contacts" element={<PrivateRoute><ContactsTable /></PrivateRoute>} />
             <Route path="/users" element={<PrivateRoute><UsersTable /></PrivateRoute>} />
             <Route path="/allentities" element={<PrivateRoute><AllEntities /></PrivateRoute>} />
             <Route path="/colaboradores" element={<PrivateRoute><ColaboradoresTable /></PrivateRoute>} />
-            <Route path="/funnel" element={<PrivateRoute><FunnelComponent /></PrivateRoute>} />
-            <Route path="/statistics" element={<PrivateRoute><div>Statistics</div></PrivateRoute>} />
-            <Route path="/inspection" element={<PrivateRoute><div>Inspection</div></PrivateRoute>} />
-            <Route path="/campaigns" element={<PrivateRoute><Campaigns /></PrivateRoute>} />
-            <Route path="/consumption" element={<PrivateRoute><Consumption /></PrivateRoute>} />
-            <Route path="/calendar" element={<PrivateRoute><EntitySelector /></PrivateRoute>} />
             <Route path="/settings" element={<PrivateRoute><SettingUser/></PrivateRoute>} />
-            <Route path="/company" element={<PrivateRoute><CompanyInfo /></PrivateRoute>} />
-            <Route path="/create-template" element={<PrivateRoute><CreateTemplate /></PrivateRoute>} />
-            <Route path="/edit-template/:id_plantilla" element={<PrivateRoute><CreateTemplate /></PrivateRoute>} />
-            <Route path="/create-campaign" element={<PrivateRoute><CreateCampaign /></PrivateRoute>} />
-            <Route path="/create-campaign/:id_plantilla" element={<PrivateRoute><CreateCampaign /></PrivateRoute>} />
-            <Route path="/edit-campaign/:id_camp" element={<PrivateRoute><CreateCampaign /></PrivateRoute>} />
-            <Route path="*" element={<PrivateRoute><CompanyInfo /></PrivateRoute>} />
           </Routes>
         </Row>
       </Row>

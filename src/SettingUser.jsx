@@ -22,8 +22,10 @@ import { AppContext } from './context';
 import { Pencil } from 'lucide-react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { List } from 'lucide-react';
+import { useMediaQuery } from 'react-responsive';
 export const SettingUser = () => {
-    const { state, setUsers, setUsuario } = useContext(AppContext);
+    const { state, setUsers, setUsuario, setStatus } = useContext(AppContext);
     const { nombre, apellido, telefono, email, rol, link_foto, id_usuario, company_id } = state?.usuario;
     const [isEditing, setIsEditing] = useState(false);
     const [userData, setUserData] = useState({
@@ -44,6 +46,8 @@ export const SettingUser = () => {
         link_foto: '',
         profile : null,
     });
+
+    const isMobile = useMediaQuery({ maxWidth: 767 });
 
     useEffect(() => {
        const loadingDates = async() => {
@@ -135,10 +139,26 @@ export const SettingUser = () => {
       };
 
       return (
-        <section className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-[90%] md:w-[50%]">
+        <section> 
+          <article className="w-full mt-1 mb-0 flex gap-2">
+            <Card className="w-full">
+              {isMobile && 
+                <CardHeader className="w-full flex items-center">
+                  <div className="w-full flex items-center justify-between">
+                    <List color="black" size={30} onClick={() => {setStatus(true); console.log("click")}} />
+                    <CardTitle className="ml-2">
+                      Configuraciones
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+              }
+            </Card>
+          </article>
+
+        <article className="min-h-screen flex items-center justify-center ps-4 pe-2 pt-0 mt-0">
+        <Card className="w-full max-w-[100%] md:w-[50%]">
             <CardHeader className="flex justify-between items-center">
-            <CardTitle>Configuraciones de Usuario</CardTitle>
+             { !isMobile ?  <CardTitle>Configuraciones de Usuario</CardTitle> : null}
             <CardDescription className='d-flex w-full justify-end'>
                 <Button variant="icon" onClick={handleEditToggle}>
                 <TooltipProvider>
@@ -238,6 +258,7 @@ export const SettingUser = () => {
             )}
             </CardFooter>
         </Card>
+        </article>
         </section>
       );
     };

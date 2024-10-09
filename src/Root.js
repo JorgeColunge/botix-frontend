@@ -5,8 +5,10 @@ import Login from './Login';
 import Register from './Register';
 import LandingPage from './LandingPage';
 import { PrivateRoute, PublicRoute } from './PrivateRoute';
+import { useMediaQuery } from 'react-responsive';
 
 const Root = () => {
+  const isMobile = useMediaQuery({ maxWidth: 767 });
   return (
     <BrowserRouter>
       <Routes>
@@ -20,7 +22,11 @@ const Root = () => {
             <Register />
           </PublicRoute>
         } />
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={ isMobile ?
+           <PublicRoute>
+           <Login />
+         </PublicRoute>
+          : <LandingPage />} />
         <Route
           path="/*"
           element={

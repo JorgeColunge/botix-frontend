@@ -87,9 +87,18 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
           <div className="user-details">
             <h5>{userData.nombre} {userData.apellido}</h5>
             <p>{roleName}</p>
+            {
+              isMobile ? (
+                <strong variant="link" className="text-white w-100 flex gap-1 justify-center">
+                {companyData.name}  <Building color="white" size={15} title="Company Info" className='mt-1' />
+               </strong> 
+              ) : (
+
              <Button variant="link" className="text-white w-100" onClick={() => onSelectOption('company')}>
                {companyData.name}  <Building color="white" size={15} title="Company Info" />
               </Button> 
+              )
+            }
           </div>
         )}
       </div>
@@ -101,12 +110,13 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
         <People color="white" size={20} />
         {!isCollapsed && <span>Contactos</span>}
       </div>
+      <div className="nav-item" onClick={() => onSelectOption('allentities')}>
+        <Person color="white" size={20} />
+        {!isCollapsed && <span>Usuarios</span>}
+      </div>
  { !isMobile && (
             <>
-            <div className="nav-item" onClick={() => onSelectOption('allentities')}>
-                    <Person color="white" size={20} />
-                    {!isCollapsed && <span>Usuarios</span>}
-                  </div>
+
                   <div className="nav-item" onClick={() => onSelectOption('funnel')}>
                     <Funnel color="white" size={20} />
                     {!isCollapsed && <span>Funnel</span>}

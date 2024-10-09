@@ -5,6 +5,7 @@ import { Google, Facebook } from 'react-bootstrap-icons';
 import CustomModal from './CustomModal';
 import "./Login.css";
 import { AppContext } from "./context";
+import { useMediaQuery } from "react-responsive";
 
 const Login = () => {
   const {setUsuario} = useContext(AppContext)
@@ -14,6 +15,7 @@ const Login = () => {
   const [showModal, setShowModal] = useState(false);
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
+  const isMobile = useMediaQuery({ maxWidth: 767 });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,9 +61,10 @@ const Login = () => {
 
   return (
     <div className="login-container">
+    { !isMobile ?
       <div className="left-side">
         <img src="/Portada.png" alt="CRM" className="crm-image" />
-      </div>
+      </div> : null}
       <div className="right-side">
         <img src="/FaviconAR.png" alt="Logo" className="logo" />
         {error && <p className="error-message">{error}</p>}

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useCallback, useState, useContext } from 'react';
-import { Button, DropdownButton, Dropdown, useAccordionButton, NavDropdown, Tooltip } from 'react-bootstrap';
+import { Button, DropdownButton, Dropdown, useAccordionButton, NavDropdown } from 'react-bootstrap';
 import { PersonCircle, TelephoneFill, EnvelopeFill, Globe, Instagram, Facebook, Linkedin, Twitter, Tiktok, Youtube, Check, CheckAll, Clock } from 'react-bootstrap-icons';
 import './App.css';
+import { ArrowLeft } from 'lucide-react';
 import EditContactModal from './EditContactModal';
 import ModalComponent from './modalComponet';
 import AudioPlayer from './audioPlayer';
@@ -16,7 +17,7 @@ import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';
 
 function ChatWindow() {
-  const { currentConversation, messages, loadMessages, socket, isConnected, setMessages, setCurrentConversation, updateContact, allUsers, handleResponsibleChange, handleEndConversation, phases } = useConversations();
+  const { currentConversation, messages, loadMessages, socket, isConnected, setMessages, setCurrentConversation, allUsers, handleResponsibleChange, handleEndConversation, phases } = useConversations();
   const {state, setConversacionActual} = useContext(AppContext)
 
   const messagesEndRef = useRef(null);
@@ -78,6 +79,24 @@ function ChatWindow() {
         return `message-bubble ${mensaje.type}`
     }
   },[])
+
+  useEffect(() => {
+    const handleBackButton = (event) => {
+      event.preventDefault(); // Evita la acción por defecto del botón de atrás
+      // Aquí puedes poner la lógica que quieres que suceda
+      console.log("Botón de regresar presionado");
+        setConversacionActual({ position_scroll: false});
+        setCurrentConversation(null)
+    };
+
+    // Agregar el listener para el evento 'backbutton'
+    document.addEventListener('backbutton', handleBackButton, false);
+
+    // Limpiar el listener al desmontar el componente
+    return () => {
+      document.removeEventListener('backbutton', handleBackButton, false);
+    };
+  }, []);
 
   useEffect(() => {
     setCurrentMessage(messages);
@@ -169,6 +188,12 @@ function ChatWindow() {
     }
   }, [currentConversation]);
 
+ const handleCloseChat = () => {
+  console.log("boon ")
+  setConversacionActual({ position_scroll: false});
+  setCurrentConversation(null)
+ }
+
   const ContactInfoBar = ({usuario, usuarios, conversacion}) => {
 
     const usuario_remitente = usuarios.find(user => user.id_usuario === conversacion.contact_user_id);
@@ -200,21 +225,27 @@ function ChatWindow() {
     const  getImage = useCallback(() => {
       if (conversacion.id_usuario === usuario.id_usuario) {
         return (
-          <img
-          src={`${process.env.REACT_APP_API_URL}${usuario_remitente.link_foto}`}
-          alt="Profile"
-          className="rounded-circle"
-          style={{ width: 50, height: 50 }}
-        />
+          <Button variant="outline" size="icon" className='d-flex items-center p-0' onClick={() => handleCloseChat()}>
+            { isMobile?  <ArrowLeft /> : null}  
+              <img
+              src={`${process.env.REACT_APP_API_URL}${usuario_remitente.link_foto}`}
+              alt="Profile"
+              className="rounded-circle"
+              style={{ width: 50, height: 50 }}
+            />
+          </Button>
         )        
       } else {   
         return (
-          <img
-          src={`${process.env.REACT_APP_API_URL}${usuario_conversacion.link_foto}`}
-          alt="Profile"
-          className="rounded-circle"
-          style={{ width: 50, height: 50 }}
-        />
+          <Button variant="outline" size="icon" className='d-flex items-center p-0' onClick={() => handleCloseChat()}>
+             { isMobile?  <ArrowLeft /> : null}   
+              <img
+              src={`${process.env.REACT_APP_API_URL}${usuario_conversacion.link_foto}`}
+              alt="Profile"
+              className="rounded-circle"
+              style={{ width: 50, height: 50 }}
+            />
+          </Button>
         )
       }
     },[usuarios, conversacion, integration.type, currentConversation, usuario])
@@ -222,17 +253,23 @@ function ChatWindow() {
     return (
       <div className="contact-info-bar d-flex align-items-center p-2 shadow-sm" style={{ gap: "10px" }}>
         {currentConversation.profile_url ? (
-          <img
-            src={`${process.env.REACT_APP_API_URL}${currentConversation.profile_url}`}
-            alt="Profile"
-            className="rounded-circle"
-            style={{ width: 50, height: 50 }}
-          />
+          <Button variant="outline" size="icon" className='d-flex items-center p-0' onClick={() => handleCloseChat()}>
+              { isMobile?  <ArrowLeft /> : null}   
+            <img
+              src={`${process.env.REACT_APP_API_URL}${currentConversation.profile_url}`}
+              alt="Profile"
+              className="rounded-circle"
+              style={{ width: 50, height: 50 }}
+            />
+           </Button>
         ) : integration.type == 'Interno' ?(
             getImage()
         ) :
           (
-          <PersonCircle className='rounded-circle' size={50} />)
+            <Button variant="outline" size="icon" className='d-flex items-center p-0' onClick={() => handleCloseChat()}>
+              { isMobile?  <ArrowLeft /> : null}   
+          <PersonCircle className='rounded-circle' size={50} />
+          </Button>)
               }
         <div style={{ flex: 1 }}>
           <div className="d-flex justify-content-between align-items-center">
