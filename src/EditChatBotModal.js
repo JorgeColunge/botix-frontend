@@ -2701,8 +2701,8 @@ codeArray.push(`
     
         // Validar formato de fecha y hora
         const esFechaValida = (fecha) => /^\\d{4}-\\d{2}-\\d{2}$/.test(fecha);
-        const esHoraValida = (hora) => /^\\d{2}:\\d{2}:\\d{2}$/.test(hora);
-    
+        const esHoraValida = (hora) => /^\d{2}:\d{2}(:\d{2})?$/.test(hora);  // Cambiamos \\d a \d
+
         // Validar las fechas y horas basadas en el valor de all_day
         if (allDay) {
           // Si es un evento de todo el día, solo se validan las fechas
@@ -2713,7 +2713,7 @@ codeArray.push(`
         } else {
           // Si no es un evento de todo el día, se validan tanto las fechas como las horas
           if (!esFechaValida(fechaInicio) || !esFechaValida(fechaFin) || !esHoraValida(horaInicio) || !esHoraValida(horaFin)) {
-            console.log("Error: Las fechas y horas de inicio y fin deben tener el formato 'YYYY-MM-DD HH:MM:SS' para eventos con hora.");
+            console.log("Error: Las fechas y horas de inicio y fin deben tener el formato 'YYYY-MM-DD HH:MM' o 'YYYY-MM-DD HH:MM:SS' para eventos con hora.");
             return;
           }
         }
