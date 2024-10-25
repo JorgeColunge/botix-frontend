@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, Plus } from 'react-bootstrap-icons'; // Icon
 import { Modal, Form, Col, Row } from 'react-bootstrap'; // Importar componentes de react-bootstrap
 import 'bootstrap/dist/css/bootstrap.min.css'; // Importar CSS de Bootstrap
 import './Calendar.css'; // Importar los estilos personalizados
+import moment from 'moment-timezone';
 
 const Calendar = ({ entityType, selectedEntityId, companyId }) => {
     const [events, setEvents] = useState([]);
@@ -22,6 +23,9 @@ const Calendar = ({ entityType, selectedEntityId, companyId }) => {
     const [selectedEndTime, setSelectedEndTime] = useState(''); // Hora de fin
     const [allDay, setAllDay] = useState(false); // Evento de todo el día
     const [multiDay, setMultiDay] = useState(false); // Estado para saber si es un evento de varios días
+    
+    // Detectar la zona horaria local del usuario
+    const userTimeZone = moment.tz.guess();
 
     useEffect(() => {
         if (calendarRef.current) {
@@ -59,12 +63,12 @@ const Calendar = ({ entityType, selectedEntityId, companyId }) => {
             const events = await response.json();
             console.log('Events fetched:', events); // Log de los eventos obtenidos
 
-            // Formatear los eventos para FullCalendar
+            // Convertir fechas de UTC a la zona horaria local del usuario
             const formattedEvents = events.map(event => ({
                 id: event.id_evento,
                 title: event.titulo,
-                start: event.fecha_inicio,
-                end: event.fecha_fin,
+                start: moment.utc(event.fecha_inicio).tz(userTimeZone).format(), // Convertir de UTC a la zona horaria local
+                end: moment.utc(event.fecha_fin).tz(userTimeZone).format(), // Convertir de UTC a la zona horaria local
                 allDay: event.all_day
             }));
 
@@ -261,6 +265,7 @@ const Calendar = ({ entityType, selectedEntityId, companyId }) => {
                     editable={true} // Habilitar arrastrar y soltar
                     selectable={true} // Habilitar selección de rango
                     select={handleEventSelect} // Manejar selección de rango
+                    timeZone="local"
                     height="70vh"
                     nowIndicator={true} // Muestra la línea roja en la hora actual
                     slotLabelFormat={{
