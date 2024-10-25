@@ -128,14 +128,18 @@ const Calendar = ({ entityType, selectedEntityId, companyId }) => {
     const handleEventCreate = async () => {
         const newEvent = {
             titulo: eventTitle,
-            descripcion: '', // Puedes agregar un campo para descripción si es necesario
-            fecha_inicio: `${selectedStartDate}T${allDay ? '00:00' : selectedStartTime}`,
-            fecha_fin: multiDay ? selectedEndDate : `${selectedStartDate}T${allDay ? '23:59' : selectedEndTime}`,
-            all_day: allDay || multiDay, // Si es todo el día o multi-día, se establece como true
+            descripcion: '',
+            fecha_inicio: moment.tz(`${selectedStartDate}T${allDay ? '00:00' : selectedStartTime}`, userTimeZone).format(),
+            fecha_fin: multiDay 
+                ? moment.tz(selectedEndDate, userTimeZone).format() 
+                : moment.tz(`${selectedStartDate}T${allDay ? '23:59' : selectedEndTime}`, userTimeZone).format(),
+            all_day: allDay || multiDay,
             tipo_asignacion: entityType,
             id_asignacion: selectedEntityId,
-            company_id: companyId
+            company_id: companyId,
+            timezone: userTimeZone // Agregar zona horaria del usuario
         };
+        
 
         try {
             console.log('Creating event with data:', newEvent); // Log del evento a crear
