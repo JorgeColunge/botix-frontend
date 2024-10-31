@@ -15,6 +15,7 @@ import { usePopper } from 'react-popper';
 import TemplateModal from './TemplateModal';
 import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';
+import { useNavigate } from 'react-router-dom';
 
 function ChatWindow() {
   const { currentConversation, messages, loadMessages, socket, isConnected, setMessages, setCurrentConversation, allUsers, handleResponsibleChange, handleEndConversation, phases } = useConversations();
@@ -37,7 +38,7 @@ function ChatWindow() {
 
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const isTable = useMediaQuery({ maxWidth: 1240 });
-
+  const navigate = useNavigate();
   const [currentMessage, setCurrentMessage] = useState(messages);
   const integration = state.integraciones.find(integ => integ?.id == currentConversation?.integration_id) 
 
@@ -82,21 +83,42 @@ function ChatWindow() {
 
   useEffect(() => {
     const handleBackButton = (event) => {
-      event.preventDefault(); // Evita la acción por defecto del botón de atrás
-      // Aquí puedes poner la lógica que quieres que suceda
+      event.preventDefault();
       console.log("Botón de regresar presionado");
-        setConversacionActual({ position_scroll: false});
-        setCurrentConversation(null)
+
+      // Lógica personalizada al presionar el botón de regreso
+      setConversacionActual({ position_scroll: false });
+      setCurrentConversation(null);
+
+      // Navegar a la ruta "/chats"
+      navigate("/chats");
     };
 
-    // Agregar el listener para el evento 'backbutton'
-    document.addEventListener('backbutton', handleBackButton, false);
+    const onDeviceReady = () => {
+      console.log("Cordova está listo");
+      document.addEventListener('backbutton', handleBackButton, false);
+    };
 
-    // Limpiar el listener al desmontar el componente
+    if (window.cordova) {
+      console.log("Simulación de botón de regreso en el corodova");
+      document.addEventListener('deviceready', onDeviceReady, false);
+    } else {
+      // Si estamos en el navegador, escucha el evento 'popstate' para simular el botón de regreso
+      console.log("Simulación de botón de regreso en el navegador");
+      window.addEventListener('popstate', handleBackButton);
+    }
+
+    // Limpiar los listeners al desmontar el componente
     return () => {
-      document.removeEventListener('backbutton', handleBackButton, false);
+      if (window.cordova) {
+        document.removeEventListener('deviceready', onDeviceReady, false);
+        document.removeEventListener('backbutton', handleBackButton, false);
+      } else {
+        window.removeEventListener('popstate', handleBackButton);
+      }
     };
-  }, []);
+  }, [navigate]);
+  
 
   useEffect(() => {
     setCurrentMessage(messages);

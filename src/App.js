@@ -1,3 +1,4 @@
+/* global cordova */
 import React, { useState, useEffect, useContext } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Container, Row, Col, Button, Offcanvas  } from 'react-bootstrap';
@@ -24,6 +25,9 @@ import { useMediaQuery } from 'react-responsive';
 import { Campaigns } from './Campaigns';
 import axios from 'axios';
 import { SettingUser } from './SettingUser';
+import Login from './Login';
+import { FirebaseConfig } from './notification';
+import { json } from 'react-router-dom';
 
 
 function App() {
@@ -46,6 +50,7 @@ function App() {
    } = useContext(AppContext)
   const isMobile = useMediaQuery({ maxWidth: 767 });
 
+  const {useFirebaseMessaging, useNotificationHandler} = FirebaseConfig()
   const [socket, setSocket] = useState(null);
   const [userHasInteracted, setUserHasInteracted] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -53,11 +58,32 @@ function App() {
   const [selectedSection, setSelectedSection] = useState('chats');
 
   const navigate = useNavigate();
+ 
+  // useFirebaseMessaging()
+  // useNotificationHandler()
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     const id_usuario = localStorage.getItem('user_id');
 
+    try {
+      // Envía el user_id desde el código de React hacia Cordova
+function sendUserIdToNative(userId) {
+  cordova.exec(
+      (result) => console.log("Resultado de Cordova:", result),
+      (error) => console.error("Error en Cordova:", error),
+      "NombreDelPlugin", // Nombre de tu plugin Cordova
+      "receiveDataFromReact", // Nombre del método en Java
+      [userId] // Parámetro que se pasará
+  );
+}
+
+// Llama a esta función en el lugar de tu código React donde tienes el user_id
+sendUserIdToNative(id_usuario);
+
+    } catch (error) {
+      console.error("error al procesar id de usuario", JSON.stringify(error))
+    } 
     if (!token || !id_usuario) return;
 
     const socket = io(`${process.env.REACT_APP_API_URL}`, {
@@ -404,7 +430,7 @@ function App() {
               <Route path="/create-campaign" element={<PrivateRoute><CreateCampaign /></PrivateRoute>} />
               <Route path="/create-campaign/:id_plantilla" element={<PrivateRoute><CreateCampaign /></PrivateRoute>} />
               <Route path="/edit-campaign/:id_camp" element={<PrivateRoute><CreateCampaign /></PrivateRoute>} />
-              <Route path="*" element={<PrivateRoute><CompanyInfo /></PrivateRoute>} />
+
               </>
             ): null}
             <Route path="/contacts" element={<PrivateRoute><ContactsTable /></PrivateRoute>} />
@@ -412,6 +438,8 @@ function App() {
             <Route path="/allentities" element={<PrivateRoute><AllEntities /></PrivateRoute>} />
             <Route path="/colaboradores" element={<PrivateRoute><ColaboradoresTable /></PrivateRoute>} />
             <Route path="/settings" element={<PrivateRoute><SettingUser/></PrivateRoute>} />
+            <Route path="*" element={<PublicRoute><Login /></PublicRoute>} />
+
           </Routes>
         </Row>
       </Row>

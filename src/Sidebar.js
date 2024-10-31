@@ -311,6 +311,7 @@ function Sidebar() {
     }
  },[state.usuario, state.usuarios, conversations])
   
+ console.log("conversaciones", conversations)
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center p-3 shadow-sm">
