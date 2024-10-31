@@ -3965,7 +3965,7 @@ codeArray.push(`
               tipo, // Añade el tipo para identificación
               code: [
                 `responseText = ${finalResponseText};`,
-                `await sendTextMessage(io, { body: { phone: senderId, messageText: responseText, conversationId } }, {});`,
+                `await sendTextMessage(io, { body: { phone: senderId, messageText: responseText, conversationId, integration_name: integrationDetails.integration_name } }, {});`,
               ],
             },
           };
