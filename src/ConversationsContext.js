@@ -1,7 +1,9 @@
+/* global cordova */
 import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { AppContext } from './context';
 import { Spinner } from 'react-bootstrap';
+import { onMessageListener, requestFirebaseNotificationPermission } from './notification';
 
 
 const ConversationsContext = createContext();
@@ -331,11 +333,37 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
       }else{
         const msj = { ...newMessage };
         console.log("nuevo msj", msj)
+        console.log("el mensaje esta siendo redirigido")
       const isResponsibleOrAdmin = String(newMessage.responsibleUserId) === userId || userPrivileges.includes('Admin') || userPrivileges.includes('Show All Conversations');
   
       if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
         const isCurrentActive = currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId));
-  
+
+        document.addEventListener('deviceready', () => {
+          console.log('Cordova está listo');
+        
+          if (!isCurrentActive) {
+            requestFirebaseNotificationPermission(); // Solicitar permiso para notificaciones de Firebase
+        
+            if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
+              // Ahora puedes usar las notificaciones locales
+              cordova.plugins.notification.local.schedule({
+                title: newMessage.senderName || 'Nuevo mensaje',
+                text: newMessage.text || 'Tienes un nuevo mensaje',
+              });
+            } else {
+              console.log('El plugin de notificaciones locales no está disponible.');
+            }
+        
+            onMessageListener()
+              .then((payload) => {
+                // Manejar la notificación recibida
+                console.log('Notification received: ', payload);
+              })
+              .catch((err) => console.log('Failed: ', err));
+          }
+        }, false);        
+        
         if (isCurrentActive) {
           resetUnreadMessages(newMessage.conversationId);
           setCurrentConversation(prev => ({
@@ -418,11 +446,39 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
       }else{
         const msj = { ...newMessage };
         console.log("nuevo msj", msj)
+        console.log("el mensaje esta siendo redirigido")
+
       const isResponsibleOrAdmin = String(newMessage.responsibleUserId) === userId;
   
       if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
         const isCurrentActive = currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.contact_user_id == newMessage.senderId));
   
+        document.addEventListener('deviceready', () => {
+          console.log('Cordova está listo');
+        
+          if (!isCurrentActive) {
+            requestFirebaseNotificationPermission(); // Solicitar permiso para notificaciones de Firebase
+        
+            if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
+              // Ahora puedes usar las notificaciones locales
+              cordova.plugins.notification.local.schedule({
+                title: newMessage.senderName || 'Nuevo mensaje',
+                text: newMessage.text || 'Tienes un nuevo mensaje',
+              });
+            } else {
+              console.log('El plugin de notificaciones locales no está disponible.');
+            }
+        
+            onMessageListener()
+              .then((payload) => {
+                // Manejar la notificación recibida
+                console.log('Notification received: ', payload);
+              })
+              .catch((err) => console.log('Failed: ', err));
+          }
+        }, false);
+         
+
         if (isCurrentActive) {
           resetUnreadMessages(newMessage.conversationId);
           setCurrentConversation(prev => ({
