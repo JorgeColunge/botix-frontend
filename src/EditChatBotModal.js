@@ -272,6 +272,7 @@ const EditChatBotModal = ({ show, handleClose, bot }) => {
   const [nodes, setNodes, onNodesChangeState] = useNodesState([]);
   const [edges, setEdges, onEdgesChangeState] = useEdgesState([]);
   const [variables, setVariables] = useState([{ name: 'Seleccione variable', displayName: 'Seleccione variable' },
+    {name: 'currentTime', displayName: 'Ahora'},
     {name: 'messageData.text', displayName: 'Mensaje de Texto'},
     {name: 'conversationState', displayName: 'Estado de la conversación'},
     {name: 'responsibleUserId', displayName: 'Responsable de la conversación'},
@@ -997,8 +998,8 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -1215,8 +1216,8 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -1278,25 +1279,40 @@ const generateCodeForIntentions = async () => {
   };
 
   const handleEdgeUpdate = (oldEdge, newConnection) => {
-    console.log("acualizando lineas")
+    console.log("Actualizando líneas");
+
+    // Actualizar la lista de edges con la nueva conexión
     setEdges((eds) => eds.map((edge) => {
-      if (edge.id === oldEdge?.id) {
-        return newConnection;
-      }
-      return edge;
+        if (edge.id === oldEdge?.id) {
+            return newConnection;
+        }
+        return edge;
     }));
 
-    // Actualizar el parentId del nodo hijo con la nueva conexión
+    // Actualizar el parentId en función del handle de la conexión
     setNodes((nds) => nds.map((node) => {
-      if (node.id === newConnection.target) {
-        return {
-          ...node,
-          parentId: newConnection.source,
-        };
-      }
-      return node;
+        if (node.id === newConnection.target) {
+            
+            // Si el handle es 'b', eliminar el parentId
+            if (newConnection.sourceHandle === 'b') {
+                return {
+                    ...node,
+                    parentId: null,
+                };
+            }
+            // Si el handle es no es 'b', asignar parentId
+            else{
+              return {
+                ...node,
+                parentId: newConnection.source,
+            };
+            }
+        }
+        return node;
     }));
-  };
+};
+
+
 
   const handleEdgeDelete = (edgeToDelete) => {
     console.log(`Nodos:`, nodes);
@@ -1329,22 +1345,33 @@ const generateCodeForIntentions = async () => {
   
 
   const onConnect = (params) => {
+    const { source, sourceHandle, target, targetHandle } = params;
+
+    // Detectar si la conexión es al handle 'b' (externo)
+    const isConnectingToB = sourceHandle === 'b';
+
+    // Crear un nuevo edge basado en el handle de destino
     const newEdge = {
-      id: `e${params.source}-${params.target}`,
-      source: params.source,
-      target: params.target,
-      animated: true,
-      style: { stroke: '#d033b9' },
-      zIndex: 10,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: '#d033b9',
-      },
+        id: `e${source}-${target}`,
+        source,
+        target,
+        sourceHandle: isConnectingToB ? 'b' : 'a',
+        animated: true,
+        style: { stroke: '#d033b9' },
+        zIndex: 10,
+        markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#d033b9',
+        },
     };
     handleEdgeUpdate(null, newEdge);
+
+    // Agregar el edge independientemente de si es interno o externo
     const updatedEdges = [...edges, newEdge];
     setEdges(updatedEdges);
-  };
+};
+
+
 
   const onEdgeUpdate = (oldEdge, newConnection) => {
     handleEdgeUpdate(oldEdge, newConnection);
@@ -1373,7 +1400,7 @@ const generateCodeForIntentions = async () => {
       id: newId,
       type: 'custom',
       position: { x: Math.random() * 250, y: Math.random() * 250 },
-      data: { label: `Imprimir: ${message}`, code: [`console.log('${message}');`], onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false) },
+      data: { label: `Imprimir: ${message}`, code: [`console.log(\`${message}\`);`], onAddClick: (id) => openToolModal(id, true), onAddExternalClick: (id) => openToolModal(id, false) },
       parentId: isInternal ? currentNodeId : null,
     };
     let newEdge
@@ -1392,8 +1419,8 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -1495,8 +1522,8 @@ const generateCodeForIntentions = async () => {
         };
       }else{
         newEdge = {
-          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-          source: newNode.parentId || `${nodes.length}`,
+          id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+          source: currentNodeId || `${nodes.length}`,
           target: newNode.id,
           animated: true,
           sourceHandle: 'b',
@@ -1550,8 +1577,8 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -1847,8 +1874,8 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -1924,8 +1951,8 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -1999,8 +2026,8 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -2072,8 +2099,8 @@ const generateCodeForIntentions = async () => {
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -2635,8 +2662,8 @@ codeArray.push(`
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -2676,14 +2703,31 @@ codeArray.push(`
           AND status = $3
           AND company_id = $4
       \`;
-      
+
       existingRequestResult = await pool.query(existingRequestQuery, [conversationId, "agenda", "datosCompletos", integrationDetails.company_id]);
-    
+
       if (existingRequestResult.rows.length > 0) {
         const requestId = existingRequestResult.rows[0].request_id;
         const requestData = existingRequestResult.rows[0].request_data;
         const companyId = existingRequestResult.rows[0].company_id;
-    
+
+        // Obtener el default_timezone de la empresa
+        const timezoneQuery = \`
+          SELECT default_timezone
+          FROM companies
+          WHERE id = $1
+        \`;
+
+        const timezoneResult = await pool.query(timezoneQuery, [companyId]);
+        if (timezoneResult.rows.length === 0) {
+          console.log("Error: No se encontró la zona horaria para la empresa.");
+          return;
+        }
+
+        // Usar clientTimezone si está disponible; si no, usar la zona horaria de la empresa o 'America/Bogota' como valor predeterminado
+        const companyTimezone = timezoneResult.rows[0].default_timezone || 'America/Bogota';
+        const timezoneToUse = clientTimezone || companyTimezone;
+
         // Extraer la información del request_data que será usada para agendar el evento
         const titulo = (requestData.titulo && requestData.titulo !== 'null' && requestData.titulo.trim() !== '') ? requestData.titulo : 'Evento sin título';
         const descripcion = (requestData.descripcion && requestData.descripcion !== 'null' && requestData.descripcion.trim() !== '') ? requestData.descripcion : 'Descripción no disponible';
@@ -2694,14 +2738,14 @@ codeArray.push(`
     
         const fechaFin = (requestData.fecha_fin && requestData.fecha_fin !== 'null' && requestData.fecha_fin.trim() !== '') ? requestData.fecha_fin.trim() : null;
         const horaFin = (requestData.hora_fin && requestData.hora_fin !== 'null' && requestData.hora_fin.trim() !== '') ? requestData.hora_fin.trim() : null;
-    
+
         const allDay = (requestData.all_day && requestData.all_day !== 'null' && requestData.all_day.trim() !== '') ? requestData.all_day.toLowerCase() === 'true' : false;
         const tipoAsignacion = (requestData.tipo_asignacion && requestData.tipo_asignacion !== 'null' && requestData.tipo_asignacion.trim() !== '') ? requestData.tipo_asignacion : null;
         const idAsignacion = (requestData.id_asignacion && requestData.id_asignacion !== 'null' && requestData.id_asignacion.trim() !== '') ? requestData.id_asignacion : null;
-    
+
         // Validar formato de fecha y hora
         const esFechaValida = (fecha) => /^\\d{4}-\\d{2}-\\d{2}$/.test(fecha);
-        const esHoraValida = (hora) => /^\d{2}:\d{2}(:\d{2})?$/.test(hora);  // Cambiamos \\d a \d
+        const esHoraValida = (hora) => /^\\d{2}:\\d{2}(:\\d{2})?$/.test(hora);
 
         // Validar las fechas y horas basadas en el valor de all_day
         if (allDay) {
@@ -2717,46 +2761,49 @@ codeArray.push(`
             return;
           }
         }
-    
+
         // Verificar que los campos obligatorios existan y no estén vacíos
         if (!fechaInicio || !fechaFin || (!horaInicio && !allDay) || (!horaFin && !allDay) || !tipoAsignacion || !idAsignacion) {
           console.log("Faltan datos obligatorios para agendar el evento: fecha_inicio, fecha_fin, hora_inicio, hora_fin, tipo_asignacion, id_asignacion.");
-        } else {
-          // Formatear fecha completa para la inserción en la tabla eventos
-          const fechaHoraInicio = allDay ? fechaInicio : \`\${fechaInicio} \${horaInicio}\`;
-          const fechaHoraFin = allDay ? fechaFin : \`\${fechaFin} \${horaFin}\`;
-    
-          // Insertar el evento en la tabla 'eventos'
-          const insertEventoQuery = \`
-            INSERT INTO eventos (titulo, descripcion, fecha_inicio, fecha_fin, all_day, tipo_asignacion, id_asignacion, company_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING id_evento;
+          return;
+        }
+
+        // Convertir fechas y horas a UTC usando la zona horaria del cliente o la empresa
+        const fechaHoraInicio = allDay ? \`\${fechaInicio}T00:00:00\` : \`\${fechaInicio}T\${horaInicio}\`;
+        const fechaHoraFin = allDay ? \`\${fechaFin}T23:59:59\` : \`\${fechaFin}T\${horaFin}\`;
+        const fechaHoraInicioUTC = moment.tz(fechaHoraInicio, timezoneToUse).utc().format();
+        const fechaHoraFinUTC = moment.tz(fechaHoraFin, timezoneToUse).utc().format();
+
+        // Insertar el evento en la tabla 'eventos'
+        const insertEventoQuery = \`
+          INSERT INTO eventos (titulo, descripcion, fecha_inicio, fecha_fin, all_day, tipo_asignacion, id_asignacion, company_id)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          RETURNING id_evento;
+        \`;
+
+        const eventoResult = await pool.query(insertEventoQuery, [titulo, descripcion, fechaHoraInicioUTC, fechaHoraFinUTC, allDay, tipoAsignacion, idAsignacion, companyId]);
+
+        // Si el evento fue insertado correctamente, actualizar el estado de la request a 'agendado'
+        if (eventoResult.rows.length > 0) {
+          const eventoId = eventoResult.rows[0].id_evento;
+
+          const updateRequestQuery = \`
+            UPDATE requests
+            SET request_data = request_data || $1::jsonb,
+                request_type = $2,
+                status = $3
+            WHERE request_id = $4;
           \`;
-    
-          const eventoResult = await pool.query(insertEventoQuery, [titulo, descripcion, fechaHoraInicio, fechaHoraFin, allDay, tipoAsignacion, idAsignacion, companyId]);
-    
-          // Si el evento fue insertado correctamente, actualizar el estado de la request a 'agendado'
-          if (eventoResult.rows.length > 0) {
-            const eventoId = eventoResult.rows[0].id_evento;
-    
-            const updateRequestQuery = \`
-              UPDATE requests
-              SET request_data = request_data || $1::jsonb,
-                  request_type = $2,
-                  status = $3
-              WHERE request_id = $4;
-            \`;
-    
-            await pool.query(updateRequestQuery, [JSON.stringify(requestData), "agenda", "agendado", requestId]);
-            console.log("Evento agendado con éxito: ID del evento", eventoId);
-          } else {
-            console.log("Error al agendar el evento.");
-          }
+
+          await pool.query(updateRequestQuery, [JSON.stringify(requestData), "agenda", "agendado", requestId]);
+          console.log("Evento agendado con éxito: ID del evento", eventoId);
+        } else {
+          console.log("Error al agendar el evento.");
         }
       } else {
         console.log("Datos incompletos o la solicitud no existe.");
       }
-    `);                  
+    `);                
   
     let updatedNodes, updatedEdges;
 
@@ -2790,8 +2837,8 @@ codeArray.push(`
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -2969,8 +3016,8 @@ codeArray.push(`
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -3430,8 +3477,8 @@ codeArray.push(`
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -3487,8 +3534,8 @@ codeArray.push(`
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -3560,8 +3607,8 @@ codeArray.push(`
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -3625,8 +3672,8 @@ codeArray.push(`
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -3682,8 +3729,8 @@ codeArray.push(`
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -3922,8 +3969,8 @@ codeArray.push(`
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -4366,8 +4413,8 @@ codeArray.push(`
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -4868,8 +4915,8 @@ const handleGetRequestModalSave = async () => {
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
@@ -5003,8 +5050,8 @@ const generateCodeForDelay = async () => {
       };
     }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
