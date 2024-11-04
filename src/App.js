@@ -68,22 +68,33 @@ function App() {
 
     try {
       // Envía el user_id desde el código de React hacia Cordova
+  // Asegúrate de que Cordova esté listo antes de llamar a exec
+
+  document.addEventListener('deviceready', function() {
+    if (id_usuario) {
+      sendUserIdToNative(id_usuario);
+    } else {
+      console.warn("El id_usuario es nulo o no está definido.");
+    }
+  }, false);
+// Función para enviar el user_id al plugin nativo
 function sendUserIdToNative(userId) {
-  cordova.exec(
+  if (window.cordova && cordova.exec) {
+    cordova.exec(
       (result) => console.log("Resultado de Cordova:", result),
       (error) => console.error("Error en Cordova:", error),
-      "NombreDelPlugin", // Nombre de tu plugin Cordova
-      "receiveDataFromReact", // Nombre del método en Java
-      [userId] // Parámetro que se pasará
-  );
-}
-
-// Llama a esta función en el lugar de tu código React donde tienes el user_id
-sendUserIdToNative(id_usuario);
-
-    } catch (error) {
+      "FirebaseMessagingPlugin", // Nombre del plugin
+      "receiveDataFromReact", // Método en Java
+      [userId] // Parámetro que se envía
+    );
+  } else {
+    console.warn("Cordova no está disponible.");
+   }
+  }
+ } catch (error) {
       console.error("error al procesar id de usuario", JSON.stringify(error))
-    } 
+  } 
+
     if (!token || !id_usuario) return;
 
     const socket = io(`${process.env.REACT_APP_API_URL}`, {
