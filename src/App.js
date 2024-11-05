@@ -56,6 +56,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [selectedSection, setSelectedSection] = useState('chats');
+  const [currentSection, setCurrentSection] = useState(null);
 
   const navigate = useNavigate();
  
@@ -372,6 +373,7 @@ function sendUserIdToNative(userId) {
   };
 
   const handleSelectSection = (section) => {
+    setCurrentSection(section); // Actualiza la sección actual
     setSelectedSection(section);
     navigate(`/${section}`);
   };
@@ -386,6 +388,7 @@ function sendUserIdToNative(userId) {
             onSelect={handleSelectSection} 
             isCollapsed={isSidebarCollapsed} 
             onToggle={handleSidebarToggle} 
+            currentSection={currentSection}
           />
         </Offcanvas>
       ) : (
@@ -394,6 +397,7 @@ function sendUserIdToNative(userId) {
             onSelect={handleSelectSection} 
             isCollapsed={isSidebarCollapsed} 
             onToggle={handleSidebarToggle} 
+            currentSection={currentSection}
           />
         </Col>
       )}

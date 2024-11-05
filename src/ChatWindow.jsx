@@ -754,7 +754,8 @@ function ChatWindow() {
     }
   }, [handleScroll]);
 
-  useEffect(() => {
+  useEffect(() => {;
+    console.log(" del estate convers", state.conversacion_Actual)
     if (state.conversacion_Actual.position_scroll === false) {
         if (lastMessageId && messagesEndRef.current) {
           requestAnimationFrame(() => {
@@ -792,7 +793,7 @@ function ChatWindow() {
         setUpdateMoreMsj(null)
       }
     }
-  }, [firstMessageId, messages, currentConversation]);
+  }, [firstMessageId, messages]);
 
   useEffect(() => {
     if (currentConversation && currentConversation.conversation_id) {

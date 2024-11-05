@@ -7,8 +7,9 @@ import { AppContext } from './context';
 import { useConversations } from './ConversationsContext';
 import {Button,
 } from "./components"
+import { useNavigate } from 'react-router-dom';
 
-const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
+const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle, currentSection }) => {
   const {setConversacionActual, setUsuario, setCompania, state} = useContext(AppContext);
   const {
     setCurrentConversation,
@@ -20,15 +21,25 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle }) => {
   const userId = localStorage.getItem('user_id');
 
   const isMobile = useMediaQuery({ maxWidth: 767 });
-
-  const onSelectOption = (selectedOption) => {
+  const navigate = useNavigate();
+// `onSelectOption` modificado:
+const onSelectOption = (selectedOption) => {
+  // Si ya estamos en la sección seleccionada, restablece el estado para recargarla.
+  if (selectedOption === 'chats' && selectedOption === currentSection) {
+    setConversacionActual({ position_scroll: false });
+    setCurrentConversation(null);
+    navigate('/temp'); // Navega a una ruta temporal para forzar la recarga
+    setTimeout(() => navigate('/chats'), 0); // Vuelve a la ruta actual
+  } else {
     onSelect(selectedOption);
     if (!isCollapsed) {
       onToggle();
     }
-    setConversacionActual({ position_scroll: false});
-    setCurrentConversation(null)
-  };
+    setConversacionActual({ position_scroll: false });
+    setCurrentConversation(null);
+  }
+};
+
 
   useEffect(() => {
     // Fetch user data
