@@ -176,16 +176,6 @@ function ChatWindow() {
       return () => currentElement.removeEventListener('scroll', handleScroll);
     }
   }, [messages, state.conversacion_Actual]);
-  
-  const handleEditContactChange = (event) => {
-    const { name, value } = event.target;
-    setEditContact(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleEditContactSave = () => {
-    console.log('Contact Updated:', editContact);
-    setShowEditModal(false);
-  };
 
   const renderLabelBadge = (label) => {
     const phase = phases[label];
@@ -421,24 +411,6 @@ function ChatWindow() {
         </div>
       </div>
     );
-  };
-
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-image`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      const imageUrl = response.data.imageUrl;
-      await sendWhatsAppMessageImage(imageUrl);
-    } catch (error) {
-      console.error('Error uploading image:', error);
-    }
   };
 
   const sendWhatsAppMessageImage = async (imageUrl) => {
@@ -774,18 +746,6 @@ function ChatWindow() {
     );
   }
 
-  function CustomToggle({ children, eventKey }) {
-    const decoratedOnClick = useAccordionButton(eventKey, () => {
-      console.log('Accordion toggled!');
-    });
-
-    return (
-      <div className="accordion-header" onClick={decoratedOnClick}>
-        {children}
-      </div>
-    );
-  }
-
   useEffect(() => {
     const currentElement = messagesEndRef.current;
     if (currentElement) {
@@ -795,7 +755,6 @@ function ChatWindow() {
   }, [handleScroll]);
 
   useEffect(() => {
-    
     if (state.conversacion_Actual.position_scroll === false) {
         if (lastMessageId && messagesEndRef.current) {
           requestAnimationFrame(() => {
@@ -833,7 +792,7 @@ function ChatWindow() {
         setUpdateMoreMsj(null)
       }
     }
-  }, [firstMessageId, messages]);
+  }, [firstMessageId, messages, currentConversation]);
 
   useEffect(() => {
     if (currentConversation && currentConversation.conversation_id) {

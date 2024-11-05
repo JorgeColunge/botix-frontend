@@ -198,8 +198,8 @@ function Sidebar() {
     switch (integracion?.type) {
       case 'Interno':    
       
-       const usuario_conversacion = usuarios.find(usu => usu.id_usuario == conversacion.contact_user_id)
-       const usuario_remitente = usuarios.find(usu => usu.id_usuario == conversacion.id_usuario)
+       const usuario_conversacion = usuarios?.find(usu => usu.id_usuario == conversacion.contact_user_id)
+       const usuario_remitente = usuarios?.find(usu => usu.id_usuario == conversacion.id_usuario)
           return (
             <div className="d-flex justify-content-between align-items-center">
               {conversacion.id_usuario == usuario.id_usuario ? (
@@ -311,7 +311,6 @@ function Sidebar() {
     }
  },[state.usuario, state.usuarios, conversations])
   
- console.log("conversaciones", conversations)
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center p-3 shadow-sm">
