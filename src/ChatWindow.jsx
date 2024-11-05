@@ -309,7 +309,7 @@ function ChatWindow() {
                 {allUsers.map((user) => (
                   <Dropdown.Item 
                     key={user.id_usuario} 
-                    onClick={() => handleResponsibleChange(user.id_usuario, currentConversation.id_usuario)}>
+                    onClick={() => {handleResponsibleChange(user.id_usuario, currentConversation.id_usuario); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}>
                     {user.nombre} {user.apellido}
                   </Dropdown.Item>
                 ))}
@@ -331,7 +331,7 @@ function ChatWindow() {
                     {allUsers.map((user) => (
                       <Dropdown.Item
                         key={user.id_usuario}
-                        onClick={() => handleResponsibleChange(user.id_usuario, currentConversation.id_usuario)}
+                        onClick={() => {handleResponsibleChange(user.id_usuario, currentConversation.id_usuario); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}
                         className={user.id_usuario === currentConversation.id_usuario ? 'bg-info text-white' : ''}
                       >
                         {user.nombre} {user.apellido}
@@ -379,7 +379,7 @@ function ChatWindow() {
                     {allUsers.map((user) => (
                       <Dropdown.Item
                         key={user.id_usuario}
-                        onClick={() => handleResponsibleChange(user.id_usuario, currentConversation.id_usuario)}
+                        onClick={() => {handleResponsibleChange(user.id_usuario, currentConversation.id_usuario); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}
                         className={user.id_usuario === currentConversation.id_usuario ? 'bg-info text-white' : ''}
                       >
                         {user.nombre} {user.apellido}
@@ -755,7 +755,6 @@ function ChatWindow() {
   }, [handleScroll]);
 
   useEffect(() => {;
-    console.log(" del estate convers", state.conversacion_Actual)
     if (state.conversacion_Actual.position_scroll === false) {
         if (lastMessageId && messagesEndRef.current) {
           requestAnimationFrame(() => {
