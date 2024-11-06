@@ -60,6 +60,7 @@ function ChatWindow() {
         setIsLoadingMore(false);
         setTimeout(() => {
            setFirstMessageId(new Date(moreMessages[moreMessages.length - 1].timestamp).getTime())
+           console.log("id de mensaje", new Date(moreMessages[moreMessages.length - 1].timestamp).getTime())
         }, 2000);
       } else {
         setIsLoadingMore(false);
@@ -167,7 +168,6 @@ function ChatWindow() {
         setIsScrolledToEnd(scrollTop + clientHeight + 200 >= scrollHeight);
       }
     };
-  
     const currentElement = messagesEndRef.current;
   
     if (currentElement) {
@@ -316,7 +316,7 @@ function ChatWindow() {
                 <hr></hr>
                 <Dropdown.Item  className='text-danger'
                   key="finalizar-conversacion" 
-                  onClick={() => handleEndConversation(currentConversation.conversation_id)}>
+                  onClick={() => {handleEndConversation(currentConversation.conversation_id); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}>
                   Finalizar Conversación
                 </Dropdown.Item>
               </DropdownButton>
@@ -774,23 +774,40 @@ function ChatWindow() {
       console.log("ingresa en el segundo")
 
       if (firstMessageId && messagesEndRef.current && (isScrolledToEnd || updateMoreMsj != null)) {
-        requestAnimationFrame(() => {
-       
+        const scrollToMessage = () => {
+            // Intento de desplazamiento
             const element = document.getElementById(`msg-${firstMessageId}`);
-            if (element) {
-              const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
-              if (scrollPosition !== undefined) {
-                messagesEndRef.current.scrollTop = scrollPosition;
-                console.log("Posición del scroll", scrollPosition);
-              }
-              console.log('Redirigiendo al mensaje con ID:', firstMessageId);
+            
+            if (element && messagesEndRef.current) {
+                // Calcula la posición de scroll relativa al contenedor
+                const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
+                
+                if (scrollPosition !== undefined) {
+                    // Realiza el desplazamiento usando scrollTop
+                    messagesEndRef.current.scrollTop = scrollPosition;
+                    console.log("Posición del scroll", scrollPosition);
+                    console.log("Elemento", element.offsetTop)
+                    console.log("mensaje posicio", messagesEndRef.current.offsetTop)
+                    console.log("mensaje current", messagesEndRef.current)
+                    console.log('Redirigiendo al mensaje con ID:', firstMessageId);
+                    console.log("--------------------------------------------")
+                } else {
+                    // Alternativa con scrollIntoView
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    console.log("Usando scrollIntoView para redirigir al mensaje con ID:", firstMessageId);
+                }
             } else {
-              console.log("Elemento no encontrado, intentar nuevamente");
+                // Reintenta el scroll en el siguiente frame si el elemento no está aún disponible
+                console.log("Elemento no encontrado, reintentando...");
+                requestAnimationFrame(scrollToMessage);
             }
-        });
+        };
+        // Inicia el intento de desplazamiento
+        requestAnimationFrame(scrollToMessage);
         
-        setUpdateMoreMsj(null)
-      }
+        // Restablece updateMoreMsj una vez terminado el intento de scroll
+        setUpdateMoreMsj(null);
+    }    
     }
   }, [firstMessageId, messages]);
 
@@ -808,6 +825,8 @@ function ChatWindow() {
       } else {
         const initialMessages = messages[currentConversation.conversation_id];
         if (initialMessages.length) {
+          console.log("id de primer mensaje", new Date(initialMessages[initialMessages.length - 1].timestamp).getTime())
+          console.log("id de ultimo mensaje", new Date(initialMessages[0].timestamp).getTime())
           setLastMessageId(new Date(initialMessages[0].timestamp).getTime());
           setFirstMessageId(new Date(initialMessages[initialMessages.length - 1].timestamp).getTime())
           console.log('Initial loaded conversation last message ID:', initialMessages[0].timestamp);
