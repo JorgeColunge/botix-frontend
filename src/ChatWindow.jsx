@@ -29,6 +29,7 @@ function ChatWindow() {
   const [offset, setOffset] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastMessageId, setLastMessageId] = useState(null);
+  const [middleMessageId, setMiddleMessageId] = useState(null);
   const [firstMessageId, setFirstMessageId] = useState(null);
   const [updateMoreMsj, setUpdateMoreMsj] = useState(null);
   const [isScrolledToEnd, setIsScrolledToEnd] = useState(true); 
@@ -50,7 +51,7 @@ function ChatWindow() {
       if (moreMessages.length) {
         setMessages(prevMessages => ({
           ...prevMessages,
-          [currentConversation.conversation_id]: [...moreMessages, ...prevMessages[currentConversation.conversation_id]]
+          [currentConversation.conversation_id]: [ ...prevMessages[currentConversation.conversation_id], ...moreMessages]
         }));
         setOffset(prevOffset => prevOffset + 50);
         console.log("redireccion a :",new Date(moreMessages[0].timestamp).getTime() )
@@ -59,7 +60,7 @@ function ChatWindow() {
         setUpdateMoreMsj(moreMessages[0].id)
         setIsLoadingMore(false);
         setTimeout(() => {
-           setFirstMessageId(new Date(moreMessages[moreMessages.length - 1].timestamp).getTime())
+          setMiddleMessageId(new Date(moreMessages[moreMessages.length - 1].timestamp).getTime())
            console.log("id de mensaje", new Date(moreMessages[moreMessages.length - 1].timestamp).getTime())
         }, 2000);
       } else {
@@ -776,7 +777,7 @@ function ChatWindow() {
       if (firstMessageId && messagesEndRef.current && (isScrolledToEnd || updateMoreMsj != null)) {
         const scrollToMessage = () => {
             // Intento de desplazamiento
-            const element = document.getElementById(`msg-${firstMessageId}`);
+            const element = document.getElementById(`msg-${middleMessageId ? middleMessageId : firstMessageId}`);
             
             if (element && messagesEndRef.current) {
                 // Calcula la posición de scroll relativa al contenedor
