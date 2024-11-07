@@ -348,7 +348,7 @@ function ChatWindow() {
                     <Dropdown.Item
                       className="text-danger"
                       key="finalizar-conversacion"
-                      onClick={() => handleEndConversation(currentConversation.conversation_id)}
+                      onClick={() => {handleEndConversation(currentConversation.conversation_id); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}
                     >
                       Finalizar Conversación
                     </Dropdown.Item>
