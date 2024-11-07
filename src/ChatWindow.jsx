@@ -811,7 +811,6 @@ function ChatWindow() {
         });
       } else {
         const initialMessages = messages[currentConversation.conversation_id];
-        console.log("mensajes", initialMessages)
         if (initialMessages.length) {
           console.log("id de primer mensaje", new Date(initialMessages[initialMessages.length - 1].timestamp).getTime())
           console.log("id de ultimo mensaje", new Date(initialMessages[0].timestamp).getTime())
