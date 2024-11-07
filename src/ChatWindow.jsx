@@ -47,28 +47,34 @@ function ChatWindow() {
     const target = e.target;
     if (target.scrollTop === 0 && messages[currentConversation.conversation_id].length) {
       setIsLoadingMore(true);
+  
+      // Obtener altura del contenedor antes de cargar más mensajes
+      const previousHeight = target.scrollHeight;
+  
+      // Cargar los mensajes
       const moreMessages = await loadMessages(currentConversation.conversation_id, offset + 50);
       if (moreMessages.length) {
         setMessages(prevMessages => ({
           ...prevMessages,
-          [currentConversation.conversation_id]: [ ...prevMessages[currentConversation.conversation_id], ...moreMessages]
+          [currentConversation.conversation_id]: [ ...moreMessages, ...prevMessages[currentConversation.conversation_id]]
         }));
         setOffset(prevOffset => prevOffset + 50);
-        console.log("redireccion a :",new Date(moreMessages[0].timestamp).getTime() )
-        setLastMessageId(new Date(moreMessages[0].timestamp).getTime());
-        console.log('Last message ID for scroll:', moreMessages[0].id);
-        setUpdateMoreMsj(moreMessages[0].id)
-        setIsLoadingMore(false);
+  
+        // Esperar a que el DOM se actualice
         setTimeout(() => {
-          setMiddleMessageId(new Date(moreMessages[moreMessages.length - 1].timestamp).getTime())
-           console.log("id de mensaje", new Date(moreMessages[moreMessages.length - 1].timestamp).getTime())
-        }, 2000);
-      } else {
-        setIsLoadingMore(false);
+          // Calcular la nueva altura del contenedor después de cargar mensajes
+          const newHeight = target.scrollHeight;
+          const heightDifference = newHeight - previousHeight;
+  
+          // Ajustar la posición del scroll para compensar la nueva altura
+          target.scrollTop = heightDifference;
+        }, 100); // Tiempo para asegurar que el DOM haya actualizado
       }
+  
+      setIsLoadingMore(false);
     }
   }, [offset, isLoadingMore, loadMessages, setMessages, currentConversation, messages, state.conversacion_Actual]);
-
+  
   const typeMessageVerificad = useCallback((mensaje, integracion, usuario) => {
     switch (integracion.type) {
       case 'Interno':
@@ -775,40 +781,20 @@ function ChatWindow() {
       console.log("ingresa en el segundo")
 
       if (firstMessageId && messagesEndRef.current && (isScrolledToEnd || updateMoreMsj != null)) {
-        const scrollToMessage = () => {
-            // Intento de desplazamiento
-            const element = document.getElementById(`msg-${middleMessageId ? middleMessageId : firstMessageId}`);
-            
-            if (element && messagesEndRef.current) {
-                // Calcula la posición de scroll relativa al contenedor
-                const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
-                
-                if (scrollPosition !== undefined) {
-                    // Realiza el desplazamiento usando scrollTop
-                    messagesEndRef.current.scrollTop = scrollPosition;
-                    console.log("Posición del scroll", scrollPosition);
-                    console.log("Elemento", element.offsetTop)
-                    console.log("mensaje posicio", messagesEndRef.current.offsetTop)
-                    console.log("mensaje current", messagesEndRef.current)
-                    console.log('Redirigiendo al mensaje con ID:', firstMessageId);
-                    console.log("--------------------------------------------")
-                } else {
-                    // Alternativa con scrollIntoView
-                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    console.log("Usando scrollIntoView para redirigir al mensaje con ID:", firstMessageId);
-                }
-            } else {
-                // Reintenta el scroll en el siguiente frame si el elemento no está aún disponible
-                console.log("Elemento no encontrado, reintentando...");
-                requestAnimationFrame(scrollToMessage);
-            }
-        };
-        // Inicia el intento de desplazamiento
-        requestAnimationFrame(scrollToMessage);
-        
-        // Restablece updateMoreMsj una vez terminado el intento de scroll
-        setUpdateMoreMsj(null);
-    }    
+        const scrollContainer = messagesEndRef.current;
+        const element = document.getElementById(`msg-${middleMessageId ? middleMessageId : firstMessageId}`);
+    
+        if (element && scrollContainer) {
+          // Obtener la posición del elemento deseado
+          const elementTop = element.offsetTop;
+    
+          // Ajustar el scroll para mantener la posición deseada
+          scrollContainer.scrollTop = elementTop;
+          console.log("Desplazado al mensaje con ID:", middleMessageId || firstMessageId);
+          
+          setUpdateMoreMsj(null); // Restablecer el estado para no repetir el scroll
+        }
+      }
     }
   }, [firstMessageId, messages]);
 
