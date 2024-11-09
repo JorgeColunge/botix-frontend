@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Modal, Button, Table, Form, InputGroup, FormControl, Row, Col, Nav, Spinner } from 'react-bootstrap';
+import { Modal, Button, Table, Form, InputGroup, FormControl, Row, Col, Nav, Spinner, Dropdown, DropdownButton } from 'react-bootstrap';
 import { ArrowDownCircle, ArrowLeft, ArrowLeftCircle, ArrowRightCircle, ArrowUpCircle, PencilSquare } from 'react-bootstrap-icons';
 import axios from 'axios';
 import CodeMirror, { color } from '@uiw/react-codemirror';
@@ -420,6 +420,11 @@ const EditChatBotModal = ({ show, handleClose, bot }) => {
 
   // Almacena la unidad de medida (Segundos, Minutos, Horas)
   const [delayUnit, setDelayUnit] = useState('Segundos');
+  const [showSendMessageModal, setShowSendMessageModal] = useState(false); // Controla el modal de envío
+  const [selectedRecipientType, setSelectedRecipientType] = useState(''); // Controla el tipo de destinatario
+  const [selectedRecipient, setSelectedRecipient] = useState(''); // Controla el destinatario seleccionado
+  const [recipients, setRecipients] = useState({ users: [], colaboradores: [], contacts: [], variables: [] }); // Almacena los datos de destinatarios
+  const [messageText, setMessageText] = useState(''); // Texto del mensaje
   
 
 
@@ -5072,6 +5077,142 @@ const generateCodeForDelay = async () => {
   setEdges(updatedEdges);
 };
 
+const loadRecipients = async (type) => {
+  const companyId = localStorage.getItem("company_id");
+  try {
+      let data = [];
+      switch (type) {
+          case 'user':
+            const usersResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/users?company_id=${companyId}`);
+            data = usersResponse.data;
+              break;
+          case 'colaborador':
+              const colaboradoresResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/colaboradores?company_id=${companyId}`);
+              data = colaboradoresResponse.data;
+              break;
+          case 'contact':
+              const contactsResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/contacts?company_id=${companyId}`);
+              data = contactsResponse.data;
+              break;
+          case 'variable':
+              data = variables; // Esto depende de si tienes variables cargadas previamente en el estado
+              break;
+      }
+      
+      console.log(`Datos recibidos para ${type}:`, data); // Verifica los datos en consola
+      setRecipients((prev) => ({ ...prev, [type]: data }));
+  } catch (error) {
+      console.error(`Error fetching ${type}:`, error);
+  }
+};
+
+const handleSendMessageSave = () => {
+  const finalMessageText = `\`${messageText.replace(/\${([^}]+)}/g, '${$1}')}\``;
+
+  let updatedNodes, updatedEdges;
+
+  if (currentEditingNodeId) {
+    console.log("Editando nodo enviar a tercero", currentEditingNodeId);
+
+    updatedNodes = nodes.map(node => {
+      if (node.id === currentEditingNodeId) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            label: `Enviar a Tercero: ${responseTextName}`,
+            responseTextName,
+            messageText,
+            selectedRecipient,
+            tipo: 'sendToThirdParty',
+            code: [
+              `const ThirdPartyContactId = await getOrCreateContact(${selectedRecipient}, integrationDetails.company_id);`,
+              `const ThirdPartyConversationId = await getOrCreateConversation(ThirdPartyContactId, ${selectedRecipient}, integrationDetails.integration_id, integrationDetails.company_id);`,
+              `const messageText = ${finalMessageText};`,
+              `await sendTextMessage(io, { body: { phone: ${selectedRecipient}, messageText, conversationId: ThirdPartyConversationId } }, {});`
+            ],
+          },
+        };
+      }
+      return node;
+    });
+    setNodes(updatedNodes);
+    generateCodeFromNodes(updatedNodes, edges);
+    setCurrentEditingNodeId(null);
+  } else {
+    console.log("Creando nuevo nodo enviar a tercero");
+
+    const newId = randomId();
+    const newNode = {
+      id: newId,
+      type: 'custom',
+      position: { x: Math.random() * 250, y: Math.random() * 250 },
+      data: {
+        label: `Enviar a Tercero: ${responseTextName}`,
+        responseTextName,
+        messageText,
+        selectedRecipient,
+        tipo: 'sendToThirdParty',
+        code: [
+          `const ThirdPartyContactId = await getOrCreateContact(${selectedRecipient}, integrationDetails.company_id);`,
+          `const ThirdPartyConversationId = await getOrCreateConversation(ThirdPartyContactId, ${selectedRecipient}, integrationDetails.integration_id, integrationDetails.company_id);`,
+          `const messageText = ${finalMessageText};`,
+          `await sendTextMessage(io, { body: { phone: ${selectedRecipient}, messageText, conversationId: ThirdPartyConversationId } }, {});`
+        ],
+        onAddClick: (id) => openToolModal(id, true),
+        onAddExternalClick: (id) => openToolModal(id, false),
+        editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+      },
+      parentId: isInternal ? currentNodeId : null,
+    };
+
+    console.log("Nuevo nodo creado:", newNode);
+
+    let newEdge;
+    if (isInternal) {
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' },
+        zIndex: 10,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#d033b9',
+        },
+      };
+    } else {
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' },
+        zIndex: 10,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#d033b9',
+        },
+      };
+    }
+
+    updatedNodes = [...nodes, newNode];
+    updatedEdges = [...edges, newEdge];
+    setNodes(updatedNodes);
+    setEdges(updatedEdges);
+    setVariables((vars) => [...vars, { name: 'messageText', displayName: responseTextName, nodeId: newNode.id }]);
+    generateCodeFromNodes(updatedNodes, updatedEdges);
+  }
+
+  setShowSendMessageModal(false);
+  setResponseTextName('');
+  setMessageText('');
+  setSelectedRecipient('');
+  setSelectedRecipientType('');
+  setCurrentEditingNodeId(null); // Resetea el ID de edición actual
+};
 
   const generateCodeFromNodes = (nodes, edges) => {
     let initialDeclarations = 'let responseText;\nlet responseImage;\nlet responseVideo;\nlet responseDocument;\nlet responseAudio;\nlet latitude;\nlet longitude;\nlet streetName;\nlet videoDuration;\nlet videoThumbnail;\nlet payload;\nlet requestType;\nlet requestStatus;\nlet nuevoStatus;\nlet requestData;\nlet existingRequestQuery;\nlet existingRequestResult;\nlet requestId;\nlet updateRequestQuery;\nlet insertRequestQuery;\nlet headersRequest;\nlet requestQueryExternal;\nlet requestResultExternal;\nlet requestDataExternal;\nlet credentialsRequest;\nlet updateStatusQueryExternal;\nlet responseExternal;\nlet intentions;\nlet apiKey;\nlet url;\nlet headers;\nlet responseGpt;\nlet gptResponse;\nlet requestDataText;\n';
@@ -5246,6 +5387,52 @@ async function updateContact(io, phoneNumber, companyId, contactFieldName, conta
  }
  }\n\n
 `;
+
+initialDeclarations +=`async function getOrCreateContact(phoneNumber, companyId) {
+  const findQuery = 'SELECT id FROM contacts WHERE phone_number = $1 AND company_id = $2';
+  try {
+    let result = await pool.query(findQuery, [phoneNumber, companyId]);
+    if (result.rows.length > 0) {
+      return result.rows[0].id;
+    } else {
+      const contactQuery = 'INSERT INTO contacts (phone_number, company_id) VALUES ($1, $2) RETURNING id';
+      const contactResult = await pool.query(contactQuery, [phoneNumber, companyId]);
+      const contactId = contactResult.rows[0].id;
+      console.log(\`ID del contacto: \${contactId}\`);
+      return contactId;
+    }
+  } catch (err) {
+    console.error('Error de base de datos en getOrCreateContact:', err);
+    throw err;
+  }
+}\n\n`;
+
+initialDeclarations +=`async function getOrCreateConversation(contactId, phoneNumber, integrationId, companyId) {
+  const findQuery = 'SELECT conversation_id, id_usuario FROM conversations WHERE contact_id = $1';
+  try {
+    let result = await pool.query(findQuery, [contactId]);
+    if (result.rows.length > 0) {
+      return result.rows[0].conversation_id;
+    } else {
+      // Obtener el usuario predeterminado para la empresa
+      const defaultUserQuery = \`
+        SELECT id_usuario 
+        FROM default_users 
+        WHERE company_id = $1
+      \`;
+      const defaultUserResult = await pool.query(defaultUserQuery, [companyId]);
+      const defaultUserId = defaultUserResult.rows[0].id_usuario;
+
+      const insertQuery = 'INSERT INTO conversations (phone_number, state, id_usuario, contact_id, integration_id) VALUES ($1, $2, $3, $4, $5) RETURNING conversation_id';
+      const conversationResult = await pool.query(insertQuery, [phoneNumber, 'new', defaultUserId, contactId, integrationId]);
+      const conversationId = conversationResult.rows[0].conversation_id;
+      return conversationId;
+    }
+  } catch (err) {
+    console.error('Error de base de datos en getOrCreateConversation:', err);
+    throw err;
+  }
+}`;
 
 initialDeclarations +=`const contactInfo = await getContactInfo(senderId, integrationDetails.company_id);
 
@@ -6824,6 +7011,7 @@ const generateNodeCode = (node, indent = '') => {
             <button className="tool-button" onClick={() => {setShowResponseLocationModal(true);setShowToolModal(false);}}>Enviar Ubicación</button>
             <button className="tool-button" onClick={() => {setShowResponseDocumentModal(true);setShowToolModal(false);}}>Enviar Documento</button>
             <button className="tool-button" onClick={() => {openTemplateModal(true);setShowToolModal(false);}}>Enviar Plantilla</button>
+            <button className="tool-button" onClick={() => {setShowSendMessageModal(true);setShowToolModal(false);}}>Enviar Mensaje a Terceros</button>
           </div>
 
           {/* Cuarta columna */}
@@ -7066,7 +7254,117 @@ const generateNodeCode = (node, indent = '') => {
   </Modal.Footer>
 </Modal>
 
+<Modal show={showSendMessageModal} onHide={() => setShowSendMessageModal(false)}>
+    <Modal.Header closeButton>
+        <Modal.Title>Enviar Mensaje a Terceros</Modal.Title>
+    </Modal.Header>
+    <Modal.Body>
+        <Form>
+            <Form.Group controlId="formResponseTextName">
+                <Form.Label>Nombre del Mensaje</Form.Label>
+                <Form.Control
+                    type="text"
+                    value={responseTextName}
+                    onChange={(e) => setResponseTextName(e.target.value)}
+                />
+            </Form.Group>
+            <Form.Group controlId="formRecipientType">
+                <Form.Label>Tipo de Destinatario</Form.Label>
+                <Form.Control
+                    as="select"
+                    value={selectedRecipientType}
+                    onChange={(e) => {
+                        setSelectedRecipientType(e.target.value);
+                        loadRecipients(e.target.value); // Cargar destinatarios según el tipo
+                        setSelectedRecipient(''); // Limpia el destinatario cuando cambia el tipo
+                    }}
+                >
+                    <option value="">Selecciona tipo</option>
+                    <option value="user">Usuario</option>
+                    <option value="colaborador">Colaborador</option>
+                    <option value="contact">Cliente</option>
+                    <option value="variable">Variable</option>
+                </Form.Control>
+            </Form.Group>
+            <Form.Group controlId="formRecipient">
+              <br></br>
+                <Form.Label>Destinatario</Form.Label>
+                {selectedRecipientType === 'variable' ? (
+                    <>
+                        <Form.Control
+                            type="text"
+                            placeholder="Escribe el número o selecciona una variable"
+                            value={selectedRecipient}
+                            onChange={(e) => setSelectedRecipient(e.target.value)}
+                        />
+                        <Form.Control as="select" onChange={(e) => setSelectedRecipient(e.target.value)}>
+                          {variables.map((variable) => (
+                            <option key={variable.name} value={variable.name}>
+                              {variable.displayName}
+                            </option>
+                          ))}
+                        </Form.Control>
+                    </>
+                ) : (
+                    <Form.Control
+                        as="select"
+                        value={selectedRecipient}
+                        onChange={(e) => setSelectedRecipient(e.target.value)}
+                    >
+                        <option value="">Selecciona destinatario</option>
+                        {recipients[selectedRecipientType]?.map((recipient) => {
+                            let displayName = '';
+                            let phone = '';
 
+                            switch (selectedRecipientType) {
+                                case 'user':
+                                    displayName = `${recipient.nombre} ${recipient.apellido}`;
+                                    phone = recipient.telefono;
+                                    break;
+                                case 'colaborador':
+                                    displayName = `${recipient.nombre} ${recipient.apellido}`;
+                                    phone = recipient.telefono;
+                                    break;
+                                case 'contact':
+                                    displayName = `${recipient.first_name} ${recipient.last_name || ''}`;
+                                    phone = recipient.phone_number;
+                                    break;
+                                default:
+                                    displayName = recipient.name || recipient.displayName;
+                                    phone = '';
+                                    break;
+                            }
+
+                            return (
+                                <option key={recipient.id_usuario || recipient.id_colaborador || recipient.id} value={phone}>
+                                    {displayName} - {phone || 'Sin número'}
+                                </option>
+                            );
+                        })}
+                    </Form.Control>
+                )}
+            </Form.Group>
+            <Form.Group controlId="formMessageText">
+              <br></br>
+                <Form.Label>Texto del Mensaje</Form.Label>
+                <Form.Control
+                    as="textarea"
+                    rows={3}
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                />
+            </Form.Group>
+        </Form>
+    </Modal.Body>
+    <Modal.Footer>
+        <Button variant="secondary" onClick={() => setShowSendMessageModal(false)}>
+            Cancelar
+        </Button>
+        <Button variant="primary" onClick={handleSendMessageSave}>
+            Crear
+        </Button>
+    </Modal.Footer>
+</Modal>
 
     </Modal>
 
