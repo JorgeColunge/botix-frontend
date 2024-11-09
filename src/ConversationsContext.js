@@ -339,30 +339,30 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
       if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
         const isCurrentActive = currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId));
 
-        document.addEventListener('deviceready', () => {
-          console.log('Cordova está listo');
+        // document.addEventListener('deviceready', () => {
+        //   console.log('Cordova está listo');
         
-          if (!isCurrentActive) {
-            requestFirebaseNotificationPermission(); // Solicitar permiso para notificaciones de Firebase
+        //   if (!isCurrentActive) {
+        //     requestFirebaseNotificationPermission(); // Solicitar permiso para notificaciones de Firebase
         
-            if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
-              // Ahora puedes usar las notificaciones locales
-              cordova.plugins.notification.local.schedule({
-                title: newMessage.senderName || 'Nuevo mensaje',
-                text: newMessage.text || 'Tienes un nuevo mensaje',
-              });
-            } else {
-              console.log('El plugin de notificaciones locales no está disponible.');
-            }
+        //     if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
+        //       // Ahora puedes usar las notificaciones locales
+        //       cordova.plugins.notification.local.schedule({
+        //         title: newMessage.senderName || 'Nuevo mensaje',
+        //         text: newMessage.text || 'Tienes un nuevo mensaje',
+        //       });
+        //     } else {
+        //       console.log('El plugin de notificaciones locales no está disponible.');
+        //     }
         
-            onMessageListener()
-              .then((payload) => {
-                // Manejar la notificación recibida
-                console.log('Notification received: ', payload);
-              })
-              .catch((err) => console.log('Failed: ', err));
-          }
-        }, false);        
+        //     onMessageListener()
+        //       .then((payload) => {
+        //         // Manejar la notificación recibida
+        //         console.log('Notification received: ', payload);
+        //       })
+        //       .catch((err) => console.log('Failed: ', err));
+        //   }
+        // }, false);        
         
         if (isCurrentActive) {
           resetUnreadMessages(newMessage.conversationId);
@@ -453,30 +453,30 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
       if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
         const isCurrentActive = currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.contact_user_id == newMessage.senderId));
   
-        document.addEventListener('deviceready', () => {
-          console.log('Cordova está listo');
+        // document.addEventListener('deviceready', () => {
+        //   console.log('Cordova está listo');
         
-          if (!isCurrentActive) {
-            requestFirebaseNotificationPermission(); // Solicitar permiso para notificaciones de Firebase
+        //   if (!isCurrentActive) {
+        //     requestFirebaseNotificationPermission(); // Solicitar permiso para notificaciones de Firebase
         
-            if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
-              // Ahora puedes usar las notificaciones locales
-              cordova.plugins.notification.local.schedule({
-                title: newMessage.senderName || 'Nuevo mensaje',
-                text: newMessage.text || 'Tienes un nuevo mensaje',
-              });
-            } else {
-              console.log('El plugin de notificaciones locales no está disponible.');
-            }
+        //     if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
+        //       // Ahora puedes usar las notificaciones locales
+        //       cordova.plugins.notification.local.schedule({
+        //         title: newMessage.senderName || 'Nuevo mensaje',
+        //         text: newMessage.text || 'Tienes un nuevo mensaje',
+        //       });
+        //     } else {
+        //       console.log('El plugin de notificaciones locales no está disponible.');
+        //     }
         
-            onMessageListener()
-              .then((payload) => {
-                // Manejar la notificación recibida
-                console.log('Notification received: ', payload);
-              })
-              .catch((err) => console.log('Failed: ', err));
-          }
-        }, false);
+        //     onMessageListener()
+        //       .then((payload) => {
+        //         // Manejar la notificación recibida
+        //         console.log('Notification received: ', payload);
+        //       })
+        //       .catch((err) => console.log('Failed: ', err));
+        //   }
+        // }, false);
          
 
         if (isCurrentActive) {

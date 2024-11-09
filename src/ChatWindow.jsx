@@ -29,6 +29,7 @@ function ChatWindow() {
   const [offset, setOffset] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastMessageId, setLastMessageId] = useState(null);
+  const [middleMessageId, setMiddleMessageId] = useState(null);
   const [firstMessageId, setFirstMessageId] = useState(null);
   const [updateMoreMsj, setUpdateMoreMsj] = useState(null);
   const [isScrolledToEnd, setIsScrolledToEnd] = useState(true); 
@@ -46,27 +47,34 @@ function ChatWindow() {
     const target = e.target;
     if (target.scrollTop === 0 && messages[currentConversation.conversation_id].length) {
       setIsLoadingMore(true);
+  
+      // Obtener altura del contenedor antes de cargar más mensajes
+      const previousHeight = target.scrollHeight;
+  
+      // Cargar los mensajes
       const moreMessages = await loadMessages(currentConversation.conversation_id, offset + 50);
       if (moreMessages.length) {
         setMessages(prevMessages => ({
           ...prevMessages,
-          [currentConversation.conversation_id]: [...moreMessages, ...prevMessages[currentConversation.conversation_id]]
+          [currentConversation.conversation_id]: [...prevMessages[currentConversation.conversation_id], ...moreMessages]
         }));
         setOffset(prevOffset => prevOffset + 50);
-        console.log("redireccion a :",new Date(moreMessages[0].timestamp).getTime() )
-        setLastMessageId(new Date(moreMessages[0].timestamp).getTime());
-        console.log('Last message ID for scroll:', moreMessages[0].id);
-        setUpdateMoreMsj(moreMessages[0].id)
-        setIsLoadingMore(false);
+  
+        // Esperar a que el DOM se actualice
         setTimeout(() => {
-           setFirstMessageId(new Date(moreMessages[moreMessages.length - 1].timestamp).getTime())
-        }, 2000);
-      } else {
-        setIsLoadingMore(false);
+          // Calcular la nueva altura del contenedor después de cargar mensajes
+          const newHeight = target.scrollHeight;
+          const heightDifference = newHeight - previousHeight;
+  
+          // Ajustar la posición del scroll para compensar la nueva altura
+          target.scrollTop = heightDifference;
+        }, 100); // Tiempo para asegurar que el DOM haya actualizado
       }
+  
+      setIsLoadingMore(false);
     }
   }, [offset, isLoadingMore, loadMessages, setMessages, currentConversation, messages, state.conversacion_Actual]);
-
+  
   const typeMessageVerificad = useCallback((mensaje, integracion, usuario) => {
     switch (integracion.type) {
       case 'Interno':
@@ -167,7 +175,6 @@ function ChatWindow() {
         setIsScrolledToEnd(scrollTop + clientHeight + 200 >= scrollHeight);
       }
     };
-  
     const currentElement = messagesEndRef.current;
   
     if (currentElement) {
@@ -176,16 +183,6 @@ function ChatWindow() {
       return () => currentElement.removeEventListener('scroll', handleScroll);
     }
   }, [messages, state.conversacion_Actual]);
-  
-  const handleEditContactChange = (event) => {
-    const { name, value } = event.target;
-    setEditContact(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleEditContactSave = () => {
-    console.log('Contact Updated:', editContact);
-    setShowEditModal(false);
-  };
 
   const renderLabelBadge = (label) => {
     const phase = phases[label];
@@ -319,14 +316,14 @@ function ChatWindow() {
                 {allUsers.map((user) => (
                   <Dropdown.Item 
                     key={user.id_usuario} 
-                    onClick={() => handleResponsibleChange(user.id_usuario, currentConversation.id_usuario)}>
+                    onClick={() => {handleResponsibleChange(user.id_usuario, currentConversation.id_usuario); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}>
                     {user.nombre} {user.apellido}
                   </Dropdown.Item>
                 ))}
                 <hr></hr>
                 <Dropdown.Item  className='text-danger'
                   key="finalizar-conversacion" 
-                  onClick={() => handleEndConversation(currentConversation.conversation_id)}>
+                  onClick={() => {handleEndConversation(currentConversation.conversation_id); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}>
                   Finalizar Conversación
                 </Dropdown.Item>
               </DropdownButton>
@@ -341,7 +338,7 @@ function ChatWindow() {
                     {allUsers.map((user) => (
                       <Dropdown.Item
                         key={user.id_usuario}
-                        onClick={() => handleResponsibleChange(user.id_usuario, currentConversation.id_usuario)}
+                        onClick={() => {handleResponsibleChange(user.id_usuario, currentConversation.id_usuario); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}
                         className={user.id_usuario === currentConversation.id_usuario ? 'bg-info text-white' : ''}
                       >
                         {user.nombre} {user.apellido}
@@ -351,7 +348,7 @@ function ChatWindow() {
                     <Dropdown.Item
                       className="text-danger"
                       key="finalizar-conversacion"
-                      onClick={() => handleEndConversation(currentConversation.conversation_id)}
+                      onClick={() => {handleEndConversation(currentConversation.conversation_id); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}
                     >
                       Finalizar Conversación
                     </Dropdown.Item>
@@ -389,7 +386,7 @@ function ChatWindow() {
                     {allUsers.map((user) => (
                       <Dropdown.Item
                         key={user.id_usuario}
-                        onClick={() => handleResponsibleChange(user.id_usuario, currentConversation.id_usuario)}
+                        onClick={() => {handleResponsibleChange(user.id_usuario, currentConversation.id_usuario); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}
                         className={user.id_usuario === currentConversation.id_usuario ? 'bg-info text-white' : ''}
                       >
                         {user.nombre} {user.apellido}
@@ -399,7 +396,7 @@ function ChatWindow() {
                     <Dropdown.Item
                       className="text-danger"
                       key="finalizar-conversacion"
-                      onClick={() => handleEndConversation(currentConversation.conversation_id)}
+                      onClick={() => {handleEndConversation(currentConversation.conversation_id); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}
                     >
                       Finalizar Conversación
                     </Dropdown.Item>
@@ -421,24 +418,6 @@ function ChatWindow() {
         </div>
       </div>
     );
-  };
-
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-image`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      const imageUrl = response.data.imageUrl;
-      await sendWhatsAppMessageImage(imageUrl);
-    } catch (error) {
-      console.error('Error uploading image:', error);
-    }
   };
 
   const sendWhatsAppMessageImage = async (imageUrl) => {
@@ -774,18 +753,6 @@ function ChatWindow() {
     );
   }
 
-  function CustomToggle({ children, eventKey }) {
-    const decoratedOnClick = useAccordionButton(eventKey, () => {
-      console.log('Accordion toggled!');
-    });
-
-    return (
-      <div className="accordion-header" onClick={decoratedOnClick}>
-        {children}
-      </div>
-    );
-  }
-
   useEffect(() => {
     const currentElement = messagesEndRef.current;
     if (currentElement) {
@@ -794,8 +761,7 @@ function ChatWindow() {
     }
   }, [handleScroll]);
 
-  useEffect(() => {
-    
+  useEffect(() => {;
     if (state.conversacion_Actual.position_scroll === false) {
         if (lastMessageId && messagesEndRef.current) {
           requestAnimationFrame(() => {
@@ -815,22 +781,19 @@ function ChatWindow() {
       console.log("ingresa en el segundo")
 
       if (firstMessageId && messagesEndRef.current && (isScrolledToEnd || updateMoreMsj != null)) {
-        requestAnimationFrame(() => {
-       
-            const element = document.getElementById(`msg-${firstMessageId}`);
-            if (element) {
-              const scrollPosition = element.offsetTop - messagesEndRef.current.offsetTop;
-              if (scrollPosition !== undefined) {
-                messagesEndRef.current.scrollTop = scrollPosition;
-                console.log("Posición del scroll", scrollPosition);
-              }
-              console.log('Redirigiendo al mensaje con ID:', firstMessageId);
-            } else {
-              console.log("Elemento no encontrado, intentar nuevamente");
-            }
-        });
-        
-        setUpdateMoreMsj(null)
+        const scrollContainer = messagesEndRef.current;
+        const element = document.getElementById(`msg-${middleMessageId ? middleMessageId : firstMessageId}`);
+    
+        if (element && scrollContainer) {
+          // Obtener la posición del elemento deseado
+          const elementTop = element.offsetTop;
+    
+          // Ajustar el scroll para mantener la posición deseada
+          scrollContainer.scrollTop = elementTop;
+          console.log("Desplazado al mensaje con ID:", middleMessageId || firstMessageId);
+          
+          setUpdateMoreMsj(null); // Restablecer el estado para no repetir el scroll
+        }
       }
     }
   }, [firstMessageId, messages]);
@@ -849,6 +812,8 @@ function ChatWindow() {
       } else {
         const initialMessages = messages[currentConversation.conversation_id];
         if (initialMessages.length) {
+          console.log("id de primer mensaje", new Date(initialMessages[initialMessages.length - 1].timestamp).getTime())
+          console.log("id de ultimo mensaje", new Date(initialMessages[0].timestamp).getTime())
           setLastMessageId(new Date(initialMessages[0].timestamp).getTime());
           setFirstMessageId(new Date(initialMessages[initialMessages.length - 1].timestamp).getTime())
           console.log('Initial loaded conversation last message ID:', initialMessages[0].timestamp);
