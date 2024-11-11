@@ -403,7 +403,7 @@ function sendUserIdToNative(userId) {
       )}
       
       <Row xs={isMobile ? 12 : (isSidebarCollapsed ? 11 : 10)} className={!isMobile ? `ms-5` : 'pe-0 scrollrender'}>
-        <Row className={selectedSection == 'chats' ? `renderContent me-0 pe-0` : `renderContent `}>
+        <Row className={selectedSection == 'chats' ? `renderContent m-0 p-0` : `renderContent `}>
           <Routes>
             <Route path="/chats" element={
               <PrivateRoute>
