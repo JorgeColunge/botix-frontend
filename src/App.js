@@ -46,7 +46,8 @@ function App() {
      setIntegrations,
      setDefaultUser,
      setAutomations,
-     setCompania
+     setCompania,
+     setRouter,
    } = useContext(AppContext)
   const isMobile = useMediaQuery({ maxWidth: 767 });
 
@@ -59,17 +60,13 @@ function App() {
   const [currentSection, setCurrentSection] = useState(null);
 
   const navigate = useNavigate();
- 
-  // useFirebaseMessaging()
-  // useNotificationHandler()
+
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     const id_usuario = localStorage.getItem('user_id');
 
     try {
-      // Envía el user_id desde el código de React hacia Cordova
-  // Asegúrate de que Cordova esté listo antes de llamar a exec
 
   document.addEventListener('deviceready', function() {
     if (id_usuario) {
@@ -375,6 +372,7 @@ function sendUserIdToNative(userId) {
   const handleSelectSection = (section) => {
     setCurrentSection(section); // Actualiza la sección actual
     setSelectedSection(section);
+    setRouter(section)
     navigate(`/${section}`);
   };
 
@@ -403,7 +401,7 @@ function sendUserIdToNative(userId) {
       )}
       
       <Row xs={isMobile ? 12 : (isSidebarCollapsed ? 11 : 10)} className={!isMobile ? `ms-5` : 'pe-0 scrollrender'}>
-        <Row className={selectedSection == 'chats' ? `renderContent m-0 p-0` : `renderContent `}>
+        <Row className={selectedSection == 'chats' || state.ruta == 'chats' ? `renderContent m-0 p-0` : `renderContent`}>
           <Routes>
             <Route path="/chats" element={
               <PrivateRoute>

@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Modal, Button, Form, DropdownButton, Dropdown, Accordion, Card, useAccordionButton } from 'react-bootstrap';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
+import { Modal, Button, Form, DropdownButton, Dropdown, Accordion, Card, useAccordionButton, NavDropdown } from 'react-bootstrap';
 import { PersonCircle, TelephoneFill, EnvelopeFill, Globe, Instagram, Facebook, Linkedin, Twitter, Tiktok, Youtube, GenderAmbiguous, HourglassSplit, CalendarX, SignpostFill, GeoFill, GlobeAmericas, CashCoin, PersonWorkspace, Mortarboard, PersonVcard, PersonHearts, CloudSun, EmojiGrin, FlagFill, Bullseye, ArrowThroughHeart } from 'react-bootstrap-icons';
 import axios from 'axios';
 import './EditContactModal.css';
 import { useConversations } from './ConversationsContext';
+import { AppContext } from './context';
 
 const EditContactModal = ({ show, onHide, contact, socket }) => {
-  const { phases } = useConversations();
+  const { phases, currentConversation, handleResponsibleChange, handleEndConversation, allUsers } = useConversations();
+  const {state, setConversacionActual} = useContext(AppContext)
   const [editContact, setEditContact] = useState(contact);
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -110,7 +112,9 @@ const EditContactModal = ({ show, onHide, contact, socket }) => {
             </div>
             <div className="col-12 text-center mt-3">
               {isEditMode ? (
+                
                 <>
+      
                   <input type="text" name="first_name" value={editContact.first_name || ''} onChange={handleInputChange} className="form-control mt-2" placeholder="Nombre" />
                   <input type="text" name="last_name" value={editContact.last_name || ''} onChange={handleInputChange} className="form-control mt-2" placeholder="Apellido" />
                   <input type="text" name="organization" value={editContact.organization || ''} onChange={handleInputChange} className="form-control mt-2" placeholder="Compañía" />
@@ -125,6 +129,7 @@ const EditContactModal = ({ show, onHide, contact, socket }) => {
                       <option key={id} value={id}>{phase.name}</option>
                     ))}
                   </select>
+
                   <textarea
                     name="observaciones_agente"
                     value={editContact.observaciones_agente || ''}
@@ -139,7 +144,7 @@ const EditContactModal = ({ show, onHide, contact, socket }) => {
                   <h4>{editContact.first_name} {editContact.last_name}</h4>
                   <p>{editContact.organization}</p>
                   <div className="row">
-                    <div className="col-12 d-flex align-items-center justify-content-center">
+                    <div className="col-12 gap-1 d-flex align-items-center justify-content-center">
                       <p className="mb-0 mr-2">{phases[editContact.label]?.name || 'Seleccione una etiqueta'}  </p>
                       <DropdownButton
                         id="dropdown-label-select"
@@ -151,6 +156,29 @@ const EditContactModal = ({ show, onHide, contact, socket }) => {
                           <Dropdown.Item key={id} eventKey={id}>{phase.name}</Dropdown.Item>
                         ))}
                       </DropdownButton>
+                      <NavDropdown
+                    id="nav-dropdown-dark-example"
+                    title="Responsable"
+                    menuVariant="white"
+                  >
+                    {allUsers.map((user) => (
+                      <Dropdown.Item
+                        key={user.id_usuario}
+                        onClick={() => {handleResponsibleChange(user.id_usuario, currentConversation.id_usuario); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}
+                        className={user.id_usuario === currentConversation.id_usuario ? 'bg-info text-white' : ''}
+                      >
+                        {user.nombre} {user.apellido}
+                      </Dropdown.Item>
+                    ))}
+                    <hr />
+                    <Dropdown.Item
+                      className="text-danger"
+                      key="finalizar-conversacion"
+                      onClick={() => {handleEndConversation(currentConversation.conversation_id); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}
+                    >
+                      Finalizar Conversación
+                    </Dropdown.Item>
+                  </NavDropdown>
                     </div>
                   </div>
                   <hr></hr>

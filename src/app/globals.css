@@ -31,15 +31,17 @@
     --chart-5: 27 87% 67%;
   }
   * {
-    scrollbar-width: thin !important; /* Para Firefox */
   }
   
   *::-webkit-scrollbar {
     width: 1px !important; /* Para WebKit (Chrome, Safari) */
+    -color: rgb(237, 241, 240);
   }
-  
+  .lase{
+    background-color: rgba(255, 255, 255, 0.5); 
+  }
   *::-webkit-scrollbar-thumb {
-    background-color: rgba(236, 18, 18, 0.5) !important; /* Color del scrollbar */
+    background-color: rgba(243, 241, 241, 0.5) !important; /* Color del scrollbar */
     border-radius: 10px !important; /* Bordes redondeados */
   }
 

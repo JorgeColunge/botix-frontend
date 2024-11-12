@@ -100,10 +100,18 @@ code {
   border-radius: 50%;
   cursor: pointer;
 }
+
+.floating-svg-reply {
+  position: absolute;
+  right: 3vw; /* Ajusta según la posición deseada */
+  bottom: 20vh;
+  border-radius: 50%;
+  cursor: pointer;
+}
 .new-message{
-  width: 1.5em;
-  height: 1.5em;
-  background-color: rgb(48, 53, 58) ;
-  border: solid;
+  width: 2.2em;
+  height: 2.2em;
+  background-color: #525151 ;
+  border: 0.1em solid #525151;
   border-radius: 50%;
 }

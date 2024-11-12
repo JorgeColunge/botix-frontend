@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useCallback, useState, useContext } from 'rea
 import { Button, DropdownButton, Dropdown, useAccordionButton, NavDropdown } from 'react-bootstrap';
 import { PersonCircle, TelephoneFill, EnvelopeFill, Globe, Instagram, Facebook, Linkedin, Twitter, Tiktok, Youtube, Check, CheckAll, Clock } from 'react-bootstrap-icons';
 import './App.css';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CameraIcon, ChevronDown, CreditCard, File, Keyboard, Mic, Settings, Video, X } from 'lucide-react';
 import EditContactModal from './EditContactModal';
 import ModalComponent from './modalComponet';
 import AudioPlayer from './audioPlayer';
@@ -16,6 +16,7 @@ import TemplateModal from './TemplateModal';
 import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';
 import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger, Input, Label, Popover, PopoverContent, PopoverTrigger } from './components';
 
 function ChatWindow() {
   const { currentConversation, messages, loadMessages, socket, isConnected, setMessages, setCurrentConversation, allUsers, handleResponsibleChange, handleEndConversation, phases } = useConversations();
@@ -36,6 +37,10 @@ function ChatWindow() {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [cursorPosition, setCursorPosition] = useState(null);
+  const [messageReply, setMessageReply] = useState(null);
+
+  const replyBarRef = useRef(null); // Elemento sobre el cual se posicionará el popover
+  const popoverTriggerRef = useRef(null);
 
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const isTable = useMediaQuery({ maxWidth: 1240 });
@@ -76,18 +81,32 @@ function ChatWindow() {
   }, [offset, isLoadingMore, loadMessages, setMessages, currentConversation, messages, state.conversacion_Actual]);
   
   const typeMessageVerificad = useCallback((mensaje, integracion, usuario) => {
+    if (!integracion) {
+      return `message-bubble ${mensaje.type}`;
+    }
+  
     switch (integracion.type) {
       case 'Interno':
-         if(usuario.id_usuario == mensaje.senderId || usuario.id_usuario == mensaje.sender_id){
-           return `message-bubble reply`
-         }else{
-           return `message-bubble message`
-         }
-
+        if (usuario.id_usuario === mensaje.senderId || usuario.id_usuario === mensaje.sender_id) {
+          return `message-bubble reply`;
+        } else {
+          return `message-bubble message`;
+        }
+  
       default:
-        return `message-bubble ${mensaje.type}`
+        return `message-bubble ${mensaje.type}`;
     }
-  },[])
+  }, []);  
+
+  const handleDropdownClick = (msj) => {
+    setMessageReply({...messageReply,msj}); // Ajusta según tu lógica de mensaje
+    // Asegurarse de que popoverTriggerRef esté disponible antes de intentar hacer clic
+    if (popoverTriggerRef.current) {
+      popoverTriggerRef.current.click();
+    } else {
+      console.warn("popoverTriggerRef no está disponible.");
+    }
+  };
 
   useEffect(() => {
     const handleBackButton = (event) => {
@@ -127,7 +146,12 @@ function ChatWindow() {
     };
   }, [navigate]);
   
-
+  useEffect(() => {
+     if (state.conversacion_Actual.conversation_id != messageReply?.msj?.conversation_fk) {
+      setMessageReply(null)
+     }
+  }, [state.conversacion_Actual])
+  
   useEffect(() => {
     setCurrentMessage(messages);
   }, [messages]);
@@ -208,7 +232,6 @@ function ChatWindow() {
   }, [currentConversation]);
 
  const handleCloseChat = () => {
-  console.log("boon ")
   setConversacionActual({ position_scroll: false});
   setCurrentConversation(null)
  }
@@ -217,7 +240,20 @@ function ChatWindow() {
 
     const usuario_remitente = usuarios.find(user => user.id_usuario === conversacion.contact_user_id);
     const usuario_conversacion = usuarios.find(user => user.id_usuario === conversacion.id_usuario);
+   
     const getContactName = useCallback(() => {
+      if (!integration) {
+        const { first_name, last_name, phone_number } = currentConversation;
+        if (first_name && last_name) {
+          return `${first_name} ${last_name}`;
+        } else if (first_name) {
+          return first_name;
+        } else if (last_name) {
+          return last_name;
+        } else {
+          return phone_number;
+        }
+      }
     
       switch (integration.type) {
         case 'Interno':
@@ -239,8 +275,12 @@ function ChatWindow() {
             return phone_number;
           }
       }
-    }, [usuarios, conversacion, integration.type, currentConversation, usuario]);
-
+    }, [usuarios, conversacion, integration, currentConversation, usuario]);
+    
+    if (!messageReply?.nombre_usuario_destino) {
+      const nombre_usuario_destino = getContactName()
+      setMessageReply({...messageReply, nombre_usuario_destino}) 
+    }
     const  getImage = useCallback(() => {
       if (conversacion.id_usuario === usuario.id_usuario) {
         return (
@@ -267,7 +307,7 @@ function ChatWindow() {
           </Button>
         )
       }
-    },[usuarios, conversacion, integration.type, currentConversation, usuario])
+    },[usuarios, conversacion, integration?.type, currentConversation, usuario])
 
     return (
       <div className="contact-info-bar d-flex align-items-center p-2 shadow-sm" style={{ gap: "10px" }}>
@@ -281,7 +321,7 @@ function ChatWindow() {
               style={{ width: 50, height: 50 }}
             />
            </Button>
-        ) : integration.type == 'Interno' ?(
+        ) : integration?.type == 'Interno' ?(
             getImage()
         ) :
           (
@@ -295,16 +335,19 @@ function ChatWindow() {
             <div className="w[70%] d-flex align-items-center">
               <strong>{getContactName()} </strong>
               <span className="ms-2">{currentConversation.label && renderLabelBadge(currentConversation.label)}</span>
-             { integration.type != 'Interno' ? (<DropdownButton
-                title=""
-                onSelect={handleSelectLabel}
-                className="ml-2 custom-dropdown"
-                size="sm"
-              >
-                {Object.entries(phases).map(([phaseId, phase]) => (
-                  <Dropdown.Item key={phaseId} eventKey={phaseId}>{phase.name}</Dropdown.Item>
-                ))}
-              </DropdownButton>): null}
+              { integration?.type !== 'Interno' ? (
+                <DropdownButton
+                  title=""
+                  onSelect={handleSelectLabel}
+                  className="ml-2 custom-dropdown"
+                  size="sm"
+                >
+                  {Object.entries(phases).map(([phaseId, phase]) => (
+                    <Dropdown.Item key={phaseId} eventKey={phaseId}>{phase.name}</Dropdown.Item>
+                  ))}
+                </DropdownButton>
+              ) : null}
+
             </div>
             <div className={isMobile ? `w-[40%] d-flex align-items-center` : `w-[55%] d-flex align-items-center mt-1`}>
             { !isMobile ? ( 
@@ -328,7 +371,7 @@ function ChatWindow() {
                 </Dropdown.Item>
               </DropdownButton>
             </article>
-              ) : integration.type !='Interno' ? (
+              ) : integration?.type !='Interno' ? (
                   <NavDropdown
                     id="nav-dropdown-dark-example"
                     title="Responsasble"
@@ -369,38 +412,16 @@ function ChatWindow() {
                   </div>
                   ) : null
                 }
-             { integration.type !='Interno' ?   (  <Button variant="outline-secondary edit_profile" size="sm" onClick={() => {
+             { integration?.type !='Interno' ?   (  <Button variant="outline-secondary edit_profile" size="sm" onClick={() => {
                         setEditContact(currentConversation);
                         setShowEditModal(true);
                       }}>
                         Más
                    </Button>): null}
               </>
-               ) : integration.type !='Interno' ? (
+               ) : integration?.type !='Interno' ? (
                  <div className="w-100 mb-3">
-                  <NavDropdown
-                    id="nav-dropdown-dark-example"
-                    title="Rp."
-                    menuVariant="white"
-                  >
-                    {allUsers.map((user) => (
-                      <Dropdown.Item
-                        key={user.id_usuario}
-                        onClick={() => {handleResponsibleChange(user.id_usuario, currentConversation.id_usuario); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}
-                        className={user.id_usuario === currentConversation.id_usuario ? 'bg-info text-white' : ''}
-                      >
-                        {user.nombre} {user.apellido}
-                      </Dropdown.Item>
-                    ))}
-                    <hr />
-                    <Dropdown.Item
-                      className="text-danger"
-                      key="finalizar-conversacion"
-                      onClick={() => {handleEndConversation(currentConversation.conversation_id); setConversacionActual({...state.conversacion_Actual,position_scroll:false})}}
-                    >
-                      Finalizar Conversación
-                    </Dropdown.Item>
-                  </NavDropdown>
+             
                     <Button variant="outline-secondary edit_profile me-1" size="sm" onClick={() => {
                         setEditContact(currentConversation);
                         setShowEditModal(true);
@@ -418,86 +439,6 @@ function ChatWindow() {
         </div>
       </div>
     );
-  };
-
-  const sendWhatsAppMessageImage = async (imageUrl) => {
-    try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-image`, {
-        phone: currentConversation.phone_number,
-        imageUrl: imageUrl,
-        conversationId: currentConversation.conversation_id
-      });
-      console.log('Image sent successfully:', response.data);
-    } catch (error) {
-      console.error('Error sending image:', error);
-    }
-  };
-
-  const handleVideoUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    try {
-      const formData = new FormData();
-      formData.append('video', file);
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-video`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      const videoUrl = response.data.videoUrl;
-      const videoDuration = response.data.videoDuration;
-      const videoThumbnail = response.data.videoThumbnail;
-      await sendWhatsAppMessageVideo(videoUrl, videoDuration, videoThumbnail);
-    } catch (error) {
-      console.error('Error uploading video:', error);
-    }
-  };
-
-  const sendWhatsAppMessageVideo = async (videoUrl, videoDuration, videoThumbnail) => {
-    try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-video`, {
-        phone: currentConversation.phone_number,
-        videoUrl: videoUrl,
-        videoDuration: videoDuration,
-        videoThumbnail: videoThumbnail,
-        conversationId: currentConversation.conversation_id
-      });
-      console.log('Video sent successfully:', response.data);
-    } catch (error) {
-      console.error('Error sending video:', error);
-    }
-  };
-
-  const handleDocumentUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    try {
-      const formData = new FormData();
-      formData.append('document', file);
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-document`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      const documentUrl = response.data.documentUrl;
-      await sendWhatsAppMessageDocument(documentUrl, file.name);
-    } catch (error) {
-      console.error('Error uploading document:', error);
-    }
-  };
-
-  const sendWhatsAppMessageDocument = async (documentUrl, documentName) => {
-    try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-document`, {
-        phone: currentConversation.phone_number,
-        documentUrl: documentUrl,
-        documentName: documentName,
-        conversationId: currentConversation.conversation_id
-      });
-      console.log('Document sent successfully:', response.data);
-    } catch (error) {
-      console.error('Error sending document:', error);
-    }
   };
 
   const handleSendAudio = async (backendAudioUrl, mimeType) => {
@@ -638,7 +579,8 @@ function ChatWindow() {
           usuario_send: currentSend?.contact_id || currentSend?.contact_user_id,
           id_usuario: currentSend?.id_usuario,
           companyId: state?.usuario?.company_id,
-          remitent: state?.usuario?.id_usuario
+          remitent: state?.usuario?.id_usuario,
+          reply_from: messageReply?.msj?.id || null
         });
     
         console.log('Respuesta recibida:', response);
@@ -699,24 +641,116 @@ function ChatWindow() {
       setMessageText(e.target.value);
       setCursorPosition(e.target.selectionStart);
     };
-   
+
+    const renderMessageContent = () => {
+      switch (messageReply?.msj?.message_type) {
+        case 'audio':
+          return <aside className='d-flex '> <Mic/> <p className='p-0 m-0'>{formatVideoDuration(messageReply.msj.duration)}</p></aside>
+        case 'video':
+          return (
+            <aside className="flex items-center justify-between">
+              {/* Icono y texto alineados a la izquierda */}
+              <div className="flex items-center space-x-1">
+                <Video className="w-8 h-8 text-gray-600" />
+                <p className="text-sm text-gray-800 ms-1 m-0 p-0">Video</p>
+              </div>
+          
+              <img 
+                src={ensureFullUrl(messageReply.msj.thumbnail_url)} 
+                alt="Original media" 
+                className="w-12 h-12 object-cover rounded-md" 
+              />
+            </aside>
+          );  
+        case 'text':
+          return <p className=" flex text-sm text-gray-800 overflow-hiden text-ellipsis ">{messageReply?.msj?.text}</p>;
+        case 'template':
+          return <p className="max-h-[100%] text-sm flex text-gray-800 overflow-hiden">{messageReply?.msj?.text}</p>;
+        case 'image':
+          return (
+            <aside className="flex items-center justify-between">
+              {/* Icono y texto alineados a la izquierda */}
+              <div className="flex items-center space-x-1">
+                <CameraIcon className="w-8 h-8 text-gray-600" />
+                <p className="text-sm text-gray-800 ms-1 m-0 p-0">Foto</p>
+              </div>
+          
+              <img 
+                src={ensureFullUrl(messageReply.msj.media_url)} 
+                alt="Original media" 
+                className="w-12 h-12 object-cover rounded-md" 
+              />
+            </aside>
+          ); 
+        case 'document':
+            return (
+              <aside className="flex items-center justify-between">
+                {/* Icono y texto alineados a la izquierda */}
+                <div className="flex items-center space-x-1">
+                  <File className="w-8 h-8 text-gray-600" />
+                  <p className="text-sm text-gray-800 ms-1 m-0 p-0">Documento</p>
+                </div>
+            
+                <img 
+                  src={getFileIcon(messageReply.msj.file_name)}
+                  alt="Original media" 
+                  className="w-12 h-12 object-cover rounded-md" 
+                />
+              </aside>
+            );                    
+        default:
+          return null;
+      }
+    };
+
     return (
-      <div className="reply-bar-container">
-        {!isMobile && integracion.name != 'Interno' && (
+      <section className='flex flex-col'>
+      {!isScrolledToEnd && messageReply?.msj != null && (
+           <section className="flex floating-svg-reply" onClick={handleViewNewMsj} style={{ display: !isScrolledToEnd && messageReply?.msj ? 'block' : 'none' }}>
+                <ChevronDown  
+                color='#798287'
+                fill='#525151'
+                className='new-message'
+                height="40"
+                width="40"/>
+            </section>
+          )}
+      <article className={`max-h-[100px] flex overflow-hiden flex-row items-center space-x-3 bg-gray-100 p-2 rounded-md shadow-sm ${messageReply?.msj ? '' : 'hidden'} `}>
+          <section className='w-100 flex col'>
+            <Card className="bg-white border rounded-md flex-grow max-h-[90px] overflow-hiden" >
+              <CardContent className="p-3 overflow-hidden max-h-[100%]">
+                <div className="flex items-center space-x-2 mb-0">
+                <Label className=" font-semibold text-gray-700 text-ellipsis whitespace-nowrap">
+                    {messageReply?.msj?.type === 'reply' ? "Tú" : messageReply?.nombre_usuario_destino}
+                  </Label>
+                </div>
+                  {renderMessageContent()}
+              </CardContent>
+            </Card>
+            <Button
+              variant="ghost"
+              size="lg"
+              
+              onClick={() => setMessageReply(null)}
+              className="text-gray-500 hover:text-gray-700 self-center"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </section>
+    </article>
+        
+      <article className="reply-bar-container"  ref={replyBarRef}>
+        {!isMobile && integracion?.name != 'Interno' && (
           <Button variant="light" className="reply-button p-0 m-0" onClick={handleOpenTemplateModal}>
-            <i className="far fa-file-alt"></i> {/* Icono de la plantilla */}
+            <i className="far fa-file-alt"></i>
           </Button>
         )}
-  
-
 
         {showEmojiPicker && (
           <div style={styles.popper} {...attributes.popper}>
             <EmojiPicker  disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onEmojiClick={onEmojiClick} />
           </div>
         )}
-  
-  
       
         <TextareaAutosize
           className="message-input"
@@ -726,30 +760,31 @@ function ChatWindow() {
           onKeyDown={handleKeyDown}
           maxRows={4}
           ref={textInputRef}
-          disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()}
+          disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()}
         />
         
         {fileMenuVisible && (
           <div ref={setPopperElement} style={styles.popper} {...attributes.popper}>
             <div className='d-flex flex-column'>
-              <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('image/*')}>Cargar Imagen</Button>
-              <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('video/*')}>Cargar Video</Button>
-              <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('.pdf,.doc,.docx,.txt')}>Cargar Documento</Button>
+              <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('image/*')}>Cargar Imagen</Button>
+              <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('video/*')}>Cargar Video</Button>
+              <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('.pdf,.doc,.docx,.txt')}>Cargar Documento</Button>
               {isMobile && (
-                <Button variant="light"  disabled={isLastMessageOlderThan24Hours()} onClick={() => handleOpenTemplateModal()}>Cargar Plantillas</Button>
+                <Button variant="light" onClick={() => handleOpenTemplateModal()}>Cargar Plantillas</Button>
               )}
             </div>
           </div>
         )}
-        <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleAttachClick}>
+        <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : false } className="reply-button" onClick={handleAttachClick}>
           <i className="fas fa-paperclip"></i> {/* Icono del clip */}
         </Button>
-        <Button variant="light" disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleEmojiClick} ref={setReferenceElement}>
+        <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleEmojiClick} ref={setReferenceElement}>
           <i className="far fa-smile"></i> {/* Icono de la cara feliz */}
         </Button>
         
-        <AudioRecorder inactivo={integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours} onSend={handleSendAudio} />
-      </div>
+        <AudioRecorder inactivo={integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours} onSend={handleSendAudio} />
+      </article>
+      </section>
     );
   }
 
@@ -1005,6 +1040,24 @@ function ChatWindow() {
                     className={bubbleClass}
                     style={{ marginBottom: '20px', maxWidth: message.message_type === 'image' || message.message_type === 'video' ? 'none' : '70%' }}
                   >
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <ChevronDown className="hover:text-gray-500 hover:cursor-pointer transition-colors duration-200" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                           className="w-56"
+                           side="right"
+                           align="start"
+                           sideOffset={4}
+                           >
+                            <DropdownMenuGroup>
+                            <DropdownMenuItem onClick={() => handleDropdownClick(message)}>
+                                <span>Responder</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                     
                     {originalMessage && (
                       
                       <>
@@ -1204,17 +1257,14 @@ function ChatWindow() {
               })}
             </React.Fragment>
           ))}
-            {!isScrolledToEnd && (
+            {!isScrolledToEnd && messageReply?.msj == null && (
                 <div className="floating-svg" onClick={handleViewNewMsj}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    height="20"
-                    width="17.5"
-                    viewBox="0 0 448 512"
+                   <ChevronDown  
+                   color='#798287'
+                   fill='#525151'
                     className='new-message'
-                  >
-                    <path fill="#ffffff" d="M246.6 470.6c-12.5 12.5-32.8 12.5-45.3 0l-160-160c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L224 402.7 361.4 265.4c12.5-12.5 32.8-12.5 45.3 0s12.5 32.8 0 45.3l-160 160zm160-352l-160 160c-12.5 12.5-32.8 12.5-45.3 0l-160-160c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L224 210.7 361.4 73.4c12.5-12.5 32.8-12.5 45.3 0s12.5 32.8 0 45.3z"/>
-                  </svg>
+                    height="40"
+                    width="40"/>
                 </div>
               )}
         </div>

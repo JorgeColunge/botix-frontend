@@ -26,15 +26,16 @@ import { Input,
     Avatar,
     AvatarImage,
     AvatarFallback} from './components';
-import { ChevronDown, MessageSquareText , Pencil , Trash, Phone, Mail, MoreHorizontal } from 'lucide-react';
+import { ChevronDown, MessageSquareText , Pencil , Trash, Phone, Mail, MoreHorizontal, List } from 'lucide-react';
 import { Plus } from 'lucide-react';
 import { HardDriveUpload } from 'lucide-react';
 import axios from 'axios';
 import { AppContext } from './context';
 import { Link } from 'react-router-dom';
+import { useMediaQuery } from 'react-responsive';
 
 export function UserDate({ users, contacts, departments, getConversationStats, getRoleName, getDepartmentName, hasPrivilege, handleEditUserClick, handleDeleteUserClick, handleEditContactClick, handleDeleteContactClick, formatTimeSinceLastMessage, handleCreateContactClick, handleUploadCSVClick, handleSelectContactChat, tipo_tabla }) {
-  const {state} = useContext(AppContext)
+  const {state, setStatus} = useContext(AppContext)
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [phases, setPhases] = useState([])
@@ -47,6 +48,8 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
     country: '',
     lastContact: '',
   })
+
+  const isMobile = useMediaQuery({ maxWidth: 767 });
 
   const [transformedContacts, setTransformedContacts] = useState([]);  
   const [filtroContacts, setFilteredContacts] = useState([]); 
@@ -326,97 +329,106 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
       
   ], [getConversationStats, getRoleName, getDepartmentName, hasPrivilege, handleEditUserClick, handleDeleteUserClick]);
 
-   const columnsContact = useMemo(() => [
-    {
-      accessorKey: 'nombre',
-      header: 'Nombre',
-      cell: info => info.getValue()
-    },
-    {
-      accessorKey: 'apellido',
-      header: 'Apellido',
-      cell: info => info.getValue()
-    },
-    {
-      accessorKey: 'telefono',
-      header: 'Teléfono',
-      cell: info => (
-       
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-        <a href={`tel:${info.getValue()}`}>
-           <Phone /> 
-          </a>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{info.getValue()}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-
-      )
-    },
-    {
-      accessorKey: 'correo',
-      header: 'Email',
-      cell: info => (
-        <TooltipProvider>
-        <Tooltip>
-        <TooltipTrigger asChild>
-        <a href={`mailto:${info.getValue()}`}>
-                <Mail />
+  const columnsContact = useMemo(() => {
+    const commonColumns = [
+      {
+        accessorKey: 'nombre',
+        header: 'Nombre',
+        cell: info => info.getValue()
+      },
+      {
+        accessorKey: 'apellido',
+        header: 'Apellido',
+        cell: info => info.getValue()
+      },
+      {
+        accessorKey: 'telefono',
+        header: 'Teléfono',
+        cell: info => (
+          !isMobile ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a href={`tel:${info.getValue()}`}>
+                    <Phone />
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{info.getValue()}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <Button variant="outline" size="icon" onClick={() => handleSelectContactChat(info.row.original)} disabled={!info.getValue()}>
+              <Link to={'/chats'} className="w-100 d-flex" size="sm">
+                <Phone />
+              </Link>
+            </Button>
+          )
+        )
+      },      
+      {
+        accessorKey: 'correo',
+        header: 'Email',
+        cell: info => (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a href={`mailto:${info.getValue()}`}>
+                  <Mail />
                 </a>
-        </TooltipTrigger>
-        <TooltipContent>
-            <p> {info.getValue()}</p>
-        </TooltipContent>
-        </Tooltip>
-        </TooltipProvider>
-      )
-    },
-    {
-      accessorKey: 'direccion',
-      header: 'Dirección',
-      cell: info => info.getValue()
-    },
-    {
-      accessorKey: 'ciudad',
-      header: 'Ciudad',
-      cell: info => info.getValue()
-    },
-    {
-      accessorKey: 'nacionalidad',
-      header: 'País',
-      cell: info => info.getValue()
-    },
-    {
-      accessorKey: 'ultimo_mensaje',
-      header: 'Último Mensaje',
-      cell: info => info.getValue() ? new Date(info.getValue()).toLocaleString() : '-'
-    },
-    {
-      accessorKey: 'tiempo_ultimo_mensaje',
-      header: 'Tiempo Desde Último Contacto',
-      cell: info => formatTimeSinceLastMessage(info.getValue())
-    },
-    {
-      accessorKey: 'fase',
-      header: 'Fase',
-      cell: info => info.getValue()
-    },
-    {
-      accessorKey: 'conversacion',
-      header: 'Conversación',
-      cell: info => info.getValue() ? 'Sí' : 'No'
-    },
-    {
-      accessorKey: 'acciones',
-      header: 'Acciones',
-      cell: ({ row }) => {
-        const contact = row.original;
-        return (
-          <>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{info.getValue()}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )
+      }
+    ];
+  
+    const additionalColumns = [
+      {
+        accessorKey: 'direccion',
+        header: 'Dirección',
+        cell: info => info.getValue()
+      },
+      {
+        accessorKey: 'ciudad',
+        header: 'Ciudad',
+        cell: info => info.getValue()
+      },
+      {
+        accessorKey: 'nacionalidad',
+        header: 'País',
+        cell: info => info.getValue()
+      },
+      {
+        accessorKey: 'ultimo_mensaje',
+        header: 'Último Mensaje',
+        cell: info => info.getValue() ? new Date(info.getValue()).toLocaleString() : '-'
+      },
+      {
+        accessorKey: 'tiempo_ultimo_mensaje',
+        header: 'Tiempo Desde Último Contacto',
+        cell: info => formatTimeSinceLastMessage(info.getValue())
+      },
+      {
+        accessorKey: 'fase',
+        header: 'Fase',
+        cell: info => info.getValue()
+      },
+      {
+        accessorKey: 'conversacion',
+        header: 'Conversación',
+        cell: info => info.getValue() ? 'Sí' : 'No'
+      },
+      {
+        accessorKey: 'acciones',
+        header: 'Acciones',
+        cell: ({ row }) => {
+          const contact = row.original;
+          return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">
@@ -426,33 +438,32 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                <DropdownMenuItem onClick={()  => handleSelectContactChat(contact)} disabled={!contact.telefono}>
-                   <Link to={'/chats'} className='w-100 d-flex' size="sm">
-                   <MessageSquareText className="mr-2 h-6 w-6"/> Enviar mensaje
-                   </Link> 
+                <DropdownMenuItem onClick={() => handleSelectContactChat(contact)} disabled={!contact.telefono}>
+                  <Link to={'/chats'} className="w-100 d-flex" size="sm">
+                    <MessageSquareText className="mr-2 h-6 w-6" /> Enviar mensaje
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleEditContactClick(contact)}>
                   <Button variant="link" size="sm">
-                    <Pencil className="mr-2 h-6 w-6"/>
-                    Editar
+                    <Pencil className="mr-2 h-6 w-6" /> Editar
                   </Button>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {
-                  <DropdownMenuItem onClick={() => handleDeleteContactClick(contact.id)}>
-                    <Button variant="link" size="sm">
-                      <Trash style={{ color: 'red' }} className="mr-2 h-6 w-6"/>
-                      Eliminar
-                    </Button>
-                  </DropdownMenuItem>
-                }
+                <DropdownMenuItem onClick={() => handleDeleteContactClick(contact.id)}>
+                  <Button variant="link" size="sm">
+                    <Trash style={{ color: 'red' }} className="mr-2 h-6 w-6" /> Eliminar
+                  </Button>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </>
-        );
+          );
+        }
       }
-    }
-  ], [handleEditContactClick, handleDeleteContactClick]);
+    ];
+  
+    return isMobile ? commonColumns : commonColumns.concat(additionalColumns);
+  }, [handleEditContactClick, handleDeleteContactClick, isMobile]);
+  
 
     const columns = tipo_tabla === 'usuarios' ? columnsUser : columnsContact;
     const data = tipo_tabla === 'usuarios' ? users : filtroContacts;
@@ -481,8 +492,9 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
       <div className="flex items-end py-4">
        {
          tipo_tabla == 'contactos' ? (
-           <section className=' d-flex row gap-2 w-[30%]'>
+           <section className={`d-flex row gap-2 ${isMobile ? 'w-[100%]' : 'w-[30%]' }`}>
             <article className='d-flex gap-2'>
+            {isMobile && (<List color="black" className='pb-3' size={60} onClick={() => {setStatus(true); console.log("click")}} />)}
               <Button className='bg-fuchsia-600 hover:bg-fuchsia-700 text-white w-100' onClick={handleCreateContactClick}>
                 <Plus className="mr-2 h-6 w-6"/> Crear contacto
               </Button>
@@ -490,7 +502,7 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
               <HardDriveUpload className="mr-2 h-6 w-6"/> Cargar CSV
             </Button>
             </article>
-            <article className='w-100'>
+            <article className={`${isMobile ? 'w-80' : 'w-100'}`}>
             <Input
                 placeholder="Buscar por nombre, apellido, teléfono o correo"
                 value={searchTerm}
@@ -507,7 +519,7 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
        }
        
        {
-         tipo_tabla == 'contactos' ? (
+         tipo_tabla == 'contactos' && !isMobile ? (
           <section className='d-flex justify-end w-[70%]'>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -621,28 +633,32 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
         
          ) :(
            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-auto">
-                  Columnas <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {table
-                  .getAllColumns()
-                  .filter((column) => column.getCanHide())
-                  .map((column) => (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            !isMobile && (
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="ml-auto">
+                    Columnas <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {table
+                    .getAllColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+           
          )
        }
       </div>

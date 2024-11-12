@@ -39,21 +39,21 @@
   }
   
   .funnel-column::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 1px;
+    height: 1px;
   }
   
   .funnel-column::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(255, 254, 254, 0.2);
     border-radius: 4px;
   }
   
   .funnel-column::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(240, 239, 239, 0.3);
   }
   
   .funnel-column::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(238, 233, 233, 0.1);
     border-radius: 4px;
   }
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { Table, Button, Modal, Form, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { Telephone, Envelope, PencilSquare, Trash, PlusCircle, Upload, Chat } from 'react-bootstrap-icons';
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import { scaleQuantize } from 'd3-scale';
 import CreateContactModal from './CreateContactModal'; // Asegúrate de que la ruta sea correcta
@@ -11,11 +10,12 @@ import { AppContext } from './context';
 import { UserDate } from './UserDate';
 import { useConversations } from './ConversationsContext';
 import Swal from 'sweetalert2';
+import { useMediaQuery } from 'react-responsive';
 
 const geoUrl = '/ne_110m_admin_0_countries.json'; // Ruta al archivo GeoJSON en la carpeta public
 
 const ContactsTable = () => {
-  const {state, setConversacionActual} = useContext(AppContext)
+  const {state, setConversacionActual, setRouter} = useContext(AppContext)
   const {
     conversations,
     setCurrentConversation,
@@ -34,6 +34,8 @@ const ContactsTable = () => {
     lastContact: '',
   });
   const companyId = localStorage.getItem('company_id');
+
+  const isMobile = useMediaQuery({ maxWidth: 767 });
 
   useEffect(() => { 
 
@@ -173,18 +175,6 @@ const ContactsTable = () => {
       });
   };
 
-  // const handleSearchChange = (e) => {
-  //   setSearch(e.target.value);
-  // };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters({
-      ...filters,
-      [name]: value,
-    });
-  };
-
   const resetUnreadMessages = async (conversationId) => {
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/reset-unread/${conversationId}`);
@@ -202,6 +192,8 @@ const ContactsTable = () => {
   };
 
   const handleSelectContactChat = async (contacto) => {
+    const integracion = state.integraciones.find( integ => integ.type == 'whatsapp')
+    console.log("integracion", integracion)
     const conver = conversations.find(conv => conv.phone_number == contacto.telefono)
     if (conver) {
       await resetUnreadMessages(conver.conversation_id);
@@ -212,6 +204,9 @@ const ContactsTable = () => {
       const {nombre, apellido, telefono, direccion, correo, ciudad, ultimo_mensaje, tiempo_ultimo_mensaje, fase, conversacion, ...rest} = contacto
       let cont = {
         ...rest,
+        conversation_id: 'nuevo',
+        integration_id: integracion.id,
+        integration_name: integracion.name,
         first_name: nombre,
         last_name: apellido,
         phone_number: telefono,
@@ -226,6 +221,8 @@ const ContactsTable = () => {
         responsable_nombre: usuario.nombre,
         responsable_apellido: usuario.apellido,
       }
+      console.log("datos a enviar", cont)
+      setRouter('chats')
       setCurrentConversation(cont);
       setConversacionActual({...cont, position_scroll: false})
     }
@@ -262,146 +259,47 @@ const ContactsTable = () => {
       "#5f105f"
     ]);
 
-  const countryOptions = Object.keys(countryContactCounts).map(country => (
-    <option key={country} value={country}>{country}</option>
-  ));
-
   return (
     <div className="contacts-container">
-      <div className="map-container">
-        <ComposableMap projectionConfig={{ scale: 150 }}>
-          <Geographies geography={geoUrl}>
-            {({ geographies }) =>
-              geographies.map(geo => {
-                const country = geo.properties.NAME;
-                const count = countryContactCounts[country] || 0;
-                return (
-                  <OverlayTrigger
-                    key={geo.rsmKey}
-                    placement="top"
-                    overlay={
-                      <Tooltip>
-                        {country}: {count}
-                      </Tooltip>
-                    }
-                  >
-                    <Geography
-                      geography={geo}
-                      fill={colorScale(count)}
-                      stroke="#D033B9"
-                      strokeWidth={0.5}
-                      onMouseEnter={() => {
-                        console.log(`${country}: ${count}`);
-                      }}
-                    />
-                  </OverlayTrigger>
-                );
-              })
-            }
-          </Geographies>
-        </ComposableMap>
-      </div>
-      {/* <Row className="mb-3"> */}
-        {/* <Col>
-          <Form.Control 
-            type="text" 
-            placeholder="Buscar por nombre, apellido, teléfono o correo" 
-            value={search}
-            onChange={handleSearchChange}
-          />
-        </Col>
-        <Col>
-          <Form.Select name="phase" value={filters.phase} onChange={handleFilterChange}>
-            <option value="">Filtrar por fase</option>
-            {/* Añadir opciones de fases aquí */}
-          {/* </Form.Select>
-        </Col>
-        <Col>
-          <Form.Select name="country" value={filters.country} onChange={handleFilterChange}>
-            <option value="">Filtrar por país</option>
-            {countryOptions}
-          </Form.Select>
-        </Col>
-        <Col>
-          <Form.Select name="lastContact" value={filters.lastContact} onChange={handleFilterChange}>
-            <option value="">Filtrar por último contacto</option>
-            <option value="today">Hoy</option>
-            <option value="yesterday">Ayer</option>
-            <option value="thisWeek">Esta semana</option>
-            <option value="lastWeek">Semana anterior</option>
-            <option value="thisMonth">Este mes</option>
-            <option value="lastMonth">El mes pasado</option>
-            <option value="beforeLastMonth">Antes del mes pasado</option>
-          </Form.Select> */}
-        {/* </Col> */}
-    {/* </Row> */} 
-      {/* <Row className="mb-3">
-        <Col>
-          <Button variant="primary" onClick={handleCreateContactClick}>
-            <PlusCircle /> Crear Contacto
-          </Button>
-        </Col>
-        <Col>
-          <Button variant="secondary" onClick={handleUploadCSVClick}>
-            <Upload /> Cargar CSV
-          </Button>
-        </Col>
-      </Row> */}
+      {
+        !isMobile && (
+          <div className="map-container">
+            <ComposableMap projectionConfig={{ scale: 150 }}>
+              <Geographies geography={geoUrl}>
+                {({ geographies }) =>
+                  geographies.map(geo => {
+                    const country = geo.properties.NAME;
+                    const count = countryContactCounts[country] || 0;
+                    return (
+                      <OverlayTrigger
+                        key={geo.rsmKey}
+                        placement="top"
+                        overlay={
+                          <Tooltip>
+                            {country}: {count}
+                          </Tooltip>
+                        }
+                      >
+                        <Geography
+                          geography={geo}
+                          fill={colorScale(count)}
+                          stroke="#D033B9"
+                          strokeWidth={0.5}
+                          onMouseEnter={() => {
+                            console.log(`${country}: ${count}`);
+                          }}
+                        />
+                      </OverlayTrigger>
+                    );
+                  })
+                }
+              </Geographies>
+            </ComposableMap>
+          </div>
+        )
+      }
+    
       <div className="table-responsive">
-        {/* <Table className="custom-table" bordered hover>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Apellido</th>
-              <th>Teléfono</th>
-              <th>Email</th>
-              <th>Dirección</th>
-              <th>Ciudad</th>
-              <th>Pais</th>
-              <th>Último Mensaje</th>
-              <th>Tiempo Desde Último Contacto</th>
-              <th>Fase</th>
-              <th>Conversación</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredContacts.map(contact => (
-              <tr key={contact.id}>
-                <td>{contact.first_name}</td>
-                <td>{contact.last_name}</td>
-                <td>
-                  <a href={`tel:${contact.phone_number}`}>
-                    <Telephone /> {contact.phone_number}
-                  </a>
-                </td>
-                <td>
-                  <a href={`mailto:${contact.email}`}>
-                    <Envelope /> {contact.email}
-                  </a>
-                </td>
-                <td>{contact.direccion_completa}</td>
-                <td>{contact.ciudad_residencia}</td>
-                <td>{contact.nacionalidad}</td>
-                <td>{contact.last_message_time ? new Date(contact.last_message_time).toLocaleString() : '-'}</td>
-                <td>{formatTimeSinceLastMessage(contact.time_since_last_message)}</td>
-                <td>{contact.phase_name}</td>
-                <td>{contact.has_conversation ? 'Sí' : 'No'}</td>
-                <td>
-                  <Button variant="link" size="sm" onClick={() => handleEditContactClick(contact)}>
-                    <PencilSquare />
-                  </Button>
-                  <Button variant="link" size="sm" onClick={() => handleDeleteContactClick(contact.id)}>
-                    <Trash style={{ color: 'red' }} />
-                  </Button>
-                  <Button variant="link" size="sm">
-                    <Chat />
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table> */}
         <UserDate 
         tipo_tabla={'contactos'}
         contacts={filteredContacts}

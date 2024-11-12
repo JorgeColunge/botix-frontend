@@ -91,7 +91,7 @@ module.exports = {
             width: '2px', // Ancho del scrollbar
           },
           '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0, 0, 0, 0.5)', // Color del scrollbar
+            backgroundColor: 'rgba(255, 255, 255, 0.5)', // Color del scrollbar
             borderRadius: '10px', // Bordes redondeados
           },
           '&::-webkit-scrollbar-track': {

@@ -9,6 +9,7 @@ export const AppProvider = ({ children }) => {
       audioRecord: null
     },
     status: false,
+    ruta: '',
     campañas: [],
     plantillas: [],
     contactos: [],
@@ -32,6 +33,7 @@ export const AppProvider = ({ children }) => {
   const setTemplates = (plantillas) => setState((prevState) => ({ ...prevState, plantillas }));
   const setContacts = (contactos) => setState((prevState) => ({ ...prevState, contactos }));
   const setStatus = (status) => setState((prevState) => ({ ...prevState, status }));
+  const setRouter = (ruta) => setState((prevState) => ({ ...prevState, ruta }));
   const setUsers = (usuarios) => setState((prevState) => ({ ...prevState, usuarios }));
   const setRoles = (roles) => setState((prevState) => ({ ...prevState, roles }));
   const setPhases = (fases) => setState((prevState) => ({ ...prevState, fases }));
@@ -59,6 +61,7 @@ export const AppProvider = ({ children }) => {
       setContacts,
       setLicences,
       setUsuario,
+      setRouter,
       setStatus,
       setPhases,
       setUsers,
