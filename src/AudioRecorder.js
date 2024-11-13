@@ -11,6 +11,7 @@ export const AudioRecorder = ({ onSend, inactivo }) => {
   const [backendAudioUrl, setBackendAudioUrl] = useState(localStorage.getItem('backendAudioURL') || null);
   const [audioBlob, setAudioBlob] = useState(null);
   const [isProcessing, setIsProcessing] = useState(localStorage.getItem('processingAudio') || false);
+  const [duration, setDuration] = useState(null);
   const mediaRecorderRef = useRef(null);
 
   const startRecording = useCallback(async () => {
@@ -29,6 +30,16 @@ export const AudioRecorder = ({ onSend, inactivo }) => {
         setAudioBlob(blob);
         setAudioUrl(url);
         localStorage.setItem('audioURL', url);
+
+  // Usar AudioContext para obtener la duración del audio
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const arrayBuffer = await blob.arrayBuffer();
+  
+  audioContext.decodeAudioData(arrayBuffer, (audioBuffer) => {
+    const duration = audioBuffer.duration;
+    setDuration(duration)
+  });
+
 
         // Enviar el blob al backend
         try {
@@ -94,7 +105,8 @@ export const AudioRecorder = ({ onSend, inactivo }) => {
 
   const handleSendAudio = () => {
     if (backendAudioUrl) {
-      onSend(backendAudioUrl, 'audio/wav');
+      onSend(backendAudioUrl, duration,'audio/wav');
+      setDuration(null)
       deleteRecording();
     }
   };

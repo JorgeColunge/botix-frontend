@@ -46,13 +46,11 @@ const onSelectOption = (selectedOption) => {
     axios.get(`${process.env.REACT_APP_API_URL}/api/user/${userId}`)
       .then(response => {
         setUserData(response.data);
-        console.log('User data:', response.data); // Log de datos del usuario
         setUsuario(response.data)
         return axios.get(`${process.env.REACT_APP_API_URL}/api/company/${response.data.company_id}`);
       })
       .then(response => {
         setCompanyData(response.data);
-        console.log('Company data:', response.data); // Log de datos de la empresa
         setCompania(response.data)
       })
       .catch(error => {

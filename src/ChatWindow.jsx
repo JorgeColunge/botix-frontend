@@ -15,7 +15,7 @@ import { usePopper } from 'react-popper';
 import TemplateModal from './TemplateModal';
 import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';
-import { useNavigate } from 'react-router-dom';
+import { Await, useNavigate } from 'react-router-dom';
 import { Card, CardContent, DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger, Input, Label, Popover, PopoverContent, PopoverTrigger } from './components';
 
 function ChatWindow() {
@@ -84,13 +84,12 @@ function ChatWindow() {
     if (!integracion) {
       return `message-bubble ${mensaje.type}`;
     }
-  
     switch (integracion.type) {
       case 'Interno':
-        if (usuario.id_usuario === mensaje.senderId || usuario.id_usuario === mensaje.sender_id) {
-          return `message-bubble reply`;
-        } else {
+        if (usuario.id_usuario == mensaje.senderId || usuario.id_usuario == mensaje.sender_id) {
           return `message-bubble message`;
+        } else {
+          return `message-bubble reply`;
         }
   
       default:
@@ -441,18 +440,118 @@ function ChatWindow() {
     );
   };
 
-  const handleSendAudio = async (backendAudioUrl, mimeType) => {
+  const sendWhatsAppMessageImage = async (imageUrl) => {
     try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-image`, {
+        phone: currentConversation.phone_number,
+        imageUrl: imageUrl,
+        conversationId: currentConversation.conversation_id
+      });
+      console.log('Image sent successfully:', response.data);
+    } catch (error) {
+      console.error('Error sending image:', error);
+    }
+  };
+
+  const handleVideoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append('video', file);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-video`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      const videoUrl = response.data.videoUrl;
+      const videoDuration = response.data.videoDuration;
+      const videoThumbnail = response.data.videoThumbnail;
+      await sendWhatsAppMessageVideo(videoUrl, videoDuration, videoThumbnail);
+    } catch (error) {
+      console.error('Error uploading video:', error);
+    }
+  };
+
+  const sendWhatsAppMessageVideo = async (videoUrl, videoDuration, videoThumbnail) => {
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-video`, {
+        phone: currentConversation.phone_number,
+        videoUrl: videoUrl,
+        videoDuration: videoDuration,
+        videoThumbnail: videoThumbnail,
+        conversationId: currentConversation.conversation_id
+      });
+      console.log('Video sent successfully:', response.data);
+    } catch (error) {
+      console.error('Error sending video:', error);
+    }
+  };
+
+  const handleDocumentUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append('document', file);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-document`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      const documentUrl = response.data.documentUrl;
+      await sendWhatsAppMessageDocument(documentUrl, file.name);
+    } catch (error) {
+      console.error('Error uploading document:', error);
+    }
+  };
+
+  const sendWhatsAppMessageDocument = async (documentUrl, documentName) => {
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-document`, {
+        phone: currentConversation.phone_number,
+        documentUrl: documentUrl,
+        documentName: documentName,
+        conversationId: currentConversation.conversation_id
+      });
+      console.log('Document sent successfully:', response.data);
+    } catch (error) {
+      console.error('Error sending document:', error);
+    }
+  };
+
+  
+  const handleSendAudio = async (backendAudioUrl, duration, mimeType) => {
+    var currentSend = {
+      ...currentConversation,
+      last_message_time: new Date().toISOString()
+    };
+    try {
+      setLastMessageId(new Date(currentSend.last_message_time).getTime())
+      setMessageReply(null)
+      setConversacionActual({...currentSend, position_scroll: false})
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-audio`, {
         phone: currentConversation.phone_number,
         audioUrl: backendAudioUrl,
         conversationId: currentConversation.conversation_id,
-        mimeType: mimeType // Pasa el tipo MIME al backend
+        mimeType: mimeType,
+        integration_name : state.integraciones?.find(intra => intra.id == currentConversation?.integration_id)?.type,
+        integration_id: currentConversation?.integration_id,
+        usuario_send: currentConversation?.contact_id || currentConversation?.contact_user_id,
+        id_usuario: currentConversation?.id_usuario,
+        companyId: state?.usuario?.company_id,
+        remitent: state?.usuario?.id_usuario,
+        reply_from: messageReply?.msj?.id || null,
+        audioDuration: duration
       });
-      setMessages(prevMessages => ({
-        ...prevMessages,
-        [currentConversation.conversation_id]: [...prevMessages[currentConversation.conversation_id], response.data.data]
-      }));
+      if (response.data) {
+        setMessages(prevMessages => ({
+          ...prevMessages,
+          [currentConversation.conversation_id]: [...prevMessages[currentConversation.conversation_id], response.data.data]
+        }));
+      } else {
+        console.log("La respuesta no tiene datos:", response);
+      }
     } catch (error) {
       console.error('Error sending audio:', error);
     }
@@ -567,9 +666,10 @@ function ChatWindow() {
       };
     
       console.log("Datos de currentSend:", currentSend);
-      setLastMessageId(new Date(currentSend.last_message_time).getTime())
       try {
-        setConversacionActual({...currentSend, position_scroll: true})
+        setLastMessageId(new Date(currentSend.last_message_time).getTime())
+        setMessageReply(null)
+        setConversacionActual({...currentSend, position_scroll: false})
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-text`, {
           phone: String(currentSend.phone_number),
           messageText: textToSend,
@@ -599,12 +699,13 @@ function ChatWindow() {
       }
     };
     
-    const handleKeyDown = (event) => {
+    const handleKeyDown = async(event) => {
       if (event.key === 'Enter' && event.shiftKey) {
         // Allow line break
       } else if (event.key === 'Enter') {
-        event.preventDefault();
-        handleSendMessage();
+         event.preventDefault();
+        await handleSendMessage();
+        console.log("actual despues", state.conversacion_Actual.position_scroll)
       }
     };
 
@@ -739,7 +840,7 @@ function ChatWindow() {
           </section>
     </article>
         
-      <article className="reply-bar-container"  ref={replyBarRef}>
+      <article className="reply-bar-container" ref={replyBarRef}>
         {!isMobile && integracion?.name != 'Interno' && (
           <Button variant="light" className="reply-button p-0 m-0" onClick={handleOpenTemplateModal}>
             <i className="far fa-file-alt"></i>
@@ -796,7 +897,7 @@ function ChatWindow() {
     }
   }, [handleScroll]);
 
-  useEffect(() => {;
+  useEffect(() => {
     if (state.conversacion_Actual.position_scroll === false) {
         if (lastMessageId && messagesEndRef.current) {
           requestAnimationFrame(() => {

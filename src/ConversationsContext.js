@@ -4,6 +4,7 @@ import axios from 'axios';
 import { AppContext } from './context';
 import { Spinner } from 'react-bootstrap';
 import { onMessageListener, requestFirebaseNotificationPermission } from './notification';
+import { duration } from 'moment';
 
 
 const ConversationsContext = createContext();
@@ -119,12 +120,10 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
     const companyId = localStorage.getItem("company_id");
     const departmentId = localStorage.getItem("department_id");
     if (roleId) {
-      console.log('Fetching user privileges');
       getUserPrivileges(roleId).then(privileges => {
         console.log('User privileges:', privileges);
         setUserPrivileges(privileges);
         getPhases(departmentId, companyId, privileges).then(phases => {
-          console.log('Fetched phases:', phases);
           setPhases(phases);
         }).catch(error => {
           console.error('Error fetching phases:', error);
@@ -439,46 +438,17 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
 
       const userId = localStorage.getItem("user_id");
       const userCompanyId = localStorage.getItem("company_id");
-
       // Validar si el mensaje pertenece a la empresa del usuario conectado
-      if (String(newMessage.company_id) !== userCompanyId) {
+      if (String(newMessage.company_id) != userCompanyId) {
         return;
       }else{
         const msj = { ...newMessage };
         console.log("nuevo msj", msj)
-        console.log("el mensaje esta siendo redirigido")
 
-      const isResponsibleOrAdmin = String(newMessage.responsibleUserId) === userId;
+      const isResponsibleOrAdmin = String(newMessage.responsibleUserId) == userId;
   
       if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
         const isCurrentActive = currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.contact_user_id == newMessage.senderId));
-  
-        // document.addEventListener('deviceready', () => {
-        //   console.log('Cordova está listo');
-        
-        //   if (!isCurrentActive) {
-        //     requestFirebaseNotificationPermission(); // Solicitar permiso para notificaciones de Firebase
-        
-        //     if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
-        //       // Ahora puedes usar las notificaciones locales
-        //       cordova.plugins.notification.local.schedule({
-        //         title: newMessage.senderName || 'Nuevo mensaje',
-        //         text: newMessage.text || 'Tienes un nuevo mensaje',
-        //       });
-        //     } else {
-        //       console.log('El plugin de notificaciones locales no está disponible.');
-        //     }
-        
-        //     onMessageListener()
-        //       .then((payload) => {
-        //         // Manejar la notificación recibida
-        //         console.log('Notification received: ', payload);
-        //       })
-        //       .catch((err) => console.log('Failed: ', err));
-        //   }
-        // }, false);
-         
-
         if (isCurrentActive) {
           resetUnreadMessages(newMessage.conversationId);
           setCurrentConversation(prev => ({
@@ -515,7 +485,9 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
                 ...convo,
                 last_message: newMessage.text,
                 last_message_time: newMessage.timestamp ? newMessage.timestamp : new Date().toISOString(),
-                unread_messages: newMessage.unread_messages
+                unread_messages: newMessage.unread_messages,
+                message_type: newMessage.message_type,
+                duration: newMessage.duration
               };
             }
             return convo;
@@ -622,7 +594,6 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
 
       try {
         const convResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/conversations?id_usuario=${id_usuario}&rol=${rol}&company_id=${company_id}`);
-        console.log('Conversations:', convResponse.data);
         if (!isCancelledRef.current && convResponse.data) {
           const sortedConversations = convResponse.data.sort((a, b) => new Date(b.last_update) - new Date(a.last_update));
 

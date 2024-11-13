@@ -8,6 +8,7 @@ import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';
 import { Button, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from './components';
 import { NewChatContacts } from './NewChatContacts';
+import { Mic, Video } from 'lucide-react';
 
 function Sidebar() {
   const {
@@ -193,8 +194,42 @@ function Sidebar() {
  
  const datesConversation = useCallback((conversacion, integraciones, usuarios, usuario) => {
     
+  const formatVideoDuration = (duration) => {
+    if (isNaN(duration)) {
+      return '';
+    }
+    const minutes = Math.floor(duration / 60);
+    const seconds = Math.floor(duration % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
      const integracion = integraciones.find( intr => intr.id === conversacion.integration_id)
      
+     const typeMessage = (()=>{
+        switch (conversacion.message_type) {
+          case 'text':
+           return <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
+          case 'audio':  
+          return <aside className='d-flex'> <Mic className="w-5 h-5 text-gray-600"/><p className='p-0 m-0'>{formatVideoDuration(conversacion.duration)}</p></aside>
+          case 'image':
+           return <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
+          case 'video':
+                     return (
+            <aside className="flex items-center justify-between">
+              {/* Icono y texto alineados a la izquierda */}
+              <div className="flex items-center space-x-1">
+                <Video className="w-8 h-8 text-gray-600" />
+                <p className="text-sm text-gray-800 ms-1 m-0 p-0">{formatVideoDuration(conversacion.duration)}</p>
+              </div>
+
+            </aside>
+          ); 
+          case 'document':
+           return <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
+          default:
+            break;
+        }
+     })
     switch (integracion?.type) {
       case 'Interno':    
       
@@ -224,7 +259,7 @@ function Sidebar() {
                     {conversacion.label && renderLabelBadge(conversacion.label)}
                   </div>
                   <div className="d-flex justify-content-between">
-                    <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
+                    {typeMessage()}
                     <div>
                       {conversacion.unread_messages > 0 && (
                         <span className="badge badge-pill badge-primary">{conversacion.unread_messages}</span>
