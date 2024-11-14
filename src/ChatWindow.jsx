@@ -86,10 +86,10 @@ function ChatWindow() {
     }
     switch (integracion.type) {
       case 'Interno':
-        if (usuario.id_usuario == mensaje.senderId || usuario.id_usuario == mensaje.sender_id) {
-          return `message-bubble message`;
-        } else {
+        if (usuario.id_usuario == mensaje.responsibleUserId || usuario.id_usuario == mensaje.sender_id) {
           return `message-bubble reply`;
+        } else {
+          return `message-bubble message`;
         }
   
       default:
@@ -512,14 +512,20 @@ function ChatWindow() {
         phone: currentConversation.phone_number,
         documentUrl: documentUrl,
         documentName: documentName,
-        conversationId: currentConversation.conversation_id
+        conversationId: currentConversation.conversation_id,
+        integration_name : state.integraciones?.find(intra => intra.id == currentConversation?.integration_id)?.type,
+        integration_id: currentConversation?.integration_id,
+        usuario_send: state?.conversacion_Actual?.contact_id || state?.conversacion_Actual?.contact_user_id,
+        id_usuario: state?.usuario?.id_usuario,
+        companyId: state?.usuario?.company_id,
+        remitent: state?.usuario?.id_usuario,
+        reply_from: messageReply?.msj?.id || null,
       });
       console.log('Document sent successfully:', response.data);
     } catch (error) {
       console.error('Error sending document:', error);
     }
   };
-
   
   const handleSendAudio = async (backendAudioUrl, duration, mimeType) => {
     var currentSend = {
@@ -537,8 +543,8 @@ function ChatWindow() {
         mimeType: mimeType,
         integration_name : state.integraciones?.find(intra => intra.id == currentConversation?.integration_id)?.type,
         integration_id: currentConversation?.integration_id,
-        usuario_send: currentConversation?.contact_id || currentConversation?.contact_user_id,
-        id_usuario: currentConversation?.id_usuario,
+        usuario_send: state?.conversacion_Actual?.contact_id || state?.conversacion_Actual?.contact_user_id,
+        id_usuario: state?.usuario?.id_usuario,
         companyId: state?.usuario?.company_id,
         remitent: state?.usuario?.id_usuario,
         reply_from: messageReply?.msj?.id || null,
@@ -665,7 +671,17 @@ function ChatWindow() {
         last_message_time: new Date().toISOString()
       };
     
-      console.log("Datos de currentSend:", currentSend);
+      console.log("Datos de currentSend:", {
+        phone: String(currentSend.phone_number),
+        messageText: textToSend,
+        conversation_id: currentSend?.conversation_id || null,
+        integration_name : state.integraciones?.find(intra => intra.id == currentSend?.integration_id)?.type,
+        integration_id: currentSend?.integration_id,
+        usuario_send: state?.conversacion_Actual?.contact_id || state?.conversacion_Actual?.contact_user_id,
+        id_usuario: state?.usuario?.id_usuario,
+        companyId: state?.usuario?.company_id,
+        remitent: state?.usuario?.id_usuario,
+        reply_from: messageReply?.msj?.id || null});
       try {
         setLastMessageId(new Date(currentSend.last_message_time).getTime())
         setMessageReply(null)
@@ -676,8 +692,8 @@ function ChatWindow() {
           conversation_id: currentSend?.conversation_id || null,
           integration_name : state.integraciones?.find(intra => intra.id == currentSend?.integration_id)?.type,
           integration_id: currentSend?.integration_id,
-          usuario_send: currentSend?.contact_id || currentSend?.contact_user_id,
-          id_usuario: currentSend?.id_usuario,
+          usuario_send: state?.conversacion_Actual?.contact_id || state?.conversacion_Actual?.contact_user_id,
+          id_usuario: state?.usuario?.id_usuario,
           companyId: state?.usuario?.company_id,
           remitent: state?.usuario?.id_usuario,
           reply_from: messageReply?.msj?.id || null

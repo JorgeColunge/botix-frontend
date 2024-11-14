@@ -267,13 +267,13 @@ function Sidebar() {
                     {/* Badge tangente al borde del avatar */}
                     <Badge
                       variant="icon"
-                      className="absolute top-0 right-0 p-0 transform translate-x-1/3 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full text-white" 
+                      className="absolute top-0 right-0 p-0 transform translate-x-1/3 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full text-white" 
                     >
                       <img
                     src='./icono WA.png'
                     alt="Profile"
                     className="rounded-circle"
-                    style={{ width: 40, height: 40 }}
+                    style={{ width: 30, height: 30 }}
                   /> 
                     </Badge>
                   </div>
@@ -303,12 +303,25 @@ function Sidebar() {
                 </>
               ) : (
                 <>
-                  <img
-                    src={`${process.env.REACT_APP_API_URL}${usuario_remitente.link_foto}`}
+                      <div className="relative inline-block">
+                    {/* Avatar */}
+                    <Avatar className="w-12 h-12"> {/* Ajusta el tamaño aquí si es necesario */}
+                      <AvatarImage  src={`${process.env.REACT_APP_API_URL}${usuario_remitente.link_foto}`} alt="User Avatar" />
+                    </Avatar>
+
+                    {/* Badge tangente al borde del avatar */}
+                    <Badge
+                      variant="icon"
+                      className="absolute top-0 right-0 p-0 transform translate-x-1/3 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full text-white" 
+                    >
+                      <img
+                    src='./icono WA.png'
                     alt="Profile"
                     className="rounded-circle"
-                    style={{ width: 40, height: 30 }}
-                  />
+                    style={{ width: 30, height: 30 }}
+                  /> 
+                    </Badge>
+                  </div>
                 <div style={{ flex: 1, marginLeft: 10 }}>
                   <div className="d-flex justify-content-between align-items-center">
                     <strong>
@@ -350,13 +363,13 @@ function Sidebar() {
                   {/* Badge tangente al borde del avatar */}
                   <Badge
                     variant="icon"
-                    className="absolute top-0 right-0 p-0 transform translate-x-1/3 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full text-white" 
+                    className="absolute top-0 right-0 p-0 transform translate-x-1/3 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full text-white" 
                   >
                     <img
                   src='./whatsapp.png'
                   alt="Profile"
                   className="rounded-circle"
-                  style={{ width: 40, height: 30 }}
+                  style={{ width: 30, height: 30 }}
                 /> 
                   </Badge>
                 </div>
@@ -370,13 +383,13 @@ function Sidebar() {
           {/* Badge tangente al borde del avatar */}
           <Badge
             variant="icon"
-            className="absolute top-0 right-0 p-0 transform translate-x-1/3 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full text-white" 
+            className="absolute top-0 right-0 p-0 transform translate-x-1/3 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full text-white" 
           >
             <img
           src='./whatsapp.png'
           alt="Profile"
           className="rounded-circle"
-          style={{ width: 40, height: 30 }}
+          style={{ width: 30, height: 30 }}
         /> 
           </Badge>
         </div>
