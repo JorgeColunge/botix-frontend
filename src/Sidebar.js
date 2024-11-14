@@ -6,9 +6,9 @@ import { useConversations } from './ConversationsContext';
 import axios from 'axios';
 import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';
-import { Button, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from './components';
+import { Avatar, AvatarImage, Badge, Button, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from './components';
 import { NewChatContacts } from './NewChatContacts';
-import { Mic, Video } from 'lucide-react';
+import { Bell, CameraIcon, File, Mic, Video } from 'lucide-react';
 
 function Sidebar() {
   const {
@@ -204,28 +204,47 @@ function Sidebar() {
   };
 
      const integracion = integraciones.find( intr => intr.id === conversacion.integration_id)
-     
      const typeMessage = (()=>{
         switch (conversacion.message_type) {
           case 'text':
            return <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
+          case 'template':
+            return <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
           case 'audio':  
           return <aside className='d-flex'> <Mic className="w-5 h-5 text-gray-600"/><p className='p-0 m-0'>{formatVideoDuration(conversacion.duration)}</p></aside>
           case 'image':
-           return <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
+            return (
+              <aside className="flex items-center justify-between">
+                {/* Icono y texto alineados a la izquierda */}
+                <div className="flex items-center space-x-1">
+                  <CameraIcon className="w-5 h-5 text-gray-600" />
+                  <p className="text-sm text-gray-800 ms-1 m-0 p-0">Foto</p>
+                </div>
+  
+              </aside>
+            ); 
           case 'video':
                      return (
             <aside className="flex items-center justify-between">
               {/* Icono y texto alineados a la izquierda */}
               <div className="flex items-center space-x-1">
-                <Video className="w-8 h-8 text-gray-600" />
+                <Video className="w-5 h-5 text-gray-600" />
                 <p className="text-sm text-gray-800 ms-1 m-0 p-0">{formatVideoDuration(conversacion.duration)}</p>
               </div>
 
             </aside>
           ); 
           case 'document':
-           return <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
+            return (
+              <aside className="flex items-center justify-between">
+                {/* Icono y texto alineados a la izquierda */}
+                <div className="flex items-center space-x-1">
+                  <File className="w-5 h-5 text-gray-600" />
+                  <p className="text-sm text-gray-800 ms-1 m-0 p-0">Documento</p>
+                </div>
+            
+              </aside>
+            );      
           default:
             break;
         }
@@ -239,12 +258,25 @@ function Sidebar() {
             <div className="d-flex justify-content-between align-items-center">
               {conversacion.id_usuario == usuario.id_usuario ? (
                 <>
-                  <img
-                    src={`${process.env.REACT_APP_API_URL}${usuario_conversacion.link_foto}`}
+                  <div className="relative inline-block">
+                    {/* Avatar */}
+                    <Avatar className="w-12 h-12"> {/* Ajusta el tamaño aquí si es necesario */}
+                      <AvatarImage  src={`${process.env.REACT_APP_API_URL}${usuario_conversacion.link_foto}`} alt="User Avatar" />
+                    </Avatar>
+
+                    {/* Badge tangente al borde del avatar */}
+                    <Badge
+                      variant="icon"
+                      className="absolute top-0 right-0 p-0 transform translate-x-1/3 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full text-white" 
+                    >
+                      <img
+                    src='./icono WA.png'
                     alt="Profile"
                     className="rounded-circle"
-                    style={{ width: 50, height: 50 }}
-                  />
+                    style={{ width: 40, height: 40 }}
+                  /> 
+                    </Badge>
+                  </div>
                 <div style={{ flex: 1, marginLeft: 10 }}>
                   <div className="d-flex justify-content-between align-items-center">
                     <strong>
@@ -275,7 +307,7 @@ function Sidebar() {
                     src={`${process.env.REACT_APP_API_URL}${usuario_remitente.link_foto}`}
                     alt="Profile"
                     className="rounded-circle"
-                    style={{ width: 50, height: 50 }}
+                    style={{ width: 40, height: 30 }}
                   />
                 <div style={{ flex: 1, marginLeft: 10 }}>
                   <div className="d-flex justify-content-between align-items-center">
@@ -291,7 +323,7 @@ function Sidebar() {
                     {conversacion.label && renderLabelBadge(conversacion.label)}
                   </div>
                   <div className="d-flex justify-content-between">
-                    <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
+                  {typeMessage()}
                     <div>
                       {conversacion.unread_messages > 0 && (
                         <span className="badge badge-pill badge-primary">{conversacion.unread_messages}</span>
@@ -309,14 +341,46 @@ function Sidebar() {
        return (
         <div className="d-flex justify-content-between align-items-center">
         {conversacion.profile_url ? (
-          <img
-            src={`${process.env.REACT_APP_API_URL}${conversacion.profile_url}`}
-            alt="Profile"
-            className="rounded-circle"
-            style={{ width: 50, height: 50 }}
-          />
+                  <div className="relative inline-block">
+                  {/* Avatar */}
+                  <Avatar className="w-12 h-12"> {/* Ajusta el tamaño aquí si es necesario */}
+                    <AvatarImage  src={`${process.env.REACT_APP_API_URL}${conversacion.profile_url}`} alt="User Avatar" />
+                  </Avatar>
+
+                  {/* Badge tangente al borde del avatar */}
+                  <Badge
+                    variant="icon"
+                    className="absolute top-0 right-0 p-0 transform translate-x-1/3 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full text-white" 
+                  >
+                    <img
+                  src='./whatsapp.png'
+                  alt="Profile"
+                  className="rounded-circle"
+                  style={{ width: 40, height: 30 }}
+                /> 
+                  </Badge>
+                </div>
         ) : (
+          <div className="relative inline-block">
+          {/* Avatar */}
+          <Avatar className="w-12 h-12"> {/* Ajusta el tamaño aquí si es necesario */}
           <PersonCircle className='rounded-circle' size={50} />
+          </Avatar>
+
+          {/* Badge tangente al borde del avatar */}
+          <Badge
+            variant="icon"
+            className="absolute top-0 right-0 p-0 transform translate-x-1/3 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full text-white" 
+          >
+            <img
+          src='./whatsapp.png'
+          alt="Profile"
+          className="rounded-circle"
+          style={{ width: 40, height: 30 }}
+        /> 
+          </Badge>
+        </div>
+     
         )}
         <div style={{ flex: 1, marginLeft: 10 }}>
           <div className="d-flex justify-content-between align-items-center">
@@ -332,7 +396,7 @@ function Sidebar() {
             {conversacion.label && renderLabelBadge(conversacion.label)}
           </div>
           <div className="d-flex justify-content-between">
-            <span className="text-muted">{conversacion.last_message ? conversacion.last_message.substring(0, 30) + '...' : 'No messages'}</span>
+          {typeMessage()}
             <div>
               {conversacion.unread_messages > 0 && (
                 <span className="badge badge-pill badge-primary">{conversacion.unread_messages}</span>
