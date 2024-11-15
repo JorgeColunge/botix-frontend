@@ -261,7 +261,7 @@ function Sidebar() {
                   <div className="relative inline-block">
                     {/* Avatar */}
                     <Avatar className="w-12 h-12"> {/* Ajusta el tamaño aquí si es necesario */}
-                      <AvatarImage  src={`${process.env.REACT_APP_API_URL}${usuario_conversacion.link_foto}`} alt="User Avatar" />
+                      <AvatarImage className="w-full h-full object-cover rounded-full"   src={`${process.env.REACT_APP_API_URL}${usuario_conversacion.link_foto}`} alt="User Avatar" />
                     </Avatar>
 
                     {/* Badge tangente al borde del avatar */}
@@ -306,7 +306,7 @@ function Sidebar() {
                       <div className="relative inline-block">
                     {/* Avatar */}
                     <Avatar className="w-12 h-12"> {/* Ajusta el tamaño aquí si es necesario */}
-                      <AvatarImage  src={`${process.env.REACT_APP_API_URL}${usuario_remitente.link_foto}`} alt="User Avatar" />
+                      <AvatarImage className="w-full h-full object-cover rounded-full" src={`${process.env.REACT_APP_API_URL}${usuario_remitente.link_foto}`} alt="User Avatar" />
                     </Avatar>
 
                     {/* Badge tangente al borde del avatar */}
@@ -357,7 +357,7 @@ function Sidebar() {
                   <div className="relative inline-block">
                   {/* Avatar */}
                   <Avatar className="w-12 h-12"> {/* Ajusta el tamaño aquí si es necesario */}
-                    <AvatarImage  src={`${process.env.REACT_APP_API_URL}${conversacion.profile_url}`} alt="User Avatar" />
+                    <AvatarImage className="w-full h-full object-cover rounded-full" src={`${process.env.REACT_APP_API_URL}${conversacion.profile_url}`} alt="User Avatar" />
                   </Avatar>
 
                   {/* Badge tangente al borde del avatar */}

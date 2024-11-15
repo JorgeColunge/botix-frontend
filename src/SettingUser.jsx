@@ -51,7 +51,7 @@ export const SettingUser = () => {
 
     useEffect(() => {
        const loadingDates = async() => {
-       await setUserData({
+        setUserData({
             nombre,
             apellido,
             telefono,
@@ -182,20 +182,25 @@ export const SettingUser = () => {
                 <div className="flex flex-col md:flex-row space-x-0 md:space-x-4 items-center">
                     {/* Componente Avatar */}
                     <Avatar className="relative w-[7em] h-[7em] cursor-pointer">
-                    <label htmlFor="link_foto" className="absolute inset-0 z-10 cursor-pointer">
-                        <AvatarImage src={`${process.env.REACT_APP_API_URL}${userData?.link_foto}`} alt={`${userData?.nombre} ${userData?.apellido}`} />
-                        <AvatarFallback>{userData?.nombre?.charAt(0)}{userData?.apellido?.charAt(0)}</AvatarFallback>
-                    </label>
-                    {isEditing && (
-                        <Input
-                        type="file"
-                        id="link_foto"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="absolute inset-0 opacity-0 z-20 cursor-pointer"
-                        />
-                    )}
-                    </Avatar>
+    <label htmlFor="link_foto" className="absolute inset-0 z-10 cursor-pointer">
+        <AvatarImage
+            src={`${process.env.REACT_APP_API_URL}${userData?.link_foto}`}
+            alt={`${userData?.nombre} ${userData?.apellido}`}
+            className="w-full h-full object-cover rounded-full"  // Ajustes importantes
+        />
+        <AvatarFallback>{userData?.nombre?.charAt(0)}{userData?.apellido?.charAt(0)}</AvatarFallback>
+    </label>
+    {isEditing && (
+        <Input
+            type="file"
+            id="link_foto"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="absolute inset-0 opacity-0 z-20 cursor-pointer"
+        />
+    )}
+</Avatar>
+
                     {/* Campos Nombre y Apellido */}
                     <div className="flex flex-col w-full space-y-1.5 mt-4 md:mt-0">
                     <Label htmlFor="nombre">Nombre</Label>
