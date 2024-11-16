@@ -692,11 +692,11 @@ function ChatWindow() {
      console.log("current", currentConversation)
     if (currentConversation?.integration_id == integracionInterna.id) {
         if (state.usuario.id_usuario == state?.conversacion_Actual?.contact_id || state?.usuario?.id_usuario == state?.conversacion_Actual?.contact_user_id) {
-          usuario_remitente = state.usuario.id_usuario;
+          usuario_remitente = state.conversacion_Actual.contact_id || state.conversacion_Actual.contact_user_id;
           usuario_destino = state?.conversacion_Actual?.id_usuario || state?.conversacion_Actual?.id_usuario;
         }else{
-          usuario_remitente = state?.conversacion_Actual?.contact_id || state?.conversacion_Actual?.contact_user_id;
-          usuario_destino = state.usuario.id_usuario;
+          usuario_remitente = state?.conversacion_Actual?.id_usuario;;
+          usuario_destino =  state.conversacion_Actual.contact_id || state.conversacion_Actual.contact_user_id;
         }
     }
       try {
