@@ -528,10 +528,25 @@ function ChatWindow() {
   };
   
   const handleSendAudio = async (backendAudioUrl, duration, mimeType) => {
+    
+    var usuario_remitente = state.usuario.id_usuario;;
+    var usuario_destino = null;
+
     var currentSend = {
       ...currentConversation,
       last_message_time: new Date().toISOString()
     };
+     const integracionInterna = state?.integraciones?.find(integr => integr.type == "Interno")
+     console.log("current", currentConversation)
+    if (currentConversation?.integration_id == integracionInterna.id) {
+        if (state.usuario.id_usuario == state?.conversacion_Actual?.contact_id || state?.usuario?.id_usuario == state?.conversacion_Actual?.contact_user_id) {
+          usuario_remitente = state.usuario.id_usuario;
+          usuario_destino = state?.conversacion_Actual?.id_usuario || state?.conversacion_Actual?.id_usuario;
+        }else{
+          usuario_remitente = state?.conversacion_Actual?.contact_id || state?.conversacion_Actual?.contact_user_id;
+          usuario_destino = state.usuario.id_usuario;
+        }
+    }
     try {
       setLastMessageId(new Date(currentSend.last_message_time).getTime())
       setMessageReply(null)
@@ -543,8 +558,8 @@ function ChatWindow() {
         mimeType: mimeType,
         integration_name : state.integraciones?.find(intra => intra.id == currentConversation?.integration_id)?.type,
         integration_id: currentConversation?.integration_id,
-        usuario_send: state?.conversacion_Actual?.contact_id || state?.conversacion_Actual?.contact_user_id,
-        id_usuario: state?.usuario?.id_usuario,
+        usuario_send: usuario_destino || null,
+        id_usuario: usuario_remitente,
         companyId: state?.usuario?.company_id,
         remitent: state?.usuario?.id_usuario,
         reply_from: messageReply?.msj?.id || null,
@@ -1131,6 +1146,19 @@ function ChatWindow() {
     messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
   }
  }
+ 
+ const validateMessageTypeView = (bubbleClass, message) => {
+   const integracionInterna = state?.integraciones?.find(integr => integr.type == "Interno")
+    if (integracionInterna?.id == state?.conversacion_Actual?.integration_id) {
+        if (bubbleClass == 'message-bubble message') {
+           return null;
+        }else{
+          return  getMessageStatusIcon(message.state)
+        }
+    }else{
+         return  getMessageStatusIcon(message.state)
+    }
+ }
 
   return (
     <>
@@ -1367,7 +1395,7 @@ function ChatWindow() {
                     )}
                     <span className="message-time">
                       {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      {message.type === 'reply' && getMessageStatusIcon(message.state)}
+                      {message.type === 'reply' && validateMessageTypeView(bubbleClass, message)}
                     </span>
                   </div>
                 );

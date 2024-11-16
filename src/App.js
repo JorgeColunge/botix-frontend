@@ -95,6 +95,7 @@ function sendUserIdToNative(userId) {
 
     if (!token || !id_usuario) return;
 
+    console.log("informacion:", id_usuario, token)
     const socket = io(`${process.env.REACT_APP_API_URL}`, {
       query: {
         token,
