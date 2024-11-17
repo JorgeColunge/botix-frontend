@@ -771,6 +771,14 @@ function ChatWindow() {
       }, 100);
     };
 
+    const handleFileChange = (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        console.log("Archivo seleccionado:", file);
+        // Aquí puedes manejar el archivo cargado según el tipo
+      }
+    };
+
     const handleTextChange = (e) => {
       setMessageText(e.target.value);
       setCursorPosition(e.target.selectionStart);
@@ -917,6 +925,13 @@ function ChatWindow() {
         </Button>
         
         <AudioRecorder inactivo={integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours} onSend={handleSendAudio} />
+        <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: "none" }} // Oculta el input
+        accept={fileInputType} // Aplica el tipo seleccionado
+        onChange={handleFileChange} // Maneja el archivo cargado
+      />
       </article>
       </section>
     );
