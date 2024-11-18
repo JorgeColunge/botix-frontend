@@ -5,6 +5,7 @@ import { AppContext } from './context';
 import { Spinner } from 'react-bootstrap';
 import { onMessageListener, requestFirebaseNotificationPermission } from './notification';
 import { duration } from 'moment';
+import { useNotificationsSwich } from './funtions/useNotificationsSwich';
 
 
 const ConversationsContext = createContext();
@@ -54,7 +55,8 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
   const {state} = useContext(AppContext)
   const companyId = localStorage.getItem('company_id');
   const userId = localStorage.getItem('user_id');
-
+ 
+  const {notificationCaseAudio, notificationCaseImage, notificationCaseDocument, notificationCaseText, notificationCaseVideo} = useNotificationsSwich();
   const loadMessages = async (conversationId, offset = 0) => {
     setLoading(true);
     try {
@@ -337,32 +339,48 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
   
       if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
         const isCurrentActive = currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId));
+        // requestFirebaseNotificationPermission(); // Solicitar permiso para notificaciones de Firebase
 
-        // document.addEventListener('deviceready', () => {
-        //   console.log('Cordova está listo');
+        document.addEventListener('deviceready', () => {
+          console.log('Cordova está listo');
         
-        //   if (!isCurrentActive) {
-        //     requestFirebaseNotificationPermission(); // Solicitar permiso para notificaciones de Firebase
+          if (!isCurrentActive) {
         
-        //     if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
-        //       // Ahora puedes usar las notificaciones locales
-        //       cordova.plugins.notification.local.schedule({
-        //         title: newMessage.senderName || 'Nuevo mensaje',
-        //         text: newMessage.text || 'Tienes un nuevo mensaje',
-        //       });
-        //     } else {
-        //       console.log('El plugin de notificaciones locales no está disponible.');
-        //     }
+            if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
+               
+                switch (newMessage.message_type) {
+                  case 'text':
+                     notificationCaseText(newMessage);
+                    break;
+                  case 'audio':
+                     notificationCaseAudio(newMessage);
+                  break;
+                  case 'video':
+                     notificationCaseVideo(newMessage);
+                  break;
+                  case 'image':
+                     notificationCaseImage(newMessage);
+                  break;
+                  case 'document':
+                     notificationCaseDocument(newMessage);
+                  break;  
+
+                  default:
+                    break;
+                }
+            } else {
+              console.log('El plugin de notificaciones locales no está disponible.');
+            }
         
-        //     onMessageListener()
-        //       .then((payload) => {
-        //         // Manejar la notificación recibida
-        //         console.log('Notification received: ', payload);
-        //       })
-        //       .catch((err) => console.log('Failed: ', err));
-        //   }
-        // }, false);        
+          }
+        }, false);        
         
+        // onMessageListener()
+        //   .then((payload) => {
+        //     // Manejar la notificación recibida
+        //     console.log('Notification received: ', payload);
+        //   })
+        //   .catch((err) => console.log('Failed: ', err));
         if (isCurrentActive) {
           resetUnreadMessages(newMessage.conversationId);
           setCurrentConversation(prev => ({
@@ -450,6 +468,36 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
       if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
         const isCurrentActive = currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.contact_user_id == newMessage.senderId));
         if (isCurrentActive) {
+
+
+          if (newMessage.senderId  == state.usuario.id_usuario) {
+            if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
+               
+              switch (newMessage.message_type) {
+                case 'text':
+                   notificationCaseText(newMessage);
+                  break;
+                case 'audio':
+                   notificationCaseAudio(newMessage);
+                break;
+                case 'video':
+                   notificationCaseVideo(newMessage);
+                break;
+                case 'image':
+                   notificationCaseImage(newMessage);
+                break;
+                case 'document':
+                   notificationCaseDocument(newMessage);
+                break;  
+
+                default:
+                  break;
+              }
+          } else {
+            console.log('El plugin de notificaciones locales no está disponible.');
+          }
+          }
+
           resetUnreadMessages(newMessage.conversationId);
           setCurrentConversation(prev => ({
             ...prev,
