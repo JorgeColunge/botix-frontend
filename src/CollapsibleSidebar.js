@@ -1,3 +1,4 @@
+/* global cordova */
 import React, { useState, useEffect, useContext } from 'react';
 import './CollapsibleSidebar.css';
 import { List, ChatLeftDots, People, Person, Funnel, FileBarGraph, Search, Megaphone, CurrencyDollar, Gear, Building, BoxArrowLeft, Calendar, Calendar3 } from 'react-bootstrap-icons';
@@ -14,13 +15,13 @@ const CollapsibleSidebar = ({ onSelect, isCollapsed, onToggle, currentSection })
   const {
     setCurrentConversation,
   } = useConversations();
-
   const [userData, setUserData] = useState({});
   const [companyData, setCompanyData] = useState({});
   const [roleName, setRoleName] = useState('');
   const userId = localStorage.getItem('user_id');
 
   const isMobile = useMediaQuery({ maxWidth: 767 });
+  const isMobile2 = useMediaQuery({ maxWidth: 450 });
   const navigate = useNavigate();
 // `onSelectOption` modificado:
 const onSelectOption = (selectedOption) => {
@@ -80,7 +81,15 @@ const onSelectOption = (selectedOption) => {
   
   const userPhoto = userData.link_foto ? `${process.env.REACT_APP_API_URL}${userData.link_foto}` : "/icono WA.png";
 
-  const handleLogout = () => {
+  const handleLogout = async() => {
+    if (isMobile2 && window.cordova) {
+       try {
+
+         await axios.delete(`${process.env.REACT_APP_API_URL}/api/auth/deleteToken/${userId}`);
+       } catch (error) {
+         console.log("error al eliminar token", error.error)
+       }
+    }
     localStorage.clear();
     window.location.href = "/login";
   };

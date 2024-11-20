@@ -538,15 +538,15 @@ function ChatWindow() {
     };
      const integracionInterna = state?.integraciones?.find(integr => integr.type == "Interno")
      console.log("current", currentConversation)
-    if (currentConversation?.integration_id == integracionInterna.id) {
-        if (state.usuario.id_usuario == state?.conversacion_Actual?.contact_id || state?.usuario?.id_usuario == state?.conversacion_Actual?.contact_user_id) {
-          usuario_remitente = state.usuario.id_usuario;
-          usuario_destino = state?.conversacion_Actual?.id_usuario || state?.conversacion_Actual?.id_usuario;
-        }else{
-          usuario_remitente = state?.conversacion_Actual?.contact_id || state?.conversacion_Actual?.contact_user_id;
-          usuario_destino = state.usuario.id_usuario;
-        }
-    }
+     if (currentConversation?.integration_id == integracionInterna.id) {
+      if (state.usuario.id_usuario == state?.conversacion_Actual?.contact_id || state?.usuario?.id_usuario == state?.conversacion_Actual?.contact_user_id) {
+        usuario_remitente = state.conversacion_Actual.contact_id || state.conversacion_Actual.contact_user_id;
+        usuario_destino = state?.conversacion_Actual?.id_usuario || state?.conversacion_Actual?.id_usuario;
+      }else{
+        usuario_remitente = state?.conversacion_Actual?.id_usuario;;
+        usuario_destino =  state.conversacion_Actual.contact_id || state.conversacion_Actual.contact_user_id;
+      }
+  }
     try {
       setLastMessageId(new Date(currentSend.last_message_time).getTime())
       setMessageReply(null)
@@ -680,23 +680,25 @@ function ChatWindow() {
       console.log("Texto a enviar:", textToSend);
     
       setMessageText('');
-    
+      var usuario_remitente = state.usuario.id_usuario;;
+      var usuario_destino = null;
+
       var currentSend = {
         ...currentConversation,
         last_message_time: new Date().toISOString()
       };
     
-      console.log("Datos de currentSend:", {
-        phone: String(currentSend.phone_number),
-        messageText: textToSend,
-        conversation_id: currentSend?.conversation_id || null,
-        integration_name : state.integraciones?.find(intra => intra.id == currentSend?.integration_id)?.type,
-        integration_id: currentSend?.integration_id,
-        usuario_send: state?.conversacion_Actual?.contact_id || state?.conversacion_Actual?.contact_user_id,
-        id_usuario: state?.usuario?.id_usuario,
-        companyId: state?.usuario?.company_id,
-        remitent: state?.usuario?.id_usuario,
-        reply_from: messageReply?.msj?.id || null});
+      const integracionInterna = state?.integraciones?.find(integr => integr.type == "Interno")
+     console.log("current", currentConversation)
+    if (currentConversation?.integration_id == integracionInterna.id) {
+        if (state.usuario.id_usuario == state?.conversacion_Actual?.contact_id || state?.usuario?.id_usuario == state?.conversacion_Actual?.contact_user_id) {
+          usuario_remitente = state.conversacion_Actual.contact_id || state.conversacion_Actual.contact_user_id;
+          usuario_destino = state?.conversacion_Actual?.id_usuario || state?.conversacion_Actual?.id_usuario;
+        }else{
+          usuario_remitente = state?.conversacion_Actual?.id_usuario;;
+          usuario_destino =  state.conversacion_Actual.contact_id || state.conversacion_Actual.contact_user_id;
+        }
+    }
       try {
         setLastMessageId(new Date(currentSend.last_message_time).getTime())
         setMessageReply(null)
@@ -707,8 +709,8 @@ function ChatWindow() {
           conversation_id: currentSend?.conversation_id || null,
           integration_name : state.integraciones?.find(intra => intra.id == currentSend?.integration_id)?.type,
           integration_id: currentSend?.integration_id,
-          usuario_send: state?.conversacion_Actual?.contact_id || state?.conversacion_Actual?.contact_user_id,
-          id_usuario: state?.usuario?.id_usuario,
+          usuario_send: usuario_destino || null,
+          id_usuario: usuario_remitente,
           companyId: state?.usuario?.company_id,
           remitent: state?.usuario?.id_usuario,
           reply_from: messageReply?.msj?.id || null
@@ -761,12 +763,20 @@ function ChatWindow() {
       }
     };
 
-    const handleFileMenuClick = type => {
+    const handleFileMenuClick = (type) => {
       resetFileInput();
       setFileInputType(type);
       setTimeout(() => {
         fileInputRef.current.click();
       }, 100);
+    };
+
+    const handleFileChange = (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        console.log("Archivo seleccionado:", file);
+        // Aquí puedes manejar el archivo cargado según el tipo
+      }
     };
 
     const handleTextChange = (e) => {
@@ -915,6 +925,13 @@ function ChatWindow() {
         </Button>
         
         <AudioRecorder inactivo={integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours} onSend={handleSendAudio} />
+        <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: "none" }} // Oculta el input
+        accept={fileInputType} // Aplica el tipo seleccionado
+        onChange={handleFileChange} // Maneja el archivo cargado
+      />
       </article>
       </section>
     );
