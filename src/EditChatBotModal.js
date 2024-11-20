@@ -425,9 +425,14 @@ const EditChatBotModal = ({ show, handleClose, bot }) => {
   const [selectedRecipient, setSelectedRecipient] = useState(''); // Controla el destinatario seleccionado
   const [recipients, setRecipients] = useState({ users: [], colaboradores: [], contacts: [], variables: [] }); // Almacena los datos de destinatarios
   const [messageText, setMessageText] = useState(''); // Texto del mensaje
+  const [showAgendarModal, setShowAgendarModal] = useState(false);
+  const [limitType, setLimitType] = useState('fixed'); // 'fixed' o 'variable'
+  const [eventCount, setEventCount] = useState(''); // Número de eventos (si es fijo)
+  const [maxEvents, setMaxEvents] = useState(''); // Máximo permitido (si es variable)
+  const [limitVariable, setLimitVariable] = useState(''); // Variable que determina el límite (si es variable)
+  const [eventFields, setEventFields] = useState([]); // Variables seleccionadas para los eventos
+  const [validateAvailability, setValidateAvailability] = useState(false);
   
-
-
 const openToolModal = (nodeId, isInternal) => {
   setCurrentNodeId(nodeId);
   setIsInternal(isInternal); // Nuevo estado para saber si es interno o externo
@@ -2697,118 +2702,291 @@ codeArray.push(`
 
   const generateCodeForAgendar = async () => {
     let codeArray = [];
-  
+
     codeArray.push(`
-      // Consulta la request para obtener el company_id y el request_data
+      // Consultar si ya existe un registro en requests para esta conversación
       existingRequestQuery = \`
         SELECT request_id, request_data, company_id
         FROM requests
         WHERE conversation_id = $1
           AND request_type = $2
-          AND status = $3
-          AND company_id = $4
+          AND status IN ($3, $4)
+          AND company_id = $5
       \`;
-
-      existingRequestResult = await pool.query(existingRequestQuery, [conversationId, "agenda", "datosCompletos", integrationDetails.company_id]);
-
-      if (existingRequestResult.rows.length > 0) {
-        const requestId = existingRequestResult.rows[0].request_id;
-        const requestData = existingRequestResult.rows[0].request_data;
-        const companyId = existingRequestResult.rows[0].company_id;
-
-        // Obtener el default_timezone de la empresa
-        const timezoneQuery = \`
-          SELECT default_timezone
-          FROM companies
-          WHERE id = $1
-        \`;
-
-        const timezoneResult = await pool.query(timezoneQuery, [companyId]);
-        if (timezoneResult.rows.length === 0) {
-          console.log("Error: No se encontró la zona horaria para la empresa.");
-          return;
-        }
-
-        // Usar clientTimezone si está disponible; si no, usar la zona horaria de la empresa o 'America/Bogota' como valor predeterminado
-        const companyTimezone = timezoneResult.rows[0].default_timezone || 'America/Bogota';
-        const timezoneToUse = clientTimezone || companyTimezone;
-
-        // Extraer la información del request_data que será usada para agendar el evento
-        const titulo = (requestData.titulo && requestData.titulo !== 'null' && requestData.titulo.trim() !== '') ? requestData.titulo : 'Evento sin título';
-        const descripcion = (requestData.descripcion && requestData.descripcion !== 'null' && requestData.descripcion.trim() !== '') ? requestData.descripcion : 'Descripción no disponible';
-        
-        // Obtener fechas y horas independientes de requestData
-        const fechaInicio = (requestData.fecha_inicio && requestData.fecha_inicio !== 'null' && requestData.fecha_inicio.trim() !== '') ? requestData.fecha_inicio.trim() : null;
-        const horaInicio = (requestData.hora_inicio && requestData.hora_inicio !== 'null' && requestData.hora_inicio.trim() !== '') ? requestData.hora_inicio.trim() : null;
     
-        const fechaFin = (requestData.fecha_fin && requestData.fecha_fin !== 'null' && requestData.fecha_fin.trim() !== '') ? requestData.fecha_fin.trim() : null;
-        const horaFin = (requestData.hora_fin && requestData.hora_fin !== 'null' && requestData.hora_fin.trim() !== '') ? requestData.hora_fin.trim() : null;
-
-        const allDay = (requestData.all_day && requestData.all_day !== 'null' && requestData.all_day.trim() !== '') ? requestData.all_day.toLowerCase() === 'true' : false;
-        const tipoAsignacion = (requestData.tipo_asignacion && requestData.tipo_asignacion !== 'null' && requestData.tipo_asignacion.trim() !== '') ? requestData.tipo_asignacion : null;
-        const idAsignacion = (requestData.id_asignacion && requestData.id_asignacion !== 'null' && requestData.id_asignacion.trim() !== '') ? requestData.id_asignacion : null;
-
-        // Validar formato de fecha y hora
-        const esFechaValida = (fecha) => /^\\d{4}-\\d{2}-\\d{2}$/.test(fecha);
-        const esHoraValida = (hora) => /^\\d{2}:\\d{2}(:\\d{2})?$/.test(hora);
-
-        // Validar las fechas y horas basadas en el valor de all_day
-        if (allDay) {
-          // Si es un evento de todo el día, solo se validan las fechas
-          if (!esFechaValida(fechaInicio) || !esFechaValida(fechaFin)) {
-            console.log("Error: Las fechas de inicio y fin deben tener el formato 'YYYY-MM-DD' para eventos de todo el día.");
-            return;
+      existingRequestResult = await pool.query(existingRequestQuery, [conversationId, "agenda", "datosIncompletos", "datosCompletos", integrationDetails.company_id]);
+    
+      const newRequestData = {}; // Almacena los datos actualizados de la solicitud
+      const selectedVariables = ${JSON.stringify(eventFields)};\n`); // Variables seleccionadas desde el modal
+    
+      console.log(`valor de eventos: ${eventCount}`);
+      console.log(`valor de límite: ${limitVariable}`);
+      
+      if (eventCount) {
+        codeArray.push(`
+          const fixedEventCount = ${eventCount}; // Valor fijo de eventCount
+        \n`);
+      } else {
+        codeArray.push(`
+          const fixedEventCount = ${limitVariable}; // Variable de limitVariable
+        \n`);
+      }
+    codeArray.push(`
+      // Extraer valores reales de las variables seleccionadas
+      Object.keys(selectedVariables).forEach((index) => {
+        const eventData = selectedVariables[index];
+        const processedData = {};
+    
+        Object.keys(eventData).forEach((fieldKey) => {
+          const variableName = eventData[fieldKey];
+          if (variableName && typeof variableName === 'string') {
+            try {
+              // Intentar obtener el valor real de la variable
+              const value = eval(variableName); // eval simula un contexto dinámico
+              if (value !== undefined && value !== null && value !== '') {
+                processedData[fieldKey] = value; // Asignar solo si tiene un valor válido
+              }
+            } catch (error) {
+              // Si eval falla, no asignar nada
+            }
           }
-        } else {
-          // Si no es un evento de todo el día, se validan tanto las fechas como las horas
-          if (!esFechaValida(fechaInicio) || !esFechaValida(fechaFin) || !esHoraValida(horaInicio) || !esHoraValida(horaFin)) {
-            console.log("Error: Las fechas y horas de inicio y fin deben tener el formato 'YYYY-MM-DD HH:MM' o 'YYYY-MM-DD HH:MM:SS' para eventos con hora.");
-            return;
+        });
+    
+        // Agregar al newRequestData solo si tiene campos válidos
+        if (Object.keys(processedData).length > 0) {
+          newRequestData[index] = processedData;
+        }
+      });
+    
+      if (Object.keys(newRequestData).length === 0) {
+        console.log("No hay datos válidos para insertar o actualizar. Operación terminada.");
+        return;
+      }
+    
+      if (existingRequestResult.rows.length === 0) {
+        // Si no existe, crear un nuevo registro en requests
+        insertRequestQuery = \`
+          INSERT INTO requests (conversation_id, request_type, request_data, company_id, status)
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING request_id;
+        \`;
+    
+        await pool.query(insertRequestQuery, [
+          conversationId,
+          "agenda",
+          JSON.stringify(newRequestData, (key, value) => 
+            typeof value === "string" ? value.normalize("NFC") : value
+          ),
+          integrationDetails.company_id,
+          "datosIncompletos"
+        ]);
+        console.log("Nuevo registro creado en requests con datos incompletos.");
+      } else {
+        // Si existe, actualizar solo los campos no vacíos
+        const existingRequestId = existingRequestResult.rows[0].request_id;
+        const existingRequestData = existingRequestResult.rows[0].request_data;
+    
+        // Fusionar datos existentes y nuevos, ignorando campos vacíos
+        const updatedRequestData = { ...existingRequestData };
+        Object.keys(newRequestData).forEach((index) => {
+          if (!updatedRequestData[index]) {
+            updatedRequestData[index] = {};
           }
-        }
+          Object.keys(newRequestData[index]).forEach((key) => {
+            if (newRequestData[index][key] !== null && newRequestData[index][key] !== '') {
+              updatedRequestData[index][key] = newRequestData[index][key];
+            }
+          });
+        });
+    
+        // Verificar si ya se tiene toda la información para la cantidad fija de eventos
+        const hasAllData = Object.keys(updatedRequestData)
+          .slice(0, fixedEventCount) // Limitar a la cantidad fija de eventos
+          .every((index) => {
+            const event = updatedRequestData[index];
+            return event.titulo &&
+              event.descripcion &&
+              event.fecha_inicio &&
+              event.hora_inicio &&
+              event.fecha_fin &&
+              event.hora_fin &&
+              event.all_day !== null &&
+              event.tipo_asignacion &&
+              event.id_asignacion;
+          });
 
-        // Verificar que los campos obligatorios existan y no estén vacíos
-        if (!fechaInicio || !fechaFin || (!horaInicio && !allDay) || (!horaFin && !allDay) || !tipoAsignacion || !idAsignacion) {
-          console.log("Faltan datos obligatorios para agendar el evento: fecha_inicio, fecha_fin, hora_inicio, hora_fin, tipo_asignacion, id_asignacion.");
-          return;
-        }
+        const newStatus = hasAllData ? "datosCompletos" : "datosIncompletos";
 
-        // Convertir fechas y horas a UTC usando la zona horaria del cliente o la empresa
-        const fechaHoraInicio = allDay ? \`\${fechaInicio}T00:00:00\` : \`\${fechaInicio}T\${horaInicio}\`;
-        const fechaHoraFin = allDay ? \`\${fechaFin}T23:59:59\` : \`\${fechaFin}T\${horaFin}\`;
-        const fechaHoraInicioUTC = moment.tz(fechaHoraInicio, timezoneToUse).utc().format();
-        const fechaHoraFinUTC = moment.tz(fechaHoraFin, timezoneToUse).utc().format();
-
-        // Insertar el evento en la tabla 'eventos'
-        const insertEventoQuery = \`
-          INSERT INTO eventos (titulo, descripcion, fecha_inicio, fecha_fin, all_day, tipo_asignacion, id_asignacion, company_id)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-          RETURNING id_evento;
+        updateRequestQuery = \`
+          UPDATE requests
+          SET request_data = $1,
+              status = $2
+          WHERE request_id = $3;
         \`;
 
-        const eventoResult = await pool.query(insertEventoQuery, [titulo, descripcion, fechaHoraInicioUTC, fechaHoraFinUTC, allDay, tipoAsignacion, idAsignacion, companyId]);
+        await pool.query(updateRequestQuery, [
+          JSON.stringify(updatedRequestData, (key, value) => 
+            typeof value === "string" ? value.normalize("NFC") : value
+          ),
+          newStatus,
+          existingRequestId
+        ]);
 
-        // Si el evento fue insertado correctamente, actualizar el estado de la request a 'agendado'
-        if (eventoResult.rows.length > 0) {
-          const eventoId = eventoResult.rows[0].id_evento;
+        // Asignar los datos a la variable dataEventsVariable
+        const dataEventsVariable = [
+          JSON.stringify(updatedRequestData, null, 2), // Convertir eventos a string con formato legible
+          hasAllData, // Booleano indicando si están completos
+        ];
 
-          const updateRequestQuery = \`
-            UPDATE requests
-            SET request_data = request_data || $1::jsonb,
-                request_type = $2,
-                status = $3
-            WHERE request_id = $4;
+        console.log(\`Registro en requests actualizado con estado: \${newStatus}\`);
+        console.log("dataEventsVariable:", dataEventsVariable);
+    `);           
+      
+    codeArray.push(`
+      // Validar si la variable de confirmación es true
+      if (confirmationVariable === true) {
+        console.log("Confirmación válida. Procediendo con el agendamiento.");
+
+        // Consulta la request para obtener el company_id y el request_data
+        existingRequestQuery = \`
+          SELECT request_id, request_data, company_id
+          FROM requests
+          WHERE conversation_id = $1
+            AND request_type = $2
+            AND status = $3
+            AND company_id = $4
+        \`;
+      
+        existingRequestResult = await pool.query(existingRequestQuery, [conversationId, "agenda", "datosCompletos", integrationDetails.company_id]);
+      
+        if (existingRequestResult.rows.length > 0) {
+          const requestId = existingRequestResult.rows[0].request_id;
+          const requestData = existingRequestResult.rows[0].request_data;
+          const companyId = existingRequestResult.rows[0].company_id;
+      
+          // Obtener el default_timezone de la empresa
+          const timezoneQuery = \`
+            SELECT default_timezone
+            FROM companies
+            WHERE id = $1
           \`;
-
-          await pool.query(updateRequestQuery, [JSON.stringify(requestData), "agenda", "agendado", requestId]);
-          console.log("Evento agendado con éxito: ID del evento", eventoId);
-        } else {
-          console.log("Error al agendar el evento.");
+      
+          const timezoneResult = await pool.query(timezoneQuery, [companyId]);
+      
+          if (timezoneResult.rows.length === 0) {
+            return;
+          }
+      
+          const companyTimezone = timezoneResult.rows[0].default_timezone || 'America/Bogota';
+          const timezoneToUse = clientTimezone || companyTimezone;
+      
+          // Procesar los datos dinámicamente
+          const eventos = [];
+          Object.keys(requestData).forEach((index) => {
+            const eventData = requestData[index];
+            if (!eventData) {
+              console.log(\`Error: El evento con índice \${index} es nulo o no válido. Ignorando...\`);
+              return;
+            }
+      
+            const {
+              titulo = 'Evento sin título',
+              descripcion = 'Descripción no disponible',
+              fecha_inicio,
+              hora_inicio,
+              fecha_fin,
+              hora_fin,
+              all_day = 'false',
+              tipo_asignacion,
+              id_asignacion,
+            } = eventData;
+      
+            // Validar datos obligatorios
+            if (!fecha_inicio || !fecha_fin || (!hora_inicio && all_day.toLowerCase() !== 'true') || (!hora_fin && all_day.toLowerCase() !== 'true') || !tipo_asignacion || !id_asignacion) {
+              console.log(\`Error: Faltan datos obligatorios para el evento con índice \${index}. Ignorando...\`);
+              return;
+            }
+      
+            // Validar formatos de fechas y horas
+            const esFechaValida = (fecha) => /^\\d{4}-\\d{2}-\\d{2}$/.test(fecha);
+            const esHoraValida = (hora) => /^\\d{2}:\\d{2}(:\\d{2})?$/.test(hora);
+      
+            if (all_day.toLowerCase() === 'true') {
+              if (!esFechaValida(fecha_inicio) || !esFechaValida(fecha_fin)) {
+                console.log(\`Error: Fechas inválidas para el evento con índice \${index}. Ignorando...\`);
+                return;
+              }
+            } else {
+              if (!esFechaValida(fecha_inicio) || !esFechaValida(fecha_fin) || !esHoraValida(hora_inicio) || !esHoraValida(hora_fin)) {
+                console.log(\`Error: Fechas/Horas inválidas para el evento con índice \${index}. Ignorando...\`);
+                return;
+              }
+            }
+      
+            // Convertir fechas y horas a UTC
+            const fechaHoraInicio = all_day.toLowerCase() === 'true'
+              ? \`\${fecha_inicio}T00:00:00\`
+              : \`\${fecha_inicio}T\${hora_inicio}\`;
+            const fechaHoraFin = all_day.toLowerCase() === 'true'
+              ? \`\${fecha_fin}T23:59:59\`
+              : \`\${fecha_fin}T\${hora_fin}\`;
+            const fechaHoraInicioUTC = moment.tz(fechaHoraInicio, timezoneToUse).utc().format();
+            const fechaHoraFinUTC = moment.tz(fechaHoraFin, timezoneToUse).utc().format();
+      
+            // Agregar evento a la lista
+            eventos.push({
+              titulo,
+              descripcion,
+              fechaHoraInicioUTC,
+              fechaHoraFinUTC,
+              allDay: all_day.toLowerCase() === 'true',
+              tipoAsignacion: tipo_asignacion,
+              idAsignacion: id_asignacion,
+              companyId,
+            });
+          });
+      
+          // Insertar todos los eventos
+          for (const evento of eventos) {
+            const insertEventoQuery = \`
+              INSERT INTO eventos (titulo, descripcion, fecha_inicio, fecha_fin, all_day, tipo_asignacion, id_asignacion, company_id)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+              RETURNING id_evento;
+            \`;
+      
+            const eventoResult = await pool.query(insertEventoQuery, [
+              evento.titulo,
+              evento.descripcion,
+              evento.fechaHoraInicioUTC,
+              evento.fechaHoraFinUTC,
+              evento.allDay,
+              evento.tipoAsignacion,
+              evento.idAsignacion,
+              evento.companyId,
+            ]);
+      
+            if (eventoResult.rows.length > 0) {
+              const eventoId = eventoResult.rows[0].id_evento;
+      
+              const updateRequestQuery = \`
+                UPDATE requests
+                SET request_data = request_data || $1::jsonb,
+                    request_type = $2,
+                    status = $3
+                WHERE request_id = $4;
+              \`;
+      
+              await pool.query(updateRequestQuery, [JSON.stringify(requestData), "agenda", "agendado", requestId]);
+              console.log(\`Evento agendado con éxito: ID \${eventoId}\`);
+            }
+          }
         }
-      } else {
-        console.log("Datos incompletos o la solicitud no existe.");
+
+      } else{
+       console.log("Sin confirmación de agendamiento. Agendamiento pendiente.");
       }
-    `);                
+  }
+    `);                          
   
     let updatedNodes, updatedEdges;
 
@@ -5214,8 +5392,43 @@ const handleSendMessageSave = () => {
   setCurrentEditingNodeId(null); // Resetea el ID de edición actual
 };
 
+const updateEventFields = (index, key, value) => {
+  const updatedFields = [...eventFields];
+  if (!updatedFields[index]) {
+    updatedFields[index] = {};
+  }
+  updatedFields[index][key] = value;
+  setEventFields(updatedFields);
+};
+
+
+
+const handleSaveAgendar = () => {
+  if (limitType === 'fixed' && (!eventCount || parseInt(eventCount) <= 0)) {
+    alert('Por favor, especifique una cantidad válida de eventos.');
+    return;
+  }
+
+  if (limitType === 'variable' && (!maxEvents || parseInt(maxEvents) <= 0 || !limitVariable)) {
+    alert('Por favor, complete el máximo permitido y la variable que determina el límite.');
+    return;
+  }
+
+  if (!eventFields || eventFields.length === 0) {
+    alert('Debe configurar al menos un evento.');
+    return;
+  }
+
+  // Generar el código basado en la selección
+  generateCodeForAgendar();
+
+  // Cerrar el modal
+  setShowAgendarModal(false);
+};
+
+
   const generateCodeFromNodes = (nodes, edges) => {
-    let initialDeclarations = 'let responseText;\nlet responseImage;\nlet responseVideo;\nlet responseDocument;\nlet responseAudio;\nlet latitude;\nlet longitude;\nlet streetName;\nlet videoDuration;\nlet videoThumbnail;\nlet payload;\nlet requestType;\nlet requestStatus;\nlet nuevoStatus;\nlet requestData;\nlet existingRequestQuery;\nlet existingRequestResult;\nlet requestId;\nlet updateRequestQuery;\nlet insertRequestQuery;\nlet headersRequest;\nlet requestQueryExternal;\nlet requestResultExternal;\nlet requestDataExternal;\nlet credentialsRequest;\nlet updateStatusQueryExternal;\nlet responseExternal;\nlet intentions;\nlet apiKey;\nlet url;\nlet headers;\nlet responseGpt;\nlet gptResponse;\nlet requestDataText;\n';
+    let initialDeclarations = 'let responseText;\nlet responseImage;\nlet responseVideo;\nlet responseDocument;\nlet responseAudio;\nlet latitude;\nlet longitude;\nlet streetName;\nlet videoDuration;\nlet videoThumbnail;\nlet payload;\nlet requestType;\nlet requestStatus;\nlet nuevoStatus;\nlet requestData;\nlet existingRequestQuery;\nlet existingRequestResult;\nlet requestId;\nlet updateRequestQuery;\nlet insertRequestQuery;\nlet headersRequest;\nlet requestQueryExternal;\nlet requestResultExternal;\nlet requestDataExternal;\nlet credentialsRequest;\nlet updateStatusQueryExternal;\nlet responseExternal;\nlet intentions;\nlet apiKey;\nlet url;\nlet headers;\nlet responseGpt;\nlet gptResponse;\nlet requestDataText;\nlet confirmationVariable;\nlet dataEventsVariable;\n';
 
     initialDeclarations += `const queryConversation = \`
     SELECT
@@ -6997,7 +7210,7 @@ const generateNodeCode = (node, indent = '') => {
             <button className="tool-button" onClick={() => {setShowAgendaModal(true);setShowToolModal(false);}}>
               Consultar Agenda
             </button>
-            <button className="tool-button" onClick={() => {generateCodeForAgendar();setShowToolModal(false);}}>
+            <button className="tool-button" onClick={() => {setShowAgendarModal(true);setShowToolModal(false);}}>
               Agendar
             </button>
           </div>
@@ -7121,256 +7334,498 @@ const generateNodeCode = (node, indent = '') => {
         </div>
 
         {/* Inicio del Periodo */}
-  {renderPeriodSelector('start')}
+        {renderPeriodSelector('start')}
 
-{/* Fin del Periodo */}
-{renderPeriodSelector('end')}
-    </Modal.Body>
-    <Modal.Footer>
-        <Button variant="secondary" onClick={() => setShowAgendaModal(false)}>
-            Cancelar
-        </Button>
-        <Button variant="primary" onClick={handleSaveAgendaModal}>
-            Crear
-        </Button>
-    </Modal.Footer>
-</Modal>
+      {/* Fin del Periodo */}
+      {renderPeriodSelector('end')}
+          </Modal.Body>
+          <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowAgendaModal(false)}>
+                  Cancelar
+              </Button>
+              <Button variant="primary" onClick={handleSaveAgendaModal}>
+                  Crear
+              </Button>
+          </Modal.Footer>
+      </Modal>
 
-<Modal show={showGetRequestModal} onHide={() => setShowGetRequestModal(false)}>
-  <Modal.Header closeButton>
-    <Modal.Title>Obtener Solicitud</Modal.Title>
-  </Modal.Header>
-  <Modal.Body>
-    <Form>
-      <Form.Group controlId="formGetRequestType">
-        <Form.Label>Tipo de Solicitud</Form.Label>
-        <Form.Control
-          type="text"
-          value={getRequestType}
-          onChange={(e) => setGetRequestType(e.target.value)}
-        />
-      </Form.Group>
+      <Modal show={showGetRequestModal} onHide={() => setShowGetRequestModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Obtener Solicitud</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group controlId="formGetRequestType">
+              <Form.Label>Tipo de Solicitud</Form.Label>
+              <Form.Control
+                type="text"
+                value={getRequestType}
+                onChange={(e) => setGetRequestType(e.target.value)}
+              />
+            </Form.Group>
 
-      <Form.Group controlId="formGetRequestStatus">
-        <Form.Label>Estatus de la Solicitud</Form.Label>
-        <Form.Control
-          type="text"
-          value={getRequestStatus}
-          onChange={(e) => setGetRequestStatus(e.target.value)}
-        />
-      </Form.Group>
+            <Form.Group controlId="formGetRequestStatus">
+              <Form.Label>Estatus de la Solicitud</Form.Label>
+              <Form.Control
+                type="text"
+                value={getRequestStatus}
+                onChange={(e) => setGetRequestStatus(e.target.value)}
+              />
+            </Form.Group>
 
-      <hr />
+            <hr />
 
-      <h5>Condiciones de Validación (Opcional)</h5>
-      {getValidationConditions.map((condition, index) => (
-        <div key={index} style={{ marginBottom: '10px' }}>
-          <Form.Group controlId={`formGetValidationConditionKey${index}`}>
-            <Form.Label>Clave de Validación</Form.Label>
-            <Form.Control
-              type="text"
-              value={condition.key}
-              onChange={(e) => updateGetValidationCondition(index, 'key', e.target.value)}
-            />
-          </Form.Group>
-          <Form.Group controlId={`formGetValidationConditionValue${index}`}>
-            <Form.Label>Valor de Validación</Form.Label>
-            <Form.Control
-              type="text"
-              value={condition.value}
-              onChange={(e) => updateGetValidationCondition(index, 'value', e.target.value)}
-            />
-          </Form.Group>
-          <Button variant="danger" onClick={() => removeGetValidationCondition(index)}>Eliminar</Button>
-        </div>
-      ))}
-      <Button variant="primary" onClick={addGetValidationCondition}>Agregar Condición de Validación</Button>
-
-      <hr />
-
-      <h5>Datos a Extraer</h5>
-      {getRequestDataKeys.map((data, index) => (
-        <div key={index} style={{ marginBottom: '10px' }}>
-          <Form.Group controlId={`formGetRequestDataKey${index}`}>
-            <Form.Label>Nombre del Dato</Form.Label>
-            <Form.Control
-              type="text"
-              value={data.key}
-              onChange={(e) => updateGetRequestDataKey(index, 'key', e.target.value)}
-            />
-          </Form.Group>
-          <Button variant="danger" onClick={() => removeGetRequestDataKey(index)}>Eliminar</Button>
-        </div>
-      ))}
-      <Button variant="primary" onClick={addGetRequestDataKey}>Agregar Dato</Button>
-    </Form>
-  </Modal.Body>
-  <Modal.Footer>
-    <Button variant="secondary" onClick={() => setShowGetRequestModal(false)}>
-      Cancelar
-    </Button>
-    <Button variant="primary" onClick={handleGetRequestModalSave}>
-      Obtener
-    </Button>
-  </Modal.Footer>
-</Modal>
-
-<Modal show={showDelayModal} onHide={() => setShowDelayModal(false)}>
-  <Modal.Header closeButton>
-    <Modal.Title>Crear Retardo</Modal.Title>
-  </Modal.Header>
-  <Modal.Body>
-    <Form>
-      <Form.Group>
-        <Form.Label>Tiempo del Retardo</Form.Label>
-        <Form.Control
-          type="number"
-          value={delayTime}
-          onChange={(e) => setDelayTime(e.target.value)}
-          placeholder="Introduce el tiempo del retardo"
-        />
-      </Form.Group>
-      <Form.Group>
-        <Form.Label>Unidad de Medida</Form.Label>
-        <Form.Control
-          as="select"
-          value={delayUnit}
-          onChange={(e) => setDelayUnit(e.target.value)}
-        >
-          <option value="Segundos">Segundos</option>
-          <option value="Minutos">Minutos</option>
-          <option value="Horas">Horas</option>
-        </Form.Control>
-      </Form.Group>
-    </Form>
-  </Modal.Body>
-  <Modal.Footer>
-    <Button variant="secondary" onClick={() => setShowDelayModal(false)}>
-      Cancelar
-    </Button>
-    <Button variant="primary" onClick={handleSaveDelayModal}>
-      Crear
-    </Button>
-  </Modal.Footer>
-</Modal>
-
-<Modal show={showSendMessageModal} onHide={() => setShowSendMessageModal(false)}>
-    <Modal.Header closeButton>
-        <Modal.Title>Enviar Mensaje a Terceros</Modal.Title>
-    </Modal.Header>
-    <Modal.Body>
-        <Form>
-            <Form.Group controlId="formResponseTextName">
-                <Form.Label>Nombre del Mensaje</Form.Label>
-                <Form.Control
+            <h5>Condiciones de Validación (Opcional)</h5>
+            {getValidationConditions.map((condition, index) => (
+              <div key={index} style={{ marginBottom: '10px' }}>
+                <Form.Group controlId={`formGetValidationConditionKey${index}`}>
+                  <Form.Label>Clave de Validación</Form.Label>
+                  <Form.Control
                     type="text"
-                    value={responseTextName}
-                    onChange={(e) => setResponseTextName(e.target.value)}
-                />
-            </Form.Group>
-            <Form.Group controlId="formRecipientType">
-                <Form.Label>Tipo de Destinatario</Form.Label>
-                <Form.Control
-                    as="select"
-                    value={selectedRecipientType}
-                    onChange={(e) => {
-                        setSelectedRecipientType(e.target.value);
-                        loadRecipients(e.target.value); // Cargar destinatarios según el tipo
-                        setSelectedRecipient(''); // Limpia el destinatario cuando cambia el tipo
-                    }}
-                >
-                    <option value="">Selecciona tipo</option>
-                    <option value="user">Usuario</option>
-                    <option value="colaborador">Colaborador</option>
-                    <option value="contact">Cliente</option>
-                    <option value="variable">Variable</option>
-                </Form.Control>
-            </Form.Group>
-            <Form.Group controlId="formRecipient">
-              <br></br>
-                <Form.Label>Destinatario</Form.Label>
-                {selectedRecipientType === 'variable' ? (
-                    <>
-                        <Form.Control
-                            type="text"
-                            placeholder="Escribe el número o selecciona una variable"
-                            value={selectedRecipient}
-                            onChange={(e) => setSelectedRecipient(e.target.value)}
-                        />
-                        <Form.Control as="select" onChange={(e) => setSelectedRecipient(e.target.value)}>
-                          {variables.map((variable) => (
-                            <option key={variable.name} value={variable.name}>
-                              {variable.displayName}
-                            </option>
-                          ))}
-                        </Form.Control>
-                    </>
-                ) : (
-                    <Form.Control
-                        as="select"
-                        value={selectedRecipient}
-                        onChange={(e) => setSelectedRecipient(e.target.value)}
-                    >
-                        <option value="">Selecciona destinatario</option>
-                        {recipients[selectedRecipientType]?.map((recipient) => {
-                            let displayName = '';
-                            let phone = '';
+                    value={condition.key}
+                    onChange={(e) => updateGetValidationCondition(index, 'key', e.target.value)}
+                  />
+                </Form.Group>
+                <Form.Group controlId={`formGetValidationConditionValue${index}`}>
+                  <Form.Label>Valor de Validación</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={condition.value}
+                    onChange={(e) => updateGetValidationCondition(index, 'value', e.target.value)}
+                  />
+                </Form.Group>
+                <Button variant="danger" onClick={() => removeGetValidationCondition(index)}>Eliminar</Button>
+              </div>
+            ))}
+            <Button variant="primary" onClick={addGetValidationCondition}>Agregar Condición de Validación</Button>
 
-                            switch (selectedRecipientType) {
-                                case 'user':
-                                    displayName = `${recipient.nombre} ${recipient.apellido}`;
-                                    phone = recipient.telefono;
-                                    break;
-                                case 'colaborador':
-                                    displayName = `${recipient.nombre} ${recipient.apellido}`;
-                                    phone = recipient.telefono;
-                                    break;
-                                case 'contact':
-                                    displayName = `${recipient.first_name} ${recipient.last_name || ''}`;
-                                    phone = recipient.phone_number;
-                                    break;
-                                default:
-                                    displayName = recipient.name || recipient.displayName;
-                                    phone = '';
-                                    break;
-                            }
+            <hr />
 
-                            return (
-                                <option key={recipient.id_usuario || recipient.id_colaborador || recipient.id} value={phone}>
-                                    {displayName} - {phone || 'Sin número'}
-                                </option>
-                            );
-                        })}
-                    </Form.Control>
-                )}
-            </Form.Group>
-            <Form.Group controlId="formMessageText">
-              <br></br>
-                <Form.Label>Texto del Mensaje</Form.Label>
-                <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                />
-            </Form.Group>
-        </Form>
-    </Modal.Body>
-    <Modal.Footer>
-        <Button variant="secondary" onClick={() => setShowSendMessageModal(false)}>
+            <h5>Datos a Extraer</h5>
+            {getRequestDataKeys.map((data, index) => (
+              <div key={index} style={{ marginBottom: '10px' }}>
+                <Form.Group controlId={`formGetRequestDataKey${index}`}>
+                  <Form.Label>Nombre del Dato</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={data.key}
+                    onChange={(e) => updateGetRequestDataKey(index, 'key', e.target.value)}
+                  />
+                </Form.Group>
+                <Button variant="danger" onClick={() => removeGetRequestDataKey(index)}>Eliminar</Button>
+              </div>
+            ))}
+            <Button variant="primary" onClick={addGetRequestDataKey}>Agregar Dato</Button>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowGetRequestModal(false)}>
             Cancelar
-        </Button>
-        <Button variant="primary" onClick={handleSendMessageSave}>
+          </Button>
+          <Button variant="primary" onClick={handleGetRequestModalSave}>
+            Obtener
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showDelayModal} onHide={() => setShowDelayModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Crear Retardo</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group>
+              <Form.Label>Tiempo del Retardo</Form.Label>
+              <Form.Control
+                type="number"
+                value={delayTime}
+                onChange={(e) => setDelayTime(e.target.value)}
+                placeholder="Introduce el tiempo del retardo"
+              />
+            </Form.Group>
+            <Form.Group>
+              <Form.Label>Unidad de Medida</Form.Label>
+              <Form.Control
+                as="select"
+                value={delayUnit}
+                onChange={(e) => setDelayUnit(e.target.value)}
+              >
+                <option value="Segundos">Segundos</option>
+                <option value="Minutos">Minutos</option>
+                <option value="Horas">Horas</option>
+              </Form.Control>
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDelayModal(false)}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={handleSaveDelayModal}>
             Crear
-        </Button>
-    </Modal.Footer>
-</Modal>
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showSendMessageModal} onHide={() => setShowSendMessageModal(false)}>
+          <Modal.Header closeButton>
+              <Modal.Title>Enviar Mensaje a Terceros</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+              <Form>
+                  <Form.Group controlId="formResponseTextName">
+                      <Form.Label>Nombre del Mensaje</Form.Label>
+                      <Form.Control
+                          type="text"
+                          value={responseTextName}
+                          onChange={(e) => setResponseTextName(e.target.value)}
+                      />
+                  </Form.Group>
+                  <Form.Group controlId="formRecipientType">
+                      <Form.Label>Tipo de Destinatario</Form.Label>
+                      <Form.Control
+                          as="select"
+                          value={selectedRecipientType}
+                          onChange={(e) => {
+                              setSelectedRecipientType(e.target.value);
+                              loadRecipients(e.target.value); // Cargar destinatarios según el tipo
+                              setSelectedRecipient(''); // Limpia el destinatario cuando cambia el tipo
+                          }}
+                      >
+                          <option value="">Selecciona tipo</option>
+                          <option value="user">Usuario</option>
+                          <option value="colaborador">Colaborador</option>
+                          <option value="contact">Cliente</option>
+                          <option value="variable">Variable</option>
+                      </Form.Control>
+                  </Form.Group>
+                  <Form.Group controlId="formRecipient">
+                    <br></br>
+                      <Form.Label>Destinatario</Form.Label>
+                      {selectedRecipientType === 'variable' ? (
+                          <>
+                              <Form.Control
+                                  type="text"
+                                  placeholder="Escribe el número o selecciona una variable"
+                                  value={selectedRecipient}
+                                  onChange={(e) => setSelectedRecipient(e.target.value)}
+                              />
+                              <Form.Control as="select" onChange={(e) => setSelectedRecipient(e.target.value)}>
+                                {variables.map((variable) => (
+                                  <option key={variable.name} value={variable.name}>
+                                    {variable.displayName}
+                                  </option>
+                                ))}
+                              </Form.Control>
+                          </>
+                      ) : (
+                          <Form.Control
+                              as="select"
+                              value={selectedRecipient}
+                              onChange={(e) => setSelectedRecipient(e.target.value)}
+                          >
+                              <option value="">Selecciona destinatario</option>
+                              {recipients[selectedRecipientType]?.map((recipient) => {
+                                  let displayName = '';
+                                  let phone = '';
+
+                                  switch (selectedRecipientType) {
+                                      case 'user':
+                                          displayName = `${recipient.nombre} ${recipient.apellido}`;
+                                          phone = recipient.telefono;
+                                          break;
+                                      case 'colaborador':
+                                          displayName = `${recipient.nombre} ${recipient.apellido}`;
+                                          phone = recipient.telefono;
+                                          break;
+                                      case 'contact':
+                                          displayName = `${recipient.first_name} ${recipient.last_name || ''}`;
+                                          phone = recipient.phone_number;
+                                          break;
+                                      default:
+                                          displayName = recipient.name || recipient.displayName;
+                                          phone = '';
+                                          break;
+                                  }
+
+                                  return (
+                                      <option key={recipient.id_usuario || recipient.id_colaborador || recipient.id} value={phone}>
+                                          {displayName} - {phone || 'Sin número'}
+                                      </option>
+                                  );
+                              })}
+                          </Form.Control>
+                      )}
+                  </Form.Group>
+                  <Form.Group controlId="formMessageText">
+                    <br></br>
+                      <Form.Label>Texto del Mensaje</Form.Label>
+                      <Form.Control
+                          as="textarea"
+                          rows={3}
+                          value={messageText}
+                          onChange={(e) => setMessageText(e.target.value)}
+                      />
+                  </Form.Group>
+              </Form>
+          </Modal.Body>
+          <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowSendMessageModal(false)}>
+                  Cancelar
+              </Button>
+              <Button variant="primary" onClick={handleSendMessageSave}>
+                  Crear
+              </Button>
+          </Modal.Footer>
+      </Modal>
+
+      <Modal show={showAgendarModal} onHide={() => setShowAgendarModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Configurar Agendamiento</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            {/* Validar disponibilidad antes de agendar */}
+            <Form.Group controlId="formValidateAvailability">
+              <Form.Check
+                type="checkbox"
+                label="¿Validar disponibilidad antes de agendar?"
+                checked={validateAvailability}
+                onChange={(e) => setValidateAvailability(e.target.checked)}
+              />
+            </Form.Group>
+            {/* Seleccionar el tipo de límite */}
+            <Form.Group controlId="formLimitType">
+              <Form.Label>¿Cómo desea determinar el límite?</Form.Label>
+              <Form.Control
+                as="select"
+                value={limitType}
+                onChange={(e) => setLimitType(e.target.value)}
+              >
+                <option value="fixed">Número Fijo</option>
+                <option value="variable">Variable</option>
+              </Form.Control>
+            </Form.Group>
+
+            {/* Si es un número fijo, pide la cantidad */}
+            {limitType === 'fixed' && (
+              <Form.Group controlId="formEventCount">
+                <Form.Label>Cantidad de Eventos a Agendar</Form.Label>
+                <Form.Control
+                  type="number"
+                  min="1"
+                  value={eventCount}
+                  onChange={(e) => setEventCount(e.target.value)}
+                  placeholder="Especificar número"
+                />
+              </Form.Group>
+            )}
+
+            {/* Si es una variable, pide máximo permitido y variable que determina */}
+            {limitType === 'variable' && (
+              <>
+                <Form.Group controlId="formMaxEvents">
+                  <Form.Label>Máximo Permitido</Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="1"
+                    value={maxEvents}
+                    onChange={(e) => setMaxEvents(e.target.value)}
+                    placeholder="Número máximo de eventos"
+                  />
+                </Form.Group>
+                <Form.Group controlId="formLimitVariable">
+                  <Form.Label>Variable que Determina el Límite</Form.Label>
+                  <Form.Control
+                    as="select"
+                    value={limitVariable}
+                    onChange={(e) => setLimitVariable(e.target.value)}
+                  >
+                    <option value="">Seleccionar una variable</option>
+                    {variables.map((variable) => (
+                      <option key={variable.name} value={variable.name}>
+                        {variable.displayName}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+              </>
+            )}
+
+            <hr />
+
+            {/* Campos dinámicos para cada evento */}
+            <h5>Información de los Eventos</h5>
+            {[...Array(
+              limitType === 'fixed'
+                ? Math.max(parseInt(eventCount) || 0, 0)
+                : Math.max(parseInt(maxEvents) || 0, 0)
+            )].map((_, index) => (
+              <div key={index} style={{ marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+                <h6>Evento {index + 1}</h6>
+                <Form.Group controlId={`formEventTitle${index}`}>
+                  <Form.Label>Título</Form.Label>
+                  <Form.Control
+                    as="select"
+                    value={eventFields[index]?.titulo || ''}
+                    onChange={(e) => updateEventFields(index, 'titulo', e.target.value)}
+                  >
+                    <option value="">Seleccionar una variable</option>
+                    {variables.map((variable) => (
+                      <option key={variable.name} value={variable.name}>
+                        {variable.displayName}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+
+                <Form.Group controlId={`formEventDescription${index}`}>
+                  <Form.Label>Descripción</Form.Label>
+                  <Form.Control
+                    as="select"
+                    value={eventFields[index]?.descripcion || ''}
+                    onChange={(e) => updateEventFields(index, 'descripcion', e.target.value)}
+                  >
+                    <option value="">Seleccionar una variable</option>
+                    {variables.map((variable) => (
+                      <option key={variable.name} value={variable.name}>
+                        {variable.displayName}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+
+                <Form.Group controlId={`formEventAllDay${index}`}>
+                  <Form.Label>Todo el Día</Form.Label>
+                  <Form.Control
+                    as="select"
+                    value={eventFields[index]?.all_day || ''}
+                    onChange={(e) => updateEventFields(index, 'all_day', e.target.value)}
+                  >
+                    <option value="">Seleccionar una variable</option>
+                    {variables.map((variable) => (
+                      <option key={variable.name} value={variable.name}>
+                        {variable.displayName}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+
+                <Form.Group controlId={`formEventStartDate${index}`}>
+                  <Form.Label>Fecha de Inicio</Form.Label>
+                  <Form.Control
+                    as="select"
+                    value={eventFields[index]?.fecha_inicio || ''}
+                    onChange={(e) => updateEventFields(index, 'fecha_inicio', e.target.value)}
+                  >
+                    <option value="">Seleccionar una variable</option>
+                    {variables.map((variable) => (
+                      <option key={variable.name} value={variable.name}>
+                        {variable.displayName}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+
+                <Form.Group controlId={`formEventStartTime${index}`}>
+                  <Form.Label>Hora de Inicio</Form.Label>
+                  <Form.Control
+                    as="select"
+                    value={eventFields[index]?.hora_inicio || ''}
+                    onChange={(e) => updateEventFields(index, 'hora_inicio', e.target.value)}
+                  >
+                    <option value="">Seleccionar una variable</option>
+                    {variables.map((variable) => (
+                      <option key={variable.name} value={variable.name}>
+                        {variable.displayName}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+
+                <Form.Group controlId={`formEventEndDate${index}`}>
+                  <Form.Label>Fecha de Finalización</Form.Label>
+                  <Form.Control
+                    as="select"
+                    value={eventFields[index]?.fecha_fin || ''}
+                    onChange={(e) => updateEventFields(index, 'fecha_fin', e.target.value)}
+                  >
+                    <option value="">Seleccionar una variable</option>
+                    {variables.map((variable) => (
+                      <option key={variable.name} value={variable.name}>
+                        {variable.displayName}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+
+                <Form.Group controlId={`formEventEndTime${index}`}>
+                  <Form.Label>Hora de Finalización</Form.Label>
+                  <Form.Control
+                    as="select"
+                    value={eventFields[index]?.hora_fin || ''}
+                    onChange={(e) => updateEventFields(index, 'hora_fin', e.target.value)}
+                  >
+                    <option value="">Seleccionar una variable</option>
+                    {variables.map((variable) => (
+                      <option key={variable.name} value={variable.name}>
+                        {variable.displayName}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+
+                <Form.Group controlId={`formEventAssignmentType${index}`}>
+                  <Form.Label>Tipo de Asignación</Form.Label>
+                  <Form.Control
+                    as="select"
+                    value={eventFields[index]?.tipo_asignacion || ''}
+                    onChange={(e) => updateEventFields(index, 'tipo_asignacion', e.target.value)}
+                  >
+                    <option value="">Seleccionar una variable</option>
+                    {variables.map((variable) => (
+                      <option key={variable.name} value={variable.name}>
+                        {variable.displayName}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+
+                <Form.Group controlId={`formEventAssignmentId${index}`}>
+                  <Form.Label>ID de Asignación</Form.Label>
+                  <Form.Control
+                    as="select"
+                    value={eventFields[index]?.id_asignacion || ''}
+                    onChange={(e) => updateEventFields(index, 'id_asignacion', e.target.value)}
+                  >
+                    <option value="">Seleccionar una variable</option>
+                    {variables.map((variable) => (
+                      <option key={variable.name} value={variable.name}>
+                        {variable.displayName}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+              </div>
+            ))}
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowAgendarModal(false)}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              handleSaveAgendar(); // Genera el código y cierra el modal
+            }}
+          >
+            Guardar
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
     </Modal>
-
-
-
-
   );
 };
 
