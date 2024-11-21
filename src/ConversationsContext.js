@@ -459,11 +459,6 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
       }else{
         const msj = { ...newMessage };
         console.log("nuevo msj", msj)
-        console.log("el mensaje esta siendo redirigido")
-      const isResponsibleOrAdmin = String(newMessage.responsibleUserId) === userId || userPrivileges.includes('Admin') || userPrivileges.includes('Show All Conversations');
-  
-      if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
-        const isCurrentActive = currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId));
 
         // document.addEventListener('deviceready', () => {
         //   console.log('Cordova está listo');
@@ -507,8 +502,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
           
           // Busca el mensaje por ID
           const updatedConversationMessages = messagesForConversation.map(msg => {
-            if (msg.id == newMessage.id) {
-              // Si encuentra el mensaje, agrega el atributo emoji
+            if (msg.id == (newMessage.id || newMessage.replies_id)) {
               return { ...msg, reaction: newMessage.reaction };
             }
             return msg; 
@@ -518,8 +512,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
           updatedMessages[newMessage.conversationId] = updatedConversationMessages;
         
           return updatedMessages;
-        });
-        
+        }); 
   
         if (activeConversation !== newMessage.conversationId && newMessage.type === 'message') {
           if (userHasInteracted) {
@@ -528,7 +521,6 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
             console.log('reproduciendo audio');
           }
         }
-      }
     }
    };
   
