@@ -701,7 +701,7 @@ function ChatWindow() {
         })
 
         const messageReact = response.data.messageReact || '';
-
+        console.log("mensaje reaccion",messageReact)
         setMessages(prevMessages => {
           const updatedMessages = { ...prevMessages };
           const messagesForConversation = updatedMessages[messageReact.conversation_fk] || [];
