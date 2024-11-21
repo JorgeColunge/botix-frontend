@@ -507,9 +507,9 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
           
           // Busca el mensaje por ID
           const updatedConversationMessages = messagesForConversation.map(msg => {
-            if (msg.id == newMessage.message_id) {
+            if (msg.id == newMessage.id) {
               // Si encuentra el mensaje, agrega el atributo emoji
-              return { ...msg, reaction: newMessage.emoji };
+              return { ...msg, reaction: newMessage.reaction };
             }
             return msg; 
           });
