@@ -43,30 +43,7 @@ function ChatWindow() {
   const [referenceElementReact, setReferenceElementReact] = useState(null);
   const [popperElementReact, setPopperElementReact] = useState(null);
   const [activeMessageId, setActiveMessageId] = useState(null);
-  const { styles: stylesReact, attributes: attributesReact} = usePopper(referenceElementReact, popperElementReact,  {
-    placement: 'right-end', // A la derecha del botón
-    strategy: 'absolute', // Asegura que siga al viewport
-    modifiers: [
-      {
-        name: 'offset',
-        options: {
-          offset: [5, 40], // 5px a la derecha, sin desplazamiento vertical
-        },
-      },
-      {
-        name: 'preventOverflow',
-        options: {
-          boundary: 'viewport',
-        },
-      },
-      {
-        name: 'computeStyles',
-        options: {
-          adaptive: true, // Mejora el cálculo de posiciones dinámicas
-        },
-      },
-    ],
-  });
+
   const replyBarRef = useRef(null); // Elemento sobre el cual se posicionará el popover
   const popoverTriggerRef = useRef(null);
   let timer;
@@ -206,33 +183,33 @@ function ChatWindow() {
     }
   }, [isConnected]);
 
-  useEffect(() => {
+  // useEffect(() => {
  
-    if (!socket) return;
-    const newMessageHandler = (newMessage) => {
-      if (['image', 'video', 'audio'].includes(newMessage.message_type)) {
-        newMessage.url = ensureFullUrl(newMessage.url);
-      }
-      setMessages(prevMessages => {
-        const updatedMessages = { ...prevMessages };
-        const messagesForConversation = updatedMessages[newMessage.conversationId] || [];
-        updatedMessages[newMessage.conversationId] = [...messagesForConversation, newMessage].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        return updatedMessages;
-      });
-      setLastMessageId(new Date(newMessage[0].timestamp).getTime())
-      if (currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId))) {
-        setCurrentConversation(prev => ({
-          ...prev,
-          last_message: newMessage.text,
-          last_message_time: newMessage.timestamp,
-        }));
-      }
-    };
-    socket.on('newMessage', newMessageHandler);
-    return () => {
-      socket.off('newMessage', newMessageHandler);
-    };
-  }, [socket, currentConversation, setMessages, setCurrentConversation, setCurrentMessage]);
+  //   if (!socket) return;
+  //   const newMessageHandler = (newMessage) => {
+  //     if (['image', 'video', 'audio'].includes(newMessage.message_type)) {
+  //       newMessage.url = ensureFullUrl(newMessage.url);
+  //     }
+  //     setMessages(prevMessages => {
+  //       const updatedMessages = { ...prevMessages };
+  //       const messagesForConversation = updatedMessages[newMessage.conversationId] || [];
+  //       updatedMessages[newMessage.conversationId] = [...messagesForConversation, newMessage].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  //       return updatedMessages;
+  //     });
+  //     setLastMessageId(new Date(newMessage[0].timestamp).getTime())
+  //     if (currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId))) {
+  //       setCurrentConversation(prev => ({
+  //         ...prev,
+  //         last_message: newMessage.text,
+  //         last_message_time: newMessage.timestamp,
+  //       }));
+  //     }
+  //   };
+  //   socket.on('newMessage', newMessageHandler);
+  //   return () => {
+  //     socket.off('newMessage', newMessageHandler);
+  //   };
+  // }, [socket, currentConversation, setMessages, setCurrentConversation, setCurrentMessage]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -824,7 +801,6 @@ function ChatWindow() {
         }
     }
       try {
-        setLastMessageId(new Date(currentSend.last_message_time).getTime())
         setMessageReply(null)
         setConversacionActual({...currentSend, position_scroll: false})
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-text`, {
@@ -1097,7 +1073,7 @@ function ChatWindow() {
 
       if (firstMessageId && messagesEndRef.current && (isScrolledToEnd || updateMoreMsj != null)) {
         const scrollContainer = messagesEndRef.current;
-        const element = document.getElementById(`msg-${middleMessageId ? middleMessageId : firstMessageId}`);
+        const element = document.getElementById(`msg-${middleMessageId ? middleMessageId : lastMessageId}`);
     
         if (element && scrollContainer) {
           // Obtener la posición del elemento deseado
@@ -1111,7 +1087,7 @@ function ChatWindow() {
         }
       }
     }
-  }, [firstMessageId, messages]);
+  }, [lastMessageId, messages]);
 
   useEffect(() => {
     if (currentConversation && currentConversation.conversation_id) {
