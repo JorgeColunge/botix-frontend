@@ -707,7 +707,7 @@ function ChatWindow() {
           const messagesForConversation = updatedMessages[messageReact.conversation_fk] || [];
           
           const updatedConversationMessages = messagesForConversation.map(msg => {
-            if (msg.id == messageReact.replies_id || messageReact.id) {
+            if (msg.id == (messageReact.replies_id || messageReact.id)) {
               return { ...msg, reaction: messageReact.reaction };
             }
             return msg; 
