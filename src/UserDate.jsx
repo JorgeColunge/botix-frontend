@@ -489,12 +489,17 @@ export function UserDate({ users, contacts, departments, getConversationStats, g
   
   return (
     <div className="w-full">
-      <div className="flex items-end py-4">
+      <div className="w-100 flex items-end justify-center py-4">
        {
          tipo_tabla == 'contactos' ? (
            <section className={`d-flex row gap-2 ${isMobile ? 'w-[100%]' : 'w-[30%]' }`}>
-            <article className='d-flex gap-2'>
-            {isMobile && (<List color="black" className='pb-3' size={60} onClick={() => {setStatus(true); console.log("click")}} />)}
+            <article className='d-flex gap-2 w-100'>
+            {isMobile && (
+              <List 
+               color="black" 
+               className='flex self-center h-10 w-20' 
+               onClick={() => {setStatus(true); console.log("click")}} />
+               )}
               <Button className='bg-fuchsia-600 hover:bg-fuchsia-700 text-white w-100' onClick={handleCreateContactClick}>
                 <Plus className="mr-2 h-6 w-6"/> Crear contacto
               </Button>

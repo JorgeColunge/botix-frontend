@@ -139,8 +139,8 @@ export const SettingUser = () => {
       };
 
       return (
-        <section> 
-          <article className="w-full mt-1 mb-0 flex gap-2">
+        <section className='w-100 ps-4'> 
+          <article className="w-full mt-1 pt-2 mb-0 flex gap-2">
             <Card className="w-full">
               {isMobile && 
                 <CardHeader className="w-full flex items-center">
@@ -155,7 +155,7 @@ export const SettingUser = () => {
             </Card>
           </article>
 
-        <article className="min-h-screen flex items-center justify-center ps-4 pe-2 pt-0 mt-0">
+        <article className="w-100 min-h-screen flex items-center justify-center pt-3 mt-0">
         <Card className="w-full max-w-[100%] md:w-[50%]">
             <CardHeader className="flex justify-between items-center">
              { !isMobile ?  <CardTitle>Configuraciones de Usuario</CardTitle> : null}

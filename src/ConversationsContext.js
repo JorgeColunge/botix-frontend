@@ -339,7 +339,6 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
   
       if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
         const isCurrentActive = currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId));
-        // requestFirebaseNotificationPermission(); // Solicitar permiso para notificaciones de Firebase
 
         document.addEventListener('deviceready', () => {
           console.log('Cordova está listo');
@@ -375,12 +374,6 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
           }
         }, false);        
         
-        // onMessageListener()
-        //   .then((payload) => {
-        //     // Manejar la notificación recibida
-        //     console.log('Notification received: ', payload);
-        //   })
-        //   .catch((err) => console.log('Failed: ', err));
         if (isCurrentActive) {
           resetUnreadMessages(newMessage.conversationId);
           setCurrentConversation(prev => ({
@@ -389,7 +382,8 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
             last_message: newMessage.text,
             last_message_time:  msj.timestamp ? msj.timestamp : new Date().toISOString(),
             unread_messages: newMessage.unread_messages,
-            phase_id: prev.phase_id
+            phase_id: prev.phase_id,
+            
           })
         );
         }
@@ -417,7 +411,9 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
                 ...convo,
                 last_message: newMessage.text,
                 last_message_time: newMessage.timestamp ? newMessage.timestamp : new Date().toISOString(),
-                unread_messages: newMessage.unread_messages
+                unread_messages: newMessage.unread_messages,
+                message_type: newMessage.message_type,
+                duration: newMessage.duration
               };
             }
             return convo;
@@ -446,6 +442,100 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
   
     return () => {
       socket.off('newMessage', newMessageHandler);
+    };
+  }, [socket, currentConversation, activeConversation, userHasInteracted, userPrivileges, state]);
+  
+  useEffect(() => {
+    if (!socket) return;
+  
+    const newMessageHandler = async (newMessage) => {
+  
+      const userId = localStorage.getItem("user_id");
+      const userCompanyId = localStorage.getItem("company_id");
+
+      // Validar si el mensaje pertenece a la empresa del usuario conectado
+      if (String(newMessage.company_id) !== userCompanyId) {
+        return;
+      }else{
+        const msj = { ...newMessage };
+        console.log("nuevo msj", msj)
+        console.log("el mensaje esta siendo redirigido")
+      const isResponsibleOrAdmin = String(newMessage.responsibleUserId) === userId || userPrivileges.includes('Admin') || userPrivileges.includes('Show All Conversations');
+  
+      if ((isResponsibleOrAdmin &&  msj.timestamp) || msj.type == "reply") {
+        const isCurrentActive = currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId));
+
+        // document.addEventListener('deviceready', () => {
+        //   console.log('Cordova está listo');
+        
+        //   if (!isCurrentActive) {
+        
+        //     // if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
+               
+        //     //     switch (newMessage.message_type) {
+        //     //       case 'text':
+        //     //          notificationCaseText(newMessage);
+        //     //         break;
+        //     //       case 'audio':
+        //     //          notificationCaseAudio(newMessage);
+        //     //       break;
+        //     //       case 'video':
+        //     //          notificationCaseVideo(newMessage);
+        //     //       break;
+        //     //       case 'image':
+        //     //          notificationCaseImage(newMessage);
+        //     //       break;
+        //     //       case 'document':
+        //     //          notificationCaseDocument(newMessage);
+        //     //       break;  
+
+        //     //       default:
+        //     //         break;
+        //     //     }
+        //     // } else {
+        //     //   console.log('El plugin de notificaciones locales no está disponible.');
+        //     // }
+        
+        //   }
+        // }, false);        
+        
+        setMessages(prevMessages => {
+          const updatedMessages = { ...prevMessages };
+          
+          // Obtén los mensajes de la conversación actual, o una lista vacía si no existen
+          const messagesForConversation = updatedMessages[newMessage.conversationId] || [];
+          
+          // Busca el mensaje por ID
+          const updatedConversationMessages = messagesForConversation.map(msg => {
+            if (msg.id == newMessage.message_id) {
+              // Si encuentra el mensaje, agrega el atributo emoji
+              return { ...msg, reaction: newMessage.emoji };
+            }
+            return msg; 
+          });
+        
+          // Actualiza los mensajes para la conversación actual
+          updatedMessages[newMessage.conversationId] = updatedConversationMessages;
+        
+          return updatedMessages;
+        });
+        
+  
+        if (activeConversation !== newMessage.conversationId && newMessage.type === 'message') {
+          if (userHasInteracted) {
+            const audio = new Audio('/whistle-campana-whatsapp.mp3');
+            audio.play().catch(error => console.error('Error playing sound:', error));
+            console.log('reproduciendo audio');
+          }
+        }
+      }
+    }
+   };
+  
+    socket.on('reactionMessage', newMessageHandler);
+  
+    return () => {
+      socket.off('reactionMessage', newMessageHandler);
     };
   }, [socket, currentConversation, activeConversation, userHasInteracted, userPrivileges, state]);
   
