@@ -541,9 +541,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
     if (String(newMessage.company_id) !== userCompanyId) {
       return;
     }else{
-      const msj = { ...newMessage };
-      console.log("nuevo msj", msj)
-      console.log("el mensaje esta siendo redirigido")
+      console.log("nuevo msj de reaccion", newMessage)
 
       setMessages(prevMessages => {
         const updatedMessages = { ...prevMessages };
