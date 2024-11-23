@@ -45,6 +45,7 @@ function ChatWindow() {
   const [activeMessageId, setActiveMessageId] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [clearView, setClearView] = useState(false);
+  const [imageCaption, setImageCaption] = useState('');
 
 
   const replyBarRef = useRef(null); // Elemento sobre el cual se posicionará el popover
@@ -782,11 +783,16 @@ function ChatWindow() {
     
       // Enviar imagen si está seleccionada
       if (selectedImage) {
-        const imageToSend = selectedImage; // Copia local de la imagen para evitar conflictos
-        setSelectedImage(null); // Quitar imagen antes de realizar el envío
+        const imageToSend = selectedImage; // Copia de la imagen para evitar conflictos
+        const captionToSend = messageText.trim(); // Usa el texto como caption
+        setSelectedImage(null); // Limpia la imagen seleccionada
+        setMessageText(''); // Limpia la barra de texto
         try {
           const formData = new FormData();
           formData.append('image', imageToSend);
+          if (captionToSend) {
+            formData.append('caption', captionToSend); // Agrega el caption al FormData
+          }
     
           const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-image`, formData, {
             headers: {
@@ -795,9 +801,9 @@ function ChatWindow() {
           });
     
           const imageUrl = response.data.imageUrl;
-          await sendWhatsAppMessageImage(imageUrl);
+          await sendWhatsAppMessageImage(imageUrl, captionToSend);
     
-          console.log("Imagen enviada:", imageUrl);
+          console.log("Imagen enviada con caption:", captionToSend);
         } catch (error) {
           console.error('Error enviando la imagen:', error);
           return;

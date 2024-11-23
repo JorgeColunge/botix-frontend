@@ -65,6 +65,7 @@
   border-radius: 10px;
   padding: 10px;
   display: flex;
+  flex-direction: column; /* Cambia a columna */
   justify-content: center;
   align-items: center;
   transform-origin: bottom left; /* Establece el ancla en la parte inferior izquierda */
@@ -75,6 +76,16 @@
   max-width: 90%; /* Ajusta el ancho máximo */
   object-fit: contain; /* Mantiene proporciones de la imagen */
   border-radius: 8px;
+}
+
+.image-caption-input {
+  margin-top: 10px;
+  width: 100%;
+  max-width: 90%;
+  padding: 10px;
+  border-radius: 5px;
+  resize: none;
+  font-size: 14px;
 }
 
 @media all and (max-width: 767px) {
