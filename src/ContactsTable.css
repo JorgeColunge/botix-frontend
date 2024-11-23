@@ -6,6 +6,7 @@
   .table-responsive {
     overflow-x: auto;
     text-align: center;
+    width: 100%;
   }
   
   .custom-table thead {

@@ -204,6 +204,7 @@ function Sidebar() {
   };
 
      const integracion = integraciones.find( intr => intr.id === conversacion.integration_id)
+
      const typeMessage = (()=>{
         switch (conversacion.message_type) {
           case 'text':
@@ -249,6 +250,7 @@ function Sidebar() {
             break;
         }
      })
+     
     switch (integracion?.type) {
       case 'Interno':    
       

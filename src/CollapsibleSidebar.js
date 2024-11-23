@@ -91,7 +91,7 @@ const onSelectOption = (selectedOption) => {
        }
     }
     localStorage.clear();
-    window.location.href = "/login";
+    navigate('/login');
   };
 
   return (

@@ -117,7 +117,6 @@
   font-size: 15px;
   box-shadow: 0px 0px 5px #979797;
   border-radius: 0px 10px 10px 10px;
-  margin-right: auto;
 }
 
 .message-bubble.reply {
@@ -232,6 +231,11 @@
   align-items: center;
   padding: 10px;
   position: relative;
+  max-width: 100%; /* Limita el ancho al contenedor */
+  overflow: hidden; /* Oculta el contenido que exceda */
+  white-space: nowrap; /* Evita que el texto se envuelva */
+  text-overflow: ellipsis; /* Agrega puntos suspensivos si el texto es muy largo */
+  box-sizing: border-box;
 }
 
 .play-pause-btn {
@@ -264,6 +268,7 @@
   padding: 2px 5px;
   border-radius: 4px;
   font-size: 0.75rem;
+
 }
 
 .wallpaper_messages{
@@ -430,8 +435,12 @@
 
 .reply-button {
   margin: 0 5px;
+  opacity: 0; /* El botón es invisible */
+  transition: opacity 0.3s ease; 
 }
-
+.reply-button:hover {
+  opacity: 1;
+}
 .message-input {
   width: 100%;
   padding: 10px;
@@ -439,6 +448,26 @@
   outline: none;
   resize: none; /* Deshabilitar cualquier redimensionamiento manual */
   overflow-y: auto;
+}
+.emoji-container {
+  position: absolute;
+  top: 100%; /* Aparece debajo del mensaje */
+  right: 0; /* Alineación inicial */
+  z-index: 1000;
+}
+
+.emoji-picker {
+  position: relative;
+  max-width: 300px; /* Limita el ancho del EmojiPicker */
+  transform: translateX(-100%); /* Mueve todo el EmojiPicker hacia la izquierda */
+  overflow: hidden;
+}
+
+.emoji-containerLeft {
+  position: absolute;
+  top: 100%; /* Aparece debajo del mensaje */
+  left: 0; /* Alineación inicial */
+  z-index: 1000;
 }
 
 .send-button {
@@ -660,7 +689,13 @@
   }
   .reply-button {
     padding: 0.1em;
+    cursor: pointer;
+    transition: opacity 0.6s ease-in-out; /* Transición suave */
   }
+  .group:hover .reply-button {
+    opacity: 1; /* Muestra el botón al pasar el mouse sobre el contenedor */
+  }
+
   .message-bubble {
     margin-right: .3em;
     margin-left: .3em;

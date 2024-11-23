@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useCallback, useState, useContext } from 'react';
-import { Button, DropdownButton, Dropdown, useAccordionButton, NavDropdown } from 'react-bootstrap';
+import { Button, DropdownButton, Dropdown, NavDropdown } from 'react-bootstrap';
 import { PersonCircle, TelephoneFill, EnvelopeFill, Globe, Instagram, Facebook, Linkedin, Twitter, Tiktok, Youtube, Check, CheckAll, Clock } from 'react-bootstrap-icons';
 import './App.css';
-import { ArrowLeft, CameraIcon, ChevronDown, CreditCard, File, Keyboard, Mic, Settings, Video, X } from 'lucide-react';
+import { CameraIcon, ChevronDown, File, Mic, Video, X } from 'lucide-react';
 import EditContactModal from './EditContactModal';
 import ModalComponent from './modalComponet';
 import AudioPlayer from './audioPlayer';
@@ -15,8 +15,8 @@ import { usePopper } from 'react-popper';
 import TemplateModal from './TemplateModal';
 import { AppContext } from './context';
 import { useMediaQuery } from 'react-responsive';
-import { Await, useNavigate } from 'react-router-dom';
-import { Card, CardContent, DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger, Input, Label, Popover, PopoverContent, PopoverTrigger } from './components';
+import { useNavigate } from 'react-router-dom';
+import { Badge, Card, CardContent, DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger,Label } from './components';
 
 function ChatWindow() {
   const { currentConversation, messages, loadMessages, socket, isConnected, setMessages, setCurrentConversation, allUsers, handleResponsibleChange, handleEndConversation, phases } = useConversations();
@@ -39,8 +39,14 @@ function ChatWindow() {
   const [cursorPosition, setCursorPosition] = useState(null);
   const [messageReply, setMessageReply] = useState(null);
 
+  const [showEmojiResponse, setShowEmojiResponse] = useState(false);
+  const [referenceElementReact, setReferenceElementReact] = useState(null);
+  const [popperElementReact, setPopperElementReact] = useState(null);
+  const [activeMessageId, setActiveMessageId] = useState(null);
+
   const replyBarRef = useRef(null); // Elemento sobre el cual se posicionará el popover
   const popoverTriggerRef = useRef(null);
+  let timer;
 
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const isTable = useMediaQuery({ maxWidth: 1240 });
@@ -146,6 +152,20 @@ function ChatWindow() {
   }, [navigate]);
   
   useEffect(() => {
+    const handleClickOutsideEmoji = (event) => {
+      if (popperElementReact && !popperElementReact.contains(event.target) && !referenceElementReact.contains(event.target)) {
+        setShowEmojiResponse(false); // Cierra el selector de emojis.
+        setActiveMessageId(null)
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutsideEmoji); // Escucha clics en cualquier parte del documento.
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutsideEmoji); // Limpia el listener al desmontar.
+    };
+  }, [popperElementReact, referenceElementReact]);
+
+  
+  useEffect(() => {
      if (state.conversacion_Actual.conversation_id != messageReply?.msj?.conversation_fk) {
       setMessageReply(null)
      }
@@ -163,33 +183,33 @@ function ChatWindow() {
     }
   }, [isConnected]);
 
-  useEffect(() => {
+  // useEffect(() => {
  
-    if (!socket) return;
-    const newMessageHandler = (newMessage) => {
-      if (['image', 'video', 'audio'].includes(newMessage.message_type)) {
-        newMessage.url = ensureFullUrl(newMessage.url);
-      }
-      setMessages(prevMessages => {
-        const updatedMessages = { ...prevMessages };
-        const messagesForConversation = updatedMessages[newMessage.conversationId] || [];
-        updatedMessages[newMessage.conversationId] = [...messagesForConversation, newMessage].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        return updatedMessages;
-      });
-      setLastMessageId(new Date(newMessage[0].timestamp).getTime())
-      if (currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId))) {
-        setCurrentConversation(prev => ({
-          ...prev,
-          last_message: newMessage.text,
-          last_message_time: newMessage.timestamp,
-        }));
-      }
-    };
-    socket.on('newMessage', newMessageHandler);
-    return () => {
-      socket.off('newMessage', newMessageHandler);
-    };
-  }, [socket, currentConversation, setMessages, setCurrentConversation, setCurrentMessage]);
+  //   if (!socket) return;
+  //   const newMessageHandler = (newMessage) => {
+  //     if (['image', 'video', 'audio'].includes(newMessage.message_type)) {
+  //       newMessage.url = ensureFullUrl(newMessage.url);
+  //     }
+  //     setMessages(prevMessages => {
+  //       const updatedMessages = { ...prevMessages };
+  //       const messagesForConversation = updatedMessages[newMessage.conversationId] || [];
+  //       updatedMessages[newMessage.conversationId] = [...messagesForConversation, newMessage].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  //       return updatedMessages;
+  //     });
+  //     setLastMessageId(new Date(newMessage[0].timestamp).getTime())
+  //     if (currentConversation && ((currentConversation.conversation_id === newMessage.conversationId )|| (currentConversation.phone_number == newMessage.senderId))) {
+  //       setCurrentConversation(prev => ({
+  //         ...prev,
+  //         last_message: newMessage.text,
+  //         last_message_time: newMessage.timestamp,
+  //       }));
+  //     }
+  //   };
+  //   socket.on('newMessage', newMessageHandler);
+  //   return () => {
+  //     socket.off('newMessage', newMessageHandler);
+  //   };
+  // }, [socket, currentConversation, setMessages, setCurrentConversation, setCurrentMessage]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -234,6 +254,14 @@ function ChatWindow() {
   setConversacionActual({ position_scroll: false});
   setCurrentConversation(null)
  }
+
+ const startPress = (messageId) => {
+  if (!activeMessageId && !showEmojiResponse) {    
+    timer = setTimeout(() => {
+      handleEmojiReaction(messageId)
+    }, 1000); 
+  }
+};
 
   const ContactInfoBar = ({usuario, usuarios, conversacion}) => {
 
@@ -284,7 +312,6 @@ function ChatWindow() {
       if (conversacion.id_usuario === usuario.id_usuario) {
         return (
           <Button variant="outline" size="icon" className='d-flex items-center p-0' onClick={() => handleCloseChat()}>
-            { isMobile?  <ArrowLeft /> : null}  
               <img
               src={`${process.env.REACT_APP_API_URL}${usuario_remitente.link_foto}`}
               alt="Profile"
@@ -296,7 +323,6 @@ function ChatWindow() {
       } else {   
         return (
           <Button variant="outline" size="icon" className='d-flex items-center p-0' onClick={() => handleCloseChat()}>
-             { isMobile?  <ArrowLeft /> : null}   
               <img
               src={`${process.env.REACT_APP_API_URL}${usuario_conversacion.link_foto}`}
               alt="Profile"
@@ -309,10 +335,9 @@ function ChatWindow() {
     },[usuarios, conversacion, integration?.type, currentConversation, usuario])
 
     return (
-      <div className="contact-info-bar d-flex align-items-center p-2 shadow-sm" style={{ gap: "10px" }}>
+      <div className="contact-info-bar d-flex align-items-center p-2 shadow-sm" style={{ gap: "10px",  height: "80px" }}>
         {currentConversation.profile_url ? (
           <Button variant="outline" size="icon" className='d-flex items-center p-0' onClick={() => handleCloseChat()}>
-              { isMobile?  <ArrowLeft /> : null}   
             <img
               src={`${process.env.REACT_APP_API_URL}${currentConversation.profile_url}`}
               alt="Profile"
@@ -325,7 +350,6 @@ function ChatWindow() {
         ) :
           (
             <Button variant="outline" size="icon" className='d-flex items-center p-0' onClick={() => handleCloseChat()}>
-              { isMobile?  <ArrowLeft /> : null}   
           <PersonCircle className='rounded-circle' size={50} />
           </Button>)
               }
@@ -613,33 +637,110 @@ function ChatWindow() {
     setShowTemplateModal(true);
   };
 
+  const handleEmojiReaction = (messageId) => {
+    setShowEmojiResponse(true)
+    setActiveMessageId((prevId) => (prevId === messageId ? null : messageId));
+};
+
+  const onEmojiClickReact = async(emojiObject, message_id, message_type) => {
+    const integracionInterna = state?.integraciones?.find(integr => integr.type == "Interno")
+    var usuario_remitente = state.usuario.id_usuario;;
+    var usuario_destino = null;
+    var currentSend = {
+      ...currentConversation,
+      last_message_time: new Date().toISOString()
+    };
+
+    if (currentConversation?.integration_id == integracionInterna.id) {
+      if (state.usuario.id_usuario == state?.conversacion_Actual?.contact_id || state?.usuario?.id_usuario == state?.conversacion_Actual?.contact_user_id) {
+        usuario_remitente = state.conversacion_Actual.contact_id || state.conversacion_Actual.contact_user_id;
+        usuario_destino = state?.conversacion_Actual?.id_usuario || state?.conversacion_Actual?.id_usuario;
+      }else{
+        usuario_remitente = state?.conversacion_Actual?.id_usuario;;
+        usuario_destino =  state.conversacion_Actual.contact_id || state.conversacion_Actual.contact_user_id;
+      }
+  }
+
+     try {
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/react-message`,{
+          conversationId: currentConversation.conversation_id,
+          phone: String(currentSend.phone_number),
+          message_id: message_id,
+          message_type: message_type,
+          emoji: emojiObject.emoji,
+          integration_name : state.integraciones?.find(intra => intra.id == currentSend?.integration_id)?.type,
+          integration_id: currentSend?.integration_id,
+          usuario_send: usuario_destino || null,
+          id_usuario: usuario_remitente,
+          companyId: state?.usuario?.company_id,
+          remitent: state?.usuario?.id_usuario,
+          reply_from: messageReply?.msj?.id || null
+        })
+
+        const messageReact = response.data.messageReact || '';
+        console.log("mensaje reaccion",messageReact)
+        setMessages(prevMessages => {
+          const updatedMessages = { ...prevMessages };
+          const messagesForConversation = updatedMessages[messageReact.conversation_fk] || [];
+          
+          const updatedConversationMessages = messagesForConversation.map(msg => {
+            if (msg.id == (messageReact.replies_id || messageReact.id)) {
+              return { ...msg, reaction: messageReact.reaction };
+            }
+            return msg; 
+          });
+        
+          updatedMessages[messageReact.conversation_fk] = updatedConversationMessages;
+        
+          return updatedMessages;
+        });
+
+        setShowEmojiResponse(false); // Cierra el selector de emojis.
+        setActiveMessageId(null)
+
+     } catch (error) {
+      console.log("error al reaccionar:",error)
+     }
+  };
+
+  const integracion = state?.integraciones?.find(intr => intr?.id == currentConversation?.integration_id) || null;
+
   function ReplyBar() {
     const [referenceElement, setReferenceElement] = useState(null);
     const [popperElement, setPopperElement] = useState(null);
     const { styles, attributes } = usePopper(referenceElement, popperElement, {
-      placement: 'top-start', // O 'bottom-start' si prefieres que aparezca abajo
+      placement: 'top', // Cambia según donde quieras que se coloque: 'top', 'bottom', etc.
+      strategy: 'fixed', // Asegura que se posicione respecto al viewport
       modifiers: [
         {
           name: 'offset',
           options: {
-            offset: [30, 15], // Ajusta el desplazamiento según sea necesario
+            offset: [0, 10], // Ajusta el desplazamiento horizontal y vertical
           },
         },
         {
           name: 'preventOverflow',
           options: {
-            boundary: 'viewport', // Asegura que el popper no se salga de la vista
+            boundary: 'viewport', // Limita el desbordamiento al viewport
+            tether: false,        // Permite que el elemento se salga si es necesario
+          },
+        },
+        {
+          name: 'computeStyles',
+          options: {
+            adaptive: false, // Asegura que se calculen correctamente los estilos en `fixed`
           },
         },
       ],
     });
+    
+    
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const textInputRef = useRef(null);
     const fileInputRef = useRef(null);
     const [fileMenuVisible, setFileMenuVisible] = useState(false);
     const [fileInputType, setFileInputType] = useState('');
 
-    const integracion = state.integraciones.find(intr => intr.id == currentConversation.integration_id)
 
     useEffect(() => {
       if (textInputRef.current) {
@@ -700,7 +801,6 @@ function ChatWindow() {
         }
     }
       try {
-        setLastMessageId(new Date(currentSend.last_message_time).getTime())
         setMessageReply(null)
         setConversacionActual({...currentSend, position_scroll: false})
         const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-text`, {
@@ -742,15 +842,15 @@ function ChatWindow() {
       }
     };
 
-    const handleEmojiClick = () => {
-      setShowEmojiPicker(!showEmojiPicker);
-    };
-
     const onEmojiClick = (emojiObject, event) => {
       const cursorPosition = textInputRef.current.selectionStart;
       const newText = messageText.substring(0, cursorPosition) + emojiObject.emoji + messageText.substring(cursorPosition);
       setMessageText(newText);
       setCursorPosition(cursorPosition + 1);
+    };
+
+    const handleEmojiClick = () => {
+      setShowEmojiPicker(!showEmojiPicker);
     };
 
     const handleAttachClick = () => {
@@ -889,11 +989,18 @@ function ChatWindow() {
         )}
 
         {showEmojiPicker && (
-          <div style={styles.popper} {...attributes.popper}>
-            <EmojiPicker  disabled={ integracion.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onEmojiClick={onEmojiClick} />
+          <div
+            ref={setPopperElement}
+            style={{ ...styles.popper, zIndex: 9999 }} // Asegura un z-index alto si está detrás de otros elementos
+            {...attributes.popper}
+          >
+            <EmojiPicker
+              disabled={integracion.name === 'Interno' ? false : isLastMessageOlderThan24Hours()}
+              onEmojiClick={onEmojiClick}
+            />
           </div>
         )}
-      
+
         <TextareaAutosize
           className="message-input"
           placeholder="Escribe un mensaje aquí..."
@@ -966,7 +1073,7 @@ function ChatWindow() {
 
       if (firstMessageId && messagesEndRef.current && (isScrolledToEnd || updateMoreMsj != null)) {
         const scrollContainer = messagesEndRef.current;
-        const element = document.getElementById(`msg-${middleMessageId ? middleMessageId : firstMessageId}`);
+        const element = document.getElementById(`msg-${middleMessageId ? middleMessageId : lastMessageId}`);
     
         if (element && scrollContainer) {
           // Obtener la posición del elemento deseado
@@ -980,7 +1087,7 @@ function ChatWindow() {
         }
       }
     }
-  }, [firstMessageId, messages]);
+  }, [lastMessageId, messages]);
 
   useEffect(() => {
     if (currentConversation && currentConversation.conversation_id) {
@@ -1190,17 +1297,48 @@ function ChatWindow() {
                 const isDifferentTypePrevious = index > 0 && message.type !== groupedMessages[date][index - 1].type;
                 const isDifferentTypeNext = index < groupedMessages[date].length - 1 && message.type !== groupedMessages[date][index + 1].type;
                 let bubbleClass = typeMessageVerificad(message, integration, state.usuario);
+                var alineacionMesj= null;
+                var alingMessage = null;
+                if (isMobile && bubbleClass == 'message-bubble reply') {
+                   alineacionMesj = 'emoji-container'; 
+                } else if (isMobile && bubbleClass != 'message-bubble reply') {
+                  alineacionMesj = 'emoji-containerLeft'
+                }else {
+                  alineacionMesj = '';
+                }
+                if (bubbleClass == 'message-bubble message') {
+                  alingMessage = 'justify-end flex-row-reverse items-center';
+                } else {
+                  alingMessage = 'justify-end';
+                }
                 if (isDifferentTypePrevious) bubbleClass += ' different-type-previous';
-                if (isDifferentTypeNext) bubbleClass += ' different-type-next';
+                if (isDifferentTypeNext) bubbleClass += ' different-type-next max-w-fit !import';
   
                 const originalMessage = message.reply_from ? findOriginalMessage(message.reply_from) : null;
   
                 return (
-                  <div
+                  <section
+                  className={`w-full flex flex-row ${alingMessage}`} 
+                >
+                  {
+                    
+                    <button
+                      variant="light"
+                      disabled={(integracion?.name === "Interno" ? false : isLastMessageOlderThan24Hours()) || isMobile}
+                      className="reply-button opacity-10 hover:opacity-100 "
+                      onClick={() => handleEmojiReaction(message.id)} // Pasar el ID del mensaje
+                      ref={setReferenceElementReact}
+                    >
+                      <i className="far fa-smile"></i>
+                    </button>
+                    
+                  }
+                  <article
+                   onTouchStart={() =>startPress(message.id)}
                     key={message.id}
                     id={`msg-${new Date(message.timestamp).getTime()}`}
                     className={bubbleClass}
-                    style={{ marginBottom: '20px', maxWidth: message.message_type === 'image' || message.message_type === 'video' ? 'none' : '70%' }}
+                    style={{ marginBottom: '20px', maxWidth: message.message_type === 'image' || message.message_type === 'video' ? 'none' : 'auto',  position: 'relative', }}
                   >
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -1216,14 +1354,30 @@ function ChatWindow() {
                             <DropdownMenuItem onClick={() => handleDropdownClick(message)}>
                                 <span>Responder</span>
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEmojiReaction(message.id)}>
+                                <span>Reaccionar</span>
+                              </DropdownMenuItem>  
                             </DropdownMenuGroup>
                           </DropdownMenuContent>
                         </DropdownMenu>
                      
+                        {activeMessageId === message.id && showEmojiResponse && ( // Mostrar solo si coincide con el ID activo
+                          <div 
+                          className={alineacionMesj}
+                            ref={setPopperElementReact}
+                            >
+                            <EmojiPicker
+                              reactionsDefaultOpen
+                              allowExpandReactions
+                              disabled={integracion.name === "Interno" ? false : isLastMessageOlderThan24Hours()}
+                              onEmojiClick={(emoji) => onEmojiClickReact(emoji, message.id, message.type)}
+                            />
+                          </div>
+                        )}
+
                     {originalMessage && (
                       
                       <>
-        
                         <div
                           className="reply-preview"
                           onClick={() => scrollToMessage(new Date(originalMessage.timestamp).getTime())}
@@ -1414,7 +1568,19 @@ function ChatWindow() {
                       {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       {message.type === 'reply' && validateMessageTypeView(bubbleClass, message)}
                     </span>
-                  </div>
+                    {/* Reacción (Badge con Emoji) */}
+                    {message.reaction && (
+                      <div className="absolute top-15 left-0 right-0 flex justify-start pt-2">
+                        <Badge
+                          variant="icon"
+                          className="p-0 transform translate-x-2/6 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-700 opacity-90 hover:opacity-100 cursor-pointer"
+                        >
+                          <span className="text-xl">{message.reaction}</span> {/* Mostrar el emoji */}
+                        </Badge>
+                      </div>
+                    )}
+                  </article>
+                  </section>
                 );
               })}
             </React.Fragment>

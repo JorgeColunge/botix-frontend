@@ -104,7 +104,7 @@ code {
 .floating-svg-reply {
   position: absolute;
   right: 3vw; /* Ajusta según la posición deseada */
-  bottom: 20vh;
+  bottom: 25vh;
   border-radius: 50%;
   cursor: pointer;
 }
