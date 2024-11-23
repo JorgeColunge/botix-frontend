@@ -271,11 +271,11 @@ const EditChatBotModal = ({ show, handleClose, bot }) => {
   const [code, setCode] = useState('');
   const [nodes, setNodes, onNodesChangeState] = useNodesState([]);
   const [edges, setEdges, onEdgesChangeState] = useEdgesState([]);
-  const [variables, setVariables] = useState([{ name: 'Seleccione variable', displayName: 'Seleccione variable' },
-    {name: 'currentTime', displayName: 'Ahora'},
-    {name: 'messageData.text', displayName: 'Mensaje de Texto'},
-    {name: 'conversationState', displayName: 'Estado de la conversación'},
-    {name: 'responsibleUserId', displayName: 'Responsable de la conversación'},
+  const [variables, setVariables] = useState([
+    { name: 'currentTime', displayName: 'Ahora'},
+    { name: 'messageData.text', displayName: 'Mensaje de Texto'},
+    { name: 'conversationState', displayName: 'Estado de la conversación'},
+    { name: 'responsibleUserId', displayName: 'Responsable de la conversación'},
     { name: 'contactInfo', displayName: 'Información del contacto' },
     { name: 'contactInfo.first_name', displayName: 'Nombre del contacto' },
     { name: 'contactInfo.last_name', displayName: 'Apellido del contacto' },
@@ -287,7 +287,10 @@ const EditChatBotModal = ({ show, handleClose, bot }) => {
     { name: 'contactInfo.nacionalidad', displayName: 'Nacionalidad' },
     { name: 'contactInfo.ciudad_residencia', displayName: 'Ciudad de residencia' },
     { name: 'contactInfo.direccion_completa', displayName: 'Dirección completa' },
-    { name: 'contactInfo.email', displayName: 'Email' }]);
+    { name: 'contactInfo.email', displayName: 'Email' },
+    { name: 'confirmationVariable', displayName: 'Confirmación de agendamiento'},
+    { name: 'dataEventsVariable', displayName: 'Datos de agendamiento'}
+  ]);
   const [showModal, setShowModal] = useState(false);
   const [selectedVariable, setSelectedVariable] = useState('');
   const [selectedOperator, setSelectedOperator] = useState('==');
@@ -432,6 +435,14 @@ const EditChatBotModal = ({ show, handleClose, bot }) => {
   const [limitVariable, setLimitVariable] = useState(''); // Variable que determina el límite (si es variable)
   const [eventFields, setEventFields] = useState([]); // Variables seleccionadas para los eventos
   const [validateAvailability, setValidateAvailability] = useState(false);
+  const [showVariableModal, setShowVariableModal] = useState(false);
+  const [variableName, setVariableName] = useState('');
+  const [initialValue, setInitialValue] = useState('');
+  const [variableType, setVariableType] = useState('string');
+  const [showAssignValueModal, setShowAssignValueModal] = useState(false);
+  const [newValue, setNewValue] = useState('');
+  const [valueType, setValueType] = useState('');
+
   
 const openToolModal = (nodeId, isInternal) => {
   setCurrentNodeId(nodeId);
@@ -926,35 +937,35 @@ const generateCodeForIntentions = async () => {
       };
 
       // Creación de la nueva arista (edge)
-      let newEdge;
-      if (isInternal) {
-          newEdge = {
-              id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-              source: newNode.parentId || `${nodes.length}`,
-              target: newNode.id,
-              animated: true,
-              style: { stroke: '#d033b9' },
-              zIndex: 10,
-              markerEnd: {
-                  type: MarkerType.ArrowClosed,
-                  color: '#d033b9',
-              },
-          };
-      } else {
-          newEdge = {
-              id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-              source: newNode.parentId || `${nodes.length}`,
-              target: newNode.id,
-              animated: true,
-              sourceHandle: 'b',
-              style: { stroke: '#d033b9' },
-              zIndex: 10,
-              markerEnd: {
-                  type: MarkerType.ArrowClosed,
-                  color: '#d033b9',
-              },
-          };
-      }
+      let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
 
       updatedNodes = [...nodes, newNode];
       updatedEdges = [...edges, newEdge];
@@ -1149,35 +1160,35 @@ const generateCodeForIntentions = async () => {
           parentId: isInternal ? currentNodeId : null,
         };
     
-        let newEdge;
-        if (isInternal) {
-          newEdge = {
-            id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-            source: newNode.parentId || `${nodes.length}`,
-            target: newNode.id,
-            animated: true,
-            style: { stroke: '#d033b9' },
-            zIndex: 10,
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: '#d033b9',
-            },
-          };
-        } else {
-          newEdge = {
-            id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-            source: newNode.parentId || `${nodes.length}`,
-            target: newNode.id,
-            animated: true,
-            sourceHandle: 'b',
-            style: { stroke: '#d033b9' },
-            zIndex: 10,
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: '#d033b9',
-            },
-          };
-        }
+        let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
     
         updatedNodes = [...nodes, newNode];
         updatedEdges = [...edges, newEdge];
@@ -1517,34 +1528,34 @@ const generateCodeForIntentions = async () => {
   
       // Crear el edge
       let newEdge
-      if(isInternal){
-        newEdge = {
-          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-          source: newNode.parentId || `${nodes.length}`,
-          target: newNode.id,
-          animated: true,
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        };
-      }else{
-        newEdge = {
-          id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
-          source: currentNodeId || `${nodes.length}`,
-          target: newNode.id,
-          animated: true,
-          sourceHandle: 'b',
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        };
-      }
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
   
       updatedNodes = [...nodes, newNode];
       updatedEdges = [...edges, newEdge];
@@ -1791,35 +1802,35 @@ const generateCodeForIntentions = async () => {
             parentId: isInternal ? currentNodeId : null,
         };
 
-        let newEdge;
-        if (isInternal) {
-            newEdge = {
-                id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-                source: newNode.parentId || `${nodes.length}`,
-                target: newNode.id,
-                animated: true,
-                style: { stroke: '#d033b9' },
-                zIndex: 10,
-                markerEnd: {
-                    type: MarkerType.ArrowClosed,
-                    color: '#d033b9',
-                },
-            };
-        } else {
-            newEdge = {
-                id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-                source: newNode.parentId || `${nodes.length}`,
-                target: newNode.id,
-                animated: true,
-                sourceHandle: 'b',
-                style: { stroke: '#d033b9' },
-                zIndex: 10,
-                markerEnd: {
-                    type: MarkerType.ArrowClosed,
-                    color: '#d033b9',
-                },
-            };
-        }
+        let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
 
         updatedNodes = [...nodes, newNode];
         updatedEdges = [...edges, newEdge];
@@ -2731,116 +2742,170 @@ codeArray.push(`
           const fixedEventCount = ${limitVariable}; // Variable de limitVariable
         \n`);
       }
-    codeArray.push(`
-      // Extraer valores reales de las variables seleccionadas
-      Object.keys(selectedVariables).forEach((index) => {
-        const eventData = selectedVariables[index];
-        const processedData = {};
-    
-        Object.keys(eventData).forEach((fieldKey) => {
-          const variableName = eventData[fieldKey];
-          if (variableName && typeof variableName === 'string') {
-            try {
-              // Intentar obtener el valor real de la variable
-              const value = eval(variableName); // eval simula un contexto dinámico
-              if (value !== undefined && value !== null && value !== '') {
-                processedData[fieldKey] = value; // Asignar solo si tiene un valor válido
+      codeArray.push(`
+        // Extraer valores reales de las variables seleccionadas
+        Object.keys(selectedVariables).forEach((index) => {
+          const eventData = selectedVariables[index];
+          const processedData = {};
+        
+          Object.keys(eventData).forEach((fieldKey) => {
+            const variableName = eventData[fieldKey];
+            if (variableName && typeof variableName === 'string') {
+              try {
+                // Intentar obtener el valor real de la variable
+                const value = eval(variableName); // eval simula un contexto dinámico
+                if (value !== undefined && value !== null && value !== '') {
+                  processedData[fieldKey] = value; // Asignar solo si tiene un valor válido
+                }
+              } catch (error) {
+                // Si eval falla, no asignar nada
               }
-            } catch (error) {
-              // Si eval falla, no asignar nada
             }
+          });
+        
+          // Agregar al newRequestData solo si tiene campos válidos
+          if (Object.keys(processedData).length > 0) {
+            newRequestData[index] = processedData;
           }
         });
-    
-        // Agregar al newRequestData solo si tiene campos válidos
-        if (Object.keys(processedData).length > 0) {
-          newRequestData[index] = processedData;
+        
+        if (Object.keys(newRequestData).length === 0) {
+          console.log("No hay datos válidos para insertar o actualizar. Operación terminada.");
+          return;
         }
-      });
-    
-      if (Object.keys(newRequestData).length === 0) {
-        console.log("No hay datos válidos para insertar o actualizar. Operación terminada.");
-        return;
-      }
-    
-      if (existingRequestResult.rows.length === 0) {
-        // Si no existe, crear un nuevo registro en requests
-        insertRequestQuery = \`
-          INSERT INTO requests (conversation_id, request_type, request_data, company_id, status)
-          VALUES ($1, $2, $3, $4, $5)
-          RETURNING request_id;
-        \`;
-    
-        await pool.query(insertRequestQuery, [
-          conversationId,
-          "agenda",
-          JSON.stringify(newRequestData, (key, value) => 
-            typeof value === "string" ? value.normalize("NFC") : value
-          ),
-          integrationDetails.company_id,
-          "datosIncompletos"
-        ]);
-        console.log("Nuevo registro creado en requests con datos incompletos.");
-      } else {
-        // Si existe, actualizar solo los campos no vacíos
-        const existingRequestId = existingRequestResult.rows[0].request_id;
-        const existingRequestData = existingRequestResult.rows[0].request_data;
-    
-        // Fusionar datos existentes y nuevos, ignorando campos vacíos
-        const updatedRequestData = { ...existingRequestData };
-        Object.keys(newRequestData).forEach((index) => {
-          if (!updatedRequestData[index]) {
-            updatedRequestData[index] = {};
-          }
-          Object.keys(newRequestData[index]).forEach((key) => {
-            if (newRequestData[index][key] !== null && newRequestData[index][key] !== '') {
-              updatedRequestData[index][key] = newRequestData[index][key];
+        
+        // Paso 1: Insertar o actualizar información
+        let finalRequestData; // Variable para almacenar todos los datos (nuevos y existentes)
+
+        // Función para filtrar datos inválidos antes de procesarlos
+        function filterValidData(data) {
+          const filteredData = {};
+          Object.keys(data).forEach((index) => {
+            filteredData[index] = {};
+            Object.keys(data[index]).forEach((key) => {
+              const value = data[index][key];
+              // Validar que el valor no sea vacío, nulo, undefined o la cadena "null"
+              if (
+                value !== null && // No es null
+                value !== undefined && // No es undefined
+                value !== '' && // No es una cadena vacía
+                !(typeof value === 'string' && value.trim().toLowerCase() === 'null') // No es la palabra "null"
+              ) {
+                filteredData[index][key] = value;
+              }
+            });
+          });
+          return filteredData;
+        }
+
+        // Aplicar filtro al newRequestData
+        const filteredNewRequestData = filterValidData(newRequestData);
+
+        if (existingRequestResult.rows.length === 0) {
+          // Insertar nuevo registro en la base de datos
+          const insertRequestQuery = \`
+            INSERT INTO requests (conversation_id, request_type, request_data, company_id, status)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING request_id;
+          \`;
+
+          await pool.query(insertRequestQuery, [
+            conversationId,
+            "agenda",
+            JSON.stringify(filteredNewRequestData, (key, value) =>
+              typeof value === "string" ? value.normalize("NFC") : value
+            ),
+            integrationDetails.company_id,
+            "datosIncompletos",
+          ]);
+
+          console.log("Nuevo registro creado en requests con estado: datosIncompletos.");
+
+          // En este caso, los datos finales son los nuevos y filtrados
+          finalRequestData = filteredNewRequestData;
+        } else {
+          // Si existe, fusionar datos existentes y nuevos
+          const existingRequestId = existingRequestResult.rows[0].request_id;
+          const existingRequestData = existingRequestResult.rows[0].request_data;
+
+          const updatedRequestData = { ...existingRequestData };
+          Object.keys(filteredNewRequestData).forEach((index) => {
+            if (!updatedRequestData[index]) {
+              updatedRequestData[index] = {};
             }
-          });
-        });
-    
-        // Verificar si ya se tiene toda la información para la cantidad fija de eventos
-        const hasAllData = Object.keys(updatedRequestData)
-          .slice(0, fixedEventCount) // Limitar a la cantidad fija de eventos
-          .every((index) => {
-            const event = updatedRequestData[index];
-            return event.titulo &&
-              event.descripcion &&
-              event.fecha_inicio &&
-              event.hora_inicio &&
-              event.fecha_fin &&
-              event.hora_fin &&
-              event.all_day !== null &&
-              event.tipo_asignacion &&
-              event.id_asignacion;
+            Object.keys(filteredNewRequestData[index]).forEach((key) => {
+              const value = filteredNewRequestData[index][key];
+              if (value !== null && value !== '' && value !== 'null' && value !== undefined) {
+                updatedRequestData[index][key] = value;
+              }
+            });
           });
 
-        const newStatus = hasAllData ? "datosCompletos" : "datosIncompletos";
+          const updateRequestQuery = \`
+            UPDATE requests
+            SET request_data = $1,
+                status = $2
+            WHERE request_id = $3;
+          \`;
 
-        updateRequestQuery = \`
-          UPDATE requests
-          SET request_data = $1,
-              status = $2
-          WHERE request_id = $3;
-        \`;
+          await pool.query(updateRequestQuery, [
+            JSON.stringify(updatedRequestData, (key, value) =>
+              typeof value === "string" ? value.normalize("NFC") : value
+            ),
+            "datosIncompletos", // Temporalmente incompleto hasta la verificación
+            existingRequestId,
+          ]);
 
-        await pool.query(updateRequestQuery, [
-          JSON.stringify(updatedRequestData, (key, value) => 
-            typeof value === "string" ? value.normalize("NFC") : value
-          ),
-          newStatus,
-          existingRequestId
-        ]);
+          console.log("Registro en requests actualizado con estado temporal: datosIncompletos.");
 
-        // Asignar los datos a la variable dataEventsVariable
-        const dataEventsVariable = [
-          JSON.stringify(updatedRequestData, null, 2), // Convertir eventos a string con formato legible
-          hasAllData, // Booleano indicando si están completos
+          // Los datos finales son los fusionados
+          finalRequestData = updatedRequestData;
+        }
+
+        // Paso 2: Verificar si la información está completa
+        const requiredFields = [
+          "titulo",
+          "descripcion",
+          "fecha_inicio",
+          "hora_inicio",
+          "fecha_fin",
+          "hora_fin",
+          "all_day",
+          "tipo_asignacion",
+          "id_asignacion",
         ];
 
-        console.log(\`Registro en requests actualizado con estado: \${newStatus}\`);
+        const hasAllData = Object.keys(finalRequestData)
+          .slice(0, fixedEventCount) // Limitar a la cantidad fija de eventos
+          .every((index) => {
+            const event = finalRequestData[index];
+            return requiredFields.every(
+              (field) => event[field] !== undefined && event[field] !== null && event[field] !== ""
+            );
+          });
+
+        // Paso 3: Cambiar el estado según la verificación
+        const finalStatus = hasAllData ? "datosCompletos" : "datosIncompletos";
+
+        const updateStatusQuery = \`
+          UPDATE requests
+          SET status = $1
+          WHERE conversation_id = $2 AND request_type = $3;
+        \`;
+
+        await pool.query(updateStatusQuery, [finalStatus, conversationId, "agenda"]);
+
+        console.log(\`Estado actualizado a: \${finalStatus}.\`);
+
+        // Paso 4: Asignar los datos a la variable dataEventsVariable y devolverlos
+        dataEventsVariable = [
+          JSON.stringify(finalRequestData, null, 2), // Convertir eventos a string con formato legible
+          hasAllData, // Booleano indicando si están completos
+        ].join('*'); // Convertir el arreglo en una cadena separada por '*'
+
         console.log("dataEventsVariable:", dataEventsVariable);
-    `);           
+    `);
+                            
       
     codeArray.push(`
       // Validar si la variable de confirmación es true
@@ -2985,7 +3050,6 @@ codeArray.push(`
       } else{
        console.log("Sin confirmación de agendamiento. Agendamiento pendiente.");
       }
-  }
     `);                          
   
     let updatedNodes, updatedEdges;
@@ -3126,35 +3190,35 @@ codeArray.push(`
         },
       };
   
-      let newEdge;
-      if (isInternal) {
-        newEdge = {
-          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-          source: newNode.parentId || `${nodes.length}`,
-          target: newNode.id,
-          animated: true,
-          style: { stroke: '#d033b9' },
-          zIndex: 10,
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#d033b9',
-          },
-        };
-      } else {
-        newEdge = {
-          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-          source: newNode.parentId || `${nodes.length}`,
-          target: newNode.id,
-          animated: true,
-          sourceHandle: 'b',
-          style: { stroke: '#d033b9' },
-          zIndex: 10,
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#d033b9',
-          },
-        };
-      }
+      let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
   
       updatedNodes = [...nodes, newNode];
       updatedEdges = [...edges, newEdge];
@@ -3493,35 +3557,35 @@ codeArray.push(`
         parentId: isInternal ? currentNodeId : null,
       };
   
-      let newEdge;
-      if (isInternal) {
-        newEdge = {
-          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-          source: newNode.parentId || `${nodes.length}`,
-          target: newNode.id,
-          animated: true,
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        };
-      } else {
-        newEdge = {
-          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-          source: newNode.parentId || `${nodes.length}`,
-          target: newNode.id,
-          animated: true,
-          sourceHandle: 'b',
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        };
-      }
+      let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
   
       const updatedNodes = [...nodes, newNode];
       console.log(updatedNodes);
@@ -4235,35 +4299,35 @@ codeArray.push(`
 
       console.log("nodo nuevo", newNode);
   
-      let newEdge;
-      if (isInternal) {
-        newEdge = {
-          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-          source: newNode.parentId || `${nodes.length}`,
-          target: newNode.id,
-          animated: true,
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        };
-      } else {
-        newEdge = {
-          id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-          source: newNode.parentId || `${nodes.length}`,
-          target: newNode.id,
-          animated: true,
-          sourceHandle: 'b',
-          style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-          zIndex: 10, // Ajusta el zIndex si es necesario
-          markerEnd: {
-            type: MarkerType.ArrowClosed, // Flecha al final de la línea
-            color: '#d033b9', // Ajusta el color de la flecha aquí
-          },
-        };
-      }
+      let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
   
       const updatedNodes = [...nodes, newNode];
       const updatedEdges = [...edges, newEdge];
@@ -4507,35 +4571,35 @@ codeArray.push(`
             parentId: isInternal ? currentNodeId : null,
         };
 
-        let newEdge;
-        if (isInternal) {
-            newEdge = {
-                id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-                source: newNode.parentId || `${nodes.length}`,
-                target: newNode.id,
-                animated: true,
-                style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-                zIndex: 10, // Ajusta el zIndex si es necesario
-                markerEnd: {
-                    type: MarkerType.ArrowClosed, // Flecha al final de la línea
-                    color: '#d033b9', // Ajusta el color de la flecha aquí
-                },
-            };
-        } else {
-            newEdge = {
-                id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-                source: newNode.parentId || `${nodes.length}`,
-                target: newNode.id,
-                animated: true,
-                sourceHandle: 'b',
-                style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
-                zIndex: 10, // Ajusta el zIndex si es necesario
-                markerEnd: {
-                    type: MarkerType.ArrowClosed, // Flecha al final de la línea
-                    color: '#d033b9', // Ajusta el color de la flecha aquí
-                },
-            };
-        }
+        let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
 
         const updatedNodes = [...nodes, newNode];
         const updatedEdges = [...edges, newEdge];
@@ -4551,6 +4615,264 @@ codeArray.push(`
     setQueryPrompt('');
     setSelectedVariables([]);
     setCurrentEditingNodeId(null);
+};
+
+const handleSaveVariableModal = () => {
+  setShowVariableModal(false); // Cierra el modal
+  if (variableName.trim() === '') {
+    alert('El nombre de la variable es obligatorio.');
+    return;
+  }
+  generateCodeForVariable(); // Genera el código para la nueva variable
+};
+
+const generateCodeForVariable = () => {
+  const codeArray = [];
+  let parsedValue;
+
+  // Manejar el valor inicial según el tipo seleccionado
+  switch (variableType) {
+    case 'number':
+      parsedValue = parseFloat(initialValue);
+      if (isNaN(parsedValue)) {
+        alert('El valor inicial no es un número válido.');
+        return;
+      }
+      break;
+    case 'boolean':
+      if (initialValue.toLowerCase() === 'true' || initialValue.toLowerCase() === 'false') {
+        parsedValue = initialValue.toLowerCase() === 'true';
+      } else {
+        alert('El valor inicial para boolean debe ser "true" o "false".');
+        return;
+      }
+      break;
+    case 'string':
+    default:
+      parsedValue = initialValue ? `"${initialValue}"` : '';
+  }
+
+  const initialAssignment = parsedValue !== undefined && parsedValue !== '' ? ` = ${parsedValue}` : '';
+
+  // Código para definir la variable
+  codeArray.push(`// Declaración de la variable ${variableName}\n`);
+  if (initialAssignment) {
+    codeArray.push(`let ${variableName}${initialAssignment};\n`);
+  } else {
+    codeArray.push(`let ${variableName};\n`);
+  }
+
+  // Crear el nodo en ReactFlow
+  let updatedNodes, updatedEdges;
+
+  const newId = randomId();
+  const newNode = {
+    id: newId,
+    type: 'custom',
+    position: { x: Math.random() * 250, y: Math.random() * 250 },
+    data: {
+      label: `Variable: ${variableName}`,
+      code: codeArray,
+      tipo: '',
+      onAddClick: (id) => openToolModal(id, true), 
+                onAddExternalClick: (id) => openToolModal(id, false),  
+                editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+            },
+            parentId: isInternal ? currentNodeId : null,
+        };
+
+        let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
+
+  updatedNodes = [...nodes, newNode];
+  updatedEdges = [...edges, newEdge];
+
+  // Agregar la variable a las variables iniciales
+  setVariables((vars) => [
+    ...vars,
+    { name: variableName, displayName: variableName, nodeId: newNode.id },
+  ]);
+
+  // Actualizar nodos y aristas en ReactFlow
+  setNodes(updatedNodes);
+  setEdges(updatedEdges);
+
+  // Resetear las variables del modal
+  resetModalVariables();
+};
+
+const resetModalVariables = () => {
+  setVariableName('');
+  setVariableType('string'); // Valor predeterminado
+  setInitialValue('');
+};
+
+const handleSaveAssignValue = () => {
+  if (!selectedVariable.trim()) {
+    alert('Debes seleccionar una variable.');
+    return;
+  }
+  if (!valueType.trim()) {
+    alert('Debes seleccionar un tipo de valor.');
+    return;
+  }
+
+  if (valueType === 'boolean' && !['true', 'false'].includes(newValue.toLowerCase())) {
+    alert('El valor booleano debe ser "true" o "false".');
+    return;
+  }
+  if (valueType === 'number' && isNaN(parseFloat(newValue))) {
+    alert('El valor debe ser un número válido.');
+    return;
+  }
+  if (valueType === 'variable' && !variables.some((v) => v.name === newValue)) {
+    alert('Debes seleccionar una variable existente como fuente del valor.');
+    return;
+  }
+
+  setShowAssignValueModal(false);
+  generateCodeForAssignValue(); // Genera el código necesario para realizar la asignación
+};
+
+
+
+const generateCodeForAssignValue = () => {
+  const codeArray = [];
+  let parsedValue;
+
+  // Validar que se haya seleccionado una variable
+  if (!selectedVariable) {
+    alert('Debes seleccionar una variable.');
+    return;
+  }
+
+  // Manejar el nuevo valor según su tipo
+  switch (valueType) {
+    case 'number':
+      parsedValue = parseFloat(newValue);
+      if (isNaN(parsedValue)) {
+        alert('El nuevo valor no es un número válido.');
+        return;
+      }
+      break;
+
+    case 'boolean':
+      if (newValue === 'true') {
+        parsedValue = true;
+      } else if (newValue === 'false') {
+        parsedValue = false;
+      } else {
+        alert('El valor booleano debe ser "true" o "false".');
+        return;
+      }
+      break;
+
+      case 'variable':
+        if (!variables.some((v) => v.name === newValue)) {
+          alert('La variable seleccionada como fuente no existe.');
+          return;
+        }
+        parsedValue = newValue; // Usar directamente el nombre de la variable
+        break;
+
+    case 'string':
+    default:
+      parsedValue = newValue ? `"${newValue}"` : '""';
+  }
+
+  // Código para asignar el nuevo valor
+  codeArray.push(`// Asignar un nuevo valor a la variable ${selectedVariable}\n`);
+  codeArray.push(`${selectedVariable} = ${parsedValue};\n`);
+
+  // Crear el nodo en ReactFlow
+  const newId = randomId();
+  const newNode = {
+    id: newId,
+    type: 'custom',
+    position: { x: Math.random() * 250, y: Math.random() * 250 },
+    data: {
+      label: `Asignar: ${selectedVariable} = ${parsedValue}`,
+      code: codeArray,
+      tipo: '',
+      onAddClick: (id) => openToolModal(id, true), 
+                onAddExternalClick: (id) => openToolModal(id, false),  
+                editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+            },
+            parentId: isInternal ? currentNodeId : null,
+        };
+
+        let newEdge
+    if(isInternal){
+      newEdge = {
+        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
+        source: newNode.parentId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }else{
+      newEdge = {
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
+        target: newNode.id,
+        animated: true,
+        sourceHandle: 'b',
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
+        markerEnd: {
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
+        },
+      };
+    }
+
+  // Actualizar nodos y aristas
+  const updatedNodes = [...nodes, newNode];
+  const updatedEdges = [...edges, newEdge];
+  setNodes(updatedNodes);
+  setEdges(updatedEdges);
+
+  // Resetear las variables del modal
+  resetAssignValueModal();
+};
+
+
+const resetAssignValueModal = () => {
+  setSelectedVariable(''); // Reiniciar la variable seleccionada
+  setValueType('');        // Reiniciar el tipo de valor
+  setNewValue('');         // Reiniciar el valor ingresado
 };
 
 
@@ -5211,13 +5533,14 @@ const generateCodeForDelay = async () => {
         label: `Retardo de ${delayTime} ${delayUnit}`,
         code: codeArray,
         tipo: 'delay',
-        onAddClick: (id) => openToolModal(id, true),  // Permite agregar nodos hijos
-        editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),  // Permite editar el nodo
-      },
-    };
+        onAddClick: (id) => openToolModal(id, true), 
+                onAddExternalClick: (id) => openToolModal(id, false),  
+                editarNodo: (id, tipo, datos) => editarNodo(id, tipo, datos, setNodes),
+            },
+            parentId: isInternal ? currentNodeId : null,
+        };
 
-    // Crear la nueva conexión (edge) con el estilo correcto
-    let newEdge
+        let newEdge
     if(isInternal){
       newEdge = {
         id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
@@ -5346,32 +5669,32 @@ const handleSendMessageSave = () => {
 
     console.log("Nuevo nodo creado:", newNode);
 
-    let newEdge;
-    if (isInternal) {
+    let newEdge
+    if(isInternal){
       newEdge = {
         id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
         source: newNode.parentId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
-        style: { stroke: '#d033b9' },
-        zIndex: 10,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
         markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: '#d033b9',
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
         },
       };
-    } else {
+    }else{
       newEdge = {
-        id: `e${newNode.parentId || nodes.length}-${nodes.length + 1}`,
-        source: newNode.parentId || `${nodes.length}`,
+        id: `e${currentNodeId || nodes.length}-${nodes.length + 1}`,
+        source: currentNodeId || `${nodes.length}`,
         target: newNode.id,
         animated: true,
         sourceHandle: 'b',
-        style: { stroke: '#d033b9' },
-        zIndex: 10,
+        style: { stroke: '#d033b9' }, // Ajusta el color de la línea aquí
+        zIndex: 10, // Ajusta el zIndex si es necesario
         markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: '#d033b9',
+          type: MarkerType.ArrowClosed, // Flecha al final de la línea
+          color: '#d033b9', // Ajusta el color de la flecha aquí
         },
       };
     }
@@ -7195,7 +7518,7 @@ const generateNodeCode = (node, indent = '') => {
               Crear Intenciones
             </button>
             <button className="tool-button" onClick={() => {setShowExternalDataModal(true);setShowToolModal(false);}}>Agregar Dato Externo</button>
-            <button className="tool-button" onClick={() => setShowDelayModal(true)}>
+            <button className="tool-button" onClick={() => {setShowDelayModal(true);setShowToolModal(false);}}>
               Crear Retardo
             </button>
           </div>
@@ -7205,6 +7528,8 @@ const generateNodeCode = (node, indent = '') => {
             <button className="tool-button" onClick={() => {addConditionalNode(currentNodeId);setShowToolModal(false);}}>Condicional</button>
             <button className="tool-button" onClick={() => {addSwitchNode(currentNodeId);setShowToolModal(false);}}>Switch</button>
             <button className="tool-button" onClick={() => {addUpdateStateNode(currentNodeId);setShowToolModal(false);}}>Actualizar Estado</button>
+            <button className="tool-button" onClick={() => {setShowVariableModal(true);setShowToolModal(false);}}>Crear Variable</button>
+            <button className="tool-button" onClick={() => {setShowAssignValueModal(true);setShowToolModal(false);}}>Dar Valor a Variable</button>
             <button className="tool-button" onClick={() => {addConcatVariablesNode(currentNodeId);setShowToolModal(false);}}>Concatenar Variables</button>
             <button className="tool-button" onClick={() => {addSplitVariableNode(currentNodeId);setShowToolModal(false);}}>Dividir Variable</button>
             <button className="tool-button" onClick={() => {setShowAgendaModal(true);setShowToolModal(false);}}>
@@ -7824,6 +8149,199 @@ const generateNodeCode = (node, indent = '') => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <Modal show={showVariableModal} onHide={() => setShowVariableModal(false)}>
+  <Modal.Header closeButton>
+    <Modal.Title>Crear Variable</Modal.Title>
+  </Modal.Header>
+  <Modal.Body>
+    <Form>
+      <Form.Group>
+        <Form.Label>Nombre de la Variable</Form.Label>
+        <Form.Control
+          type="text"
+          value={variableName}
+          onChange={(e) =>
+            setVariableName(e.target.value.toLowerCase().replace(/\s+/g, '_'))
+          }
+          placeholder="Introduce el nombre de la variable"
+        />
+      </Form.Group>
+      <Form.Group>
+        <Form.Label>Tipo de Variable</Form.Label>
+        <Form.Control
+          as="select"
+          value={variableType}
+          onChange={(e) => setVariableType(e.target.value)}
+        >
+          <option value="string">Texto</option>
+          <option value="number">Número</option>
+          <option value="boolean">Booleano</option>
+        </Form.Control>
+      </Form.Group>
+      <Form.Group>
+        <Form.Label>Valor Inicial (Opcional)</Form.Label>
+        {variableType === 'number' && (
+          <Form.Control
+            type="number"
+            value={initialValue}
+            onChange={(e) => setInitialValue(e.target.value)}
+            placeholder="Introduce un número"
+          />
+        )}
+        {variableType === 'boolean' && (
+          <Form.Control
+            as="select"
+            value={initialValue}
+            onChange={(e) => setInitialValue(e.target.value)}
+          >
+            <option value="">Selecciona un valor</option>
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </Form.Control>
+        )}
+        {variableType === 'string' && (
+          <Form.Control
+            type="text"
+            value={initialValue}
+            onChange={(e) => setInitialValue(e.target.value)}
+            placeholder="Introduce un texto"
+          />
+        )}
+      </Form.Group>
+    </Form>
+  </Modal.Body>
+  <Modal.Footer>
+    <Button
+      variant="secondary"
+      onClick={() => {
+        setShowVariableModal(false);
+        resetModalVariables();
+      }}
+    >
+      Cancelar
+    </Button>
+    <Button variant="primary" onClick={handleSaveVariableModal}>
+      Crear
+    </Button>
+  </Modal.Footer>
+</Modal>
+
+
+<Modal show={showAssignValueModal} onHide={() => setShowAssignValueModal(false)}>
+  <Modal.Header closeButton>
+    <Modal.Title>Dar Valor a Variable</Modal.Title>
+  </Modal.Header>
+  <Modal.Body>
+    <Form>
+      {/* Seleccionar una Variable */}
+      <Form.Group>
+        <Form.Label>Seleccionar una Variable</Form.Label>
+        <Form.Control
+          as="select"
+          value={selectedVariable}
+          onChange={(e) => {
+            const variableName = e.target.value;
+            setSelectedVariable(variableName);
+            const variable = variables.find((v) => v.name === variableName);
+            setValueType(variable?.type || ''); // Ajustar automáticamente el tipo
+          }}
+        >
+          <option value="">Selecciona...</option>
+          {variables.map((variable) => (
+            <option key={variable.name} value={variable.name}>
+              {variable.name}
+            </option>
+          ))}
+        </Form.Control>
+      </Form.Group>
+
+      {/* Seleccionar Tipo de Valor */}
+      <Form.Group>
+        <Form.Label>Selecciona el Tipo de Valor</Form.Label>
+        <Form.Control
+          as="select"
+          value={valueType}
+          onChange={(e) => setValueType(e.target.value)}
+        >
+          <option value="">Selecciona un tipo...</option>
+          <option value="string">Texto</option>
+          <option value="number">Número</option>
+          <option value="boolean">Booleano</option>
+          <option value="variable">Otra Variable</option> {/* Nuevo tipo */}
+        </Form.Control>
+      </Form.Group>
+
+      {/* Introducir el Valor */}
+      {valueType !== 'variable' && (
+        <Form.Group>
+          <Form.Label>Valor</Form.Label>
+          {valueType === 'number' && (
+            <Form.Control
+              type="number"
+              value={newValue}
+              onChange={(e) => setNewValue(e.target.value)}
+              placeholder="Introduce un número"
+            />
+          )}
+          {valueType === 'boolean' && (
+            <Form.Control
+              as="select"
+              value={newValue}
+              onChange={(e) => setNewValue(e.target.value)}
+            >
+              <option value="">Selecciona un valor</option>
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </Form.Control>
+          )}
+          {valueType === 'string' && (
+            <Form.Control
+              type="text"
+              value={newValue}
+              onChange={(e) => setNewValue(e.target.value)}
+              placeholder="Introduce un texto"
+            />
+          )}
+        </Form.Group>
+      )}
+
+      {/* Seleccionar otra variable como fuente del valor */}
+      {valueType === 'variable' && (
+        <Form.Group>
+          <Form.Label>Seleccionar Otra Variable</Form.Label>
+          <Form.Control
+            as="select"
+            value={newValue}
+            onChange={(e) => setNewValue(e.target.value)}
+          >
+            <option value="">Selecciona una variable...</option>
+            {variables.map((variable) => (
+              <option key={variable.name} value={variable.name}>
+                {variable.name}
+              </option>
+            ))}
+          </Form.Control>
+        </Form.Group>
+      )}
+    </Form>
+  </Modal.Body>
+  <Modal.Footer>
+    <Button
+      variant="secondary"
+      onClick={() => {
+        setShowAssignValueModal(false);
+        resetAssignValueModal();
+      }}
+    >
+      Cancelar
+    </Button>
+    <Button variant="primary" onClick={handleSaveAssignValue}>
+      Asignar
+    </Button>
+  </Modal.Footer>
+</Modal>
+
 
     </Modal>
   );
