@@ -56,6 +56,27 @@
   overflow-y: scroll;
 }
 
+.selected-image-preview-overlay {
+  position: absolute;
+  bottom: 100%; /* Fija la parte inferior al 100% de la barra */
+  left: 0; /* Fija el ancla en la parte inferior izquierda */
+  z-index: 1000;
+  background-color: rgba(228, 228, 228, 0.8);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform-origin: bottom left; /* Establece el ancla en la parte inferior izquierda */
+}
+
+.selected-image-preview-overlay img {
+  max-height: 300px; /* Altura máxima de la imagen */
+  max-width: 90%; /* Ajusta el ancho máximo */
+  object-fit: contain; /* Mantiene proporciones de la imagen */
+  border-radius: 8px;
+}
+
 @media all and (max-width: 767px) {
   .messages-container{
     height: 100% !important;

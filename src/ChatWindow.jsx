@@ -43,6 +43,9 @@ function ChatWindow() {
   const [referenceElementReact, setReferenceElementReact] = useState(null);
   const [popperElementReact, setPopperElementReact] = useState(null);
   const [activeMessageId, setActiveMessageId] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [clearView, setClearView] = useState(false);
+
 
   const replyBarRef = useRef(null); // Elemento sobre el cual se posicionará el popover
   const popoverTriggerRef = useRef(null);
@@ -775,8 +778,34 @@ function ChatWindow() {
     }, [popperElement, referenceElement]);
 
     const handleSendMessage = async () => {
-      if (!currentConversation || !messageText.trim()) return;
+      if (!currentConversation) return;
     
+      // Enviar imagen si está seleccionada
+      if (selectedImage) {
+        const imageToSend = selectedImage; // Copia local de la imagen para evitar conflictos
+        setSelectedImage(null); // Quitar imagen antes de realizar el envío
+        try {
+          const formData = new FormData();
+          formData.append('image', imageToSend);
+    
+          const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-image`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+    
+          const imageUrl = response.data.imageUrl;
+          await sendWhatsAppMessageImage(imageUrl);
+    
+          console.log("Imagen enviada:", imageUrl);
+        } catch (error) {
+          console.error('Error enviando la imagen:', error);
+          return;
+        }
+      }
+
+    // Enviar mensaje de texto si hay contenido
+  if (messageText.trim()) {
       const textToSend = messageText;
       console.log("Texto a enviar:", textToSend);
     
@@ -830,6 +859,7 @@ function ChatWindow() {
       } catch (error) {
         console.error('Error al enviar el mensaje:', error.response ? error.response.data : error.message);
       }
+    }
     };
     
     const handleKeyDown = async(event) => {
@@ -873,16 +903,41 @@ function ChatWindow() {
 
     const handleFileChange = (event) => {
       const file = event.target.files[0];
-      if (file) {
-        console.log("Archivo seleccionado:", file);
-        // Aquí puedes manejar el archivo cargado según el tipo
+      if (file && file.type.startsWith('image/')) {
+        setSelectedImage(file); // Actualiza el estado con la imagen seleccionada
+      } else {
+        console.warn("El archivo no es una imagen válida");
       }
     };
+    
 
     const handleTextChange = (e) => {
       setMessageText(e.target.value);
       setCursorPosition(e.target.selectionStart);
     };
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (!replyBarRef.current.contains(event.target)) {
+          setSelectedImage(null); // Quita la imagen si haces clic fuera de la barra
+        }
+      };
+    
+      const handleKeyDown = (event) => {
+        if (event.key === 'Escape') {
+          setSelectedImage(null); // Quita la imagen si presionas "Escape"
+        }
+      };
+    
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }, [replyBarRef, setSelectedImage]);
+    
 
     const renderMessageContent = () => {
       switch (messageReply?.msj?.message_type) {
@@ -997,6 +1052,17 @@ function ChatWindow() {
             <EmojiPicker
               disabled={integracion.name === 'Interno' ? false : isLastMessageOlderThan24Hours()}
               onEmojiClick={onEmojiClick}
+            />
+          </div>
+        )}
+
+        {selectedImage && !clearView && (
+          <div
+            className="selected-image-preview-overlay"
+          >
+            <img
+              src={URL.createObjectURL(selectedImage)}
+              alt="Preview"
             />
           </div>
         )}
