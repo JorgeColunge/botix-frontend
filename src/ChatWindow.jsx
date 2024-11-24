@@ -45,7 +45,7 @@ function ChatWindow() {
   const [activeMessageId, setActiveMessageId] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [clearView, setClearView] = useState(false);
-  const [imageCaption, setImageCaption] = useState('');
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
 
   const replyBarRef = useRef(null); // Elemento sobre el cual se posicionará el popover
@@ -486,40 +486,53 @@ function ChatWindow() {
     }
   };
 
-  const handleVideoUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  const handleVideoUpload = async (videoFile, messageText) => {
+    if (!videoFile) return;
+  
     try {
       const formData = new FormData();
-      formData.append('video', file);
+      formData.append('video', videoFile);
+  
+      if (messageText) {
+        formData.append('messageText', messageText); // Agrega el caption al FormData
+      }
+  
+      // Subir el video al backend
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-video`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       });
+  
       const videoUrl = response.data.videoUrl;
       const videoDuration = response.data.videoDuration;
       const videoThumbnail = response.data.videoThumbnail;
-      await sendWhatsAppMessageVideo(videoUrl, videoDuration, videoThumbnail);
+  
+      console.log("Video subido exitosamente, URL:", videoUrl);
+  
+      // Enviar el video a WhatsApp
+      await sendWhatsAppMessageVideo(videoUrl, videoDuration, videoThumbnail, messageText);
     } catch (error) {
-      console.error('Error uploading video:', error);
+      console.error('Error al subir el video:', error);
     }
   };
-
-  const sendWhatsAppMessageVideo = async (videoUrl, videoDuration, videoThumbnail) => {
+  
+  const sendWhatsAppMessageVideo = async (videoUrl, videoDuration, videoThumbnail, messageText) => {
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-video`, {
         phone: currentConversation.phone_number,
         videoUrl: videoUrl,
         videoDuration: videoDuration,
         videoThumbnail: videoThumbnail,
-        conversationId: currentConversation.conversation_id
+        conversationId: currentConversation.conversation_id,
+        messageText: messageText,
       });
-      console.log('Video sent successfully:', response.data);
+  
+      console.log('Video enviado exitosamente:', response.data);
     } catch (error) {
-      console.error('Error sending video:', error);
+      console.error('Error al enviar el video:', error);
     }
-  };
+  };  
 
   const handleDocumentUpload = async (event) => {
     const file = event.target.files[0];
@@ -785,6 +798,27 @@ function ChatWindow() {
 
     const handleSendMessage = async () => {
       if (!currentConversation) return;
+
+      if (selectedVideo) {
+        const videoToSend = selectedVideo; // Copia del video para evitar conflictos
+        const textToSend = messageText; // Usa el texto como caption
+        setSelectedVideo(null); // Limpia el video seleccionado
+        setMessageText(''); // Limpia la barra de texto
+
+        try {
+          console.log("Preparando para enviar video:");
+          console.log("Video seleccionado:", videoToSend);
+          console.log("Texto del caption:", textToSend);
+
+          await handleVideoUpload(videoToSend, textToSend);
+
+          console.log("Video enviado con caption:", textToSend);
+        } catch (error) {
+          console.error('Error enviando el video:', error);
+          return;
+        }
+      }
+
     
       // Enviar imagen si está seleccionada
       if (selectedImage) {
@@ -794,9 +828,6 @@ function ChatWindow() {
         setMessageText(''); // Limpia la barra de texto
 
         try {
-          console.log("Preparando para enviar imagen:");
-          console.log("Imagen seleccionada:", imageToSend);
-          console.log("Texto del caption:", messageText);
 
           const formData = new FormData();
           formData.append('image', imageToSend);
@@ -921,10 +952,14 @@ function ChatWindow() {
 
     const handleFileChange = (event) => {
       const file = event.target.files[0];
-      if (file && file.type.startsWith('image/')) {
-        setSelectedImage(file); // Actualiza el estado con la imagen seleccionada
+      if (!file) return;
+    
+      if (file.type.startsWith('image/')) {
+        setSelectedImage(file); // Imagen seleccionada
+      } else if (file.type.startsWith('video/')) {
+        setSelectedVideo(file); // Video seleccionado
       } else {
-        console.warn("El archivo no es una imagen válida");
+        console.warn("El archivo no es válido");
       }
     };
     
@@ -938,12 +973,14 @@ function ChatWindow() {
       const handleClickOutside = (event) => {
         if (!replyBarRef.current.contains(event.target)) {
           setSelectedImage(null); // Quita la imagen si haces clic fuera de la barra
+          setSelectedVideo(null); // Quita la imagen si haces clic fuera de la barra
         }
       };
     
       const handleKeyDown = (event) => {
         if (event.key === 'Escape') {
           setSelectedImage(null); // Quita la imagen si presionas "Escape"
+          setSelectedVideo(null);
         }
       };
     
@@ -1071,6 +1108,12 @@ function ChatWindow() {
               disabled={integracion.name === 'Interno' ? false : isLastMessageOlderThan24Hours()}
               onEmojiClick={onEmojiClick}
             />
+          </div>
+        )}
+
+        {selectedVideo && !clearView && (
+          <div className="selected-video-preview-overlay">
+            <video src={URL.createObjectURL(selectedVideo)} controls />
           </div>
         )}
 
