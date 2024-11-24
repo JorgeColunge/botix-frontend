@@ -553,12 +553,13 @@ function ChatWindow() {
     }
   };  
 
-  const sendWhatsAppMessageDocument = async (documentUrl, documentName) => {
+  const sendWhatsAppMessageDocument = async (documentUrl, documentName, messageText) => {
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-document`, {
         phone: currentConversation.phone_number,
         documentUrl: documentUrl,
         documentName: documentName,
+        messageText: messageText,
         conversationId: currentConversation.conversation_id,
         integration_name : state.integraciones?.find(intra => intra.id == currentConversation?.integration_id)?.type,
         integration_id: currentConversation?.integration_id,
@@ -1156,11 +1157,6 @@ function ChatWindow() {
                 }}>Guardar como...</button>
               </div>
             </div>
-            {messageText && (
-              <div className="message-content" style={{ whiteSpace: 'pre-wrap' }}>
-                {messageText}
-              </div>
-            )}
           </div>
         )}
 
