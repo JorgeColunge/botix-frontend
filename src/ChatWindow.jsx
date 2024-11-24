@@ -1208,21 +1208,6 @@ function ChatWindow() {
         {fileMenuVisible && (
           <div ref={setPopperElement} style={styles.popper} {...attributes.popper}>
             <div className='d-flex flex-column'>
-            <Button
-    variant="light"
-    disabled={integracion?.name == "Interno" ? false : isLastMessageOlderThan24Hours()}
-    onClick={() => fileInputRef.current.click()} // Disparar input de cámara
-  >
-    Abrir Cámara
-  </Button>
-  <input
-    type="file"
-    ref={fileInputRef}
-    style={{ display: "none" }}
-    accept="image/*,video/*"
-    capture="environment" // Usar la cámara trasera
-    onChange={handleCameraFile}
-  />
               <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('image/*')}>Cargar Imagen</Button>
               <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('video/*')}>Cargar Video</Button>
               <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('.pdf,.doc,.docx,.txt')}>Cargar Documento</Button>
