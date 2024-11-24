@@ -46,7 +46,7 @@ function ChatWindow() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [clearView, setClearView] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
-
+  const [selectedDocument, setSelectedDocument] = useState(null);
 
   const replyBarRef = useRef(null); // Elemento sobre el cual se posicionará el popover
   const popoverTriggerRef = useRef(null);
@@ -534,23 +534,24 @@ function ChatWindow() {
     }
   };  
 
-  const handleDocumentUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  const handleDocumentUpload = async (documentFile, messageText) => {
+    if (!documentFile) return;
+  
     try {
       const formData = new FormData();
-      formData.append('document', file);
+      formData.append('document', documentFile);
+      if (messageText) formData.append('messageText', messageText);
+  
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-document`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
+  
       const documentUrl = response.data.documentUrl;
-      await sendWhatsAppMessageDocument(documentUrl, file.name);
+      await sendWhatsAppMessageDocument(documentUrl, documentFile.name, messageText);
     } catch (error) {
-      console.error('Error uploading document:', error);
+      console.error('Error al subir el documento:', error);
     }
-  };
+  };  
 
   const sendWhatsAppMessageDocument = async (documentUrl, documentName) => {
     try {
@@ -799,6 +800,23 @@ function ChatWindow() {
     const handleSendMessage = async () => {
       if (!currentConversation) return;
 
+      // Enviar documento
+      if (selectedDocument) {
+        const documentToSend = selectedDocument;
+        const textToSend = messageText; // Usa el texto como caption
+        setSelectedDocument(null); // Limpia el documento seleccionado
+        setMessageText(''); // Limpia la barra de texto
+
+        try {
+          console.log("Preparando para enviar documento:", documentToSend);
+          await handleDocumentUpload(documentToSend, textToSend);
+          console.log("Documento enviado con caption:", textToSend);
+        } catch (error) {
+          console.error('Error enviando el documento:', error);
+          return;
+        }
+      }
+
       if (selectedVideo) {
         const videoToSend = selectedVideo; // Copia del video para evitar conflictos
         const textToSend = messageText; // Usa el texto como caption
@@ -959,40 +977,42 @@ function ChatWindow() {
       } else if (file.type.startsWith('video/')) {
         setSelectedVideo(file); // Video seleccionado
       } else {
-        console.warn("El archivo no es válido");
+        setSelectedDocument(file); // Documento seleccionado
       }
     };
+    
     
 
     const handleTextChange = (e) => {
       setMessageText(e.target.value);
       setCursorPosition(e.target.selectionStart);
     };
-
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (!replyBarRef.current.contains(event.target)) {
-          setSelectedImage(null); // Quita la imagen si haces clic fuera de la barra
-          setSelectedVideo(null); // Quita la imagen si haces clic fuera de la barra
-        }
-      };
     
-      const handleKeyDown = (event) => {
-        if (event.key === 'Escape') {
-          setSelectedImage(null); // Quita la imagen si presionas "Escape"
-          setSelectedVideo(null);
-        }
-      };
-    
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleKeyDown);
-    
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-        document.removeEventListener('keydown', handleKeyDown);
-      };
-    }, [replyBarRef, setSelectedImage]);
-    
+      useEffect(() => {
+        const handleClickOutside = (event) => {
+          if (!replyBarRef.current.contains(event.target)) {
+            setSelectedImage(null); 
+            setSelectedVideo(null); 
+            setSelectedDocument(null); 
+          }
+        };
+      
+        const handleKeyDown = (event) => {
+          if (event.key === 'Escape') {
+            setSelectedImage(null); 
+            setSelectedVideo(null);
+            setSelectedDocument(null);
+          }
+        };
+      
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleKeyDown);
+      
+        return () => {
+          document.removeEventListener('mousedown', handleClickOutside);
+          document.removeEventListener('keydown', handleKeyDown);
+        };
+      }, [replyBarRef]);      
 
     const renderMessageContent = () => {
       switch (messageReply?.msj?.message_type) {
@@ -1108,6 +1128,39 @@ function ChatWindow() {
               disabled={integracion.name === 'Interno' ? false : isLastMessageOlderThan24Hours()}
               onEmojiClick={onEmojiClick}
             />
+          </div>
+        )}
+
+        {selectedDocument && !clearView && (
+          <div className="selected-document-preview-overlay">
+            <div className="document-preview">
+              <div className="document-info" onClick={() => window.open(URL.createObjectURL(selectedDocument), '_blank')}>
+                <img src={getFileIcon(selectedDocument.name)} alt="Document icon" className="document-icon" />
+                <p className="document-name text-dark">{selectedDocument.name}</p>
+              </div>
+              <div className="document-actions">
+                <button className="btn btn-light document-button open" onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(URL.createObjectURL(selectedDocument), '_blank');
+                }}>Abrir</button>
+                <button className="btn btn-light document-button save" onClick={(e) => {
+                  e.stopPropagation();
+                  const link = document.createElement('a');
+                  link.href = URL.createObjectURL(selectedDocument);
+                  link.download = selectedDocument.name;
+                  link.target = '_blank';
+                  link.rel = 'noopener noreferrer';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}>Guardar como...</button>
+              </div>
+            </div>
+            {messageText && (
+              <div className="message-content" style={{ whiteSpace: 'pre-wrap' }}>
+                {messageText}
+              </div>
+            )}
           </div>
         )}
 

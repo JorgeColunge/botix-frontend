@@ -100,6 +100,28 @@
   border-radius: 8px;
 }
 
+.selected-document-preview-overlay {
+  position: absolute;
+  bottom: 100%; /* Fija la parte inferior al 100% de la barra */
+  left: 0; /* Fija el ancla en la parte inferior izquierda */
+  z-index: 1000;
+  background-color: rgba(228, 228, 228, 0.8);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column; /* Cambia a columna */
+  justify-content: center;
+  align-items: center;
+  transform-origin: bottom left; /* Establece el ancla en la parte inferior izquierda */
+}
+
+.selected-document-preview-overlay video {
+  max-height: 350px; /* Altura máxima de la imagen */
+  max-width: 400px; /* Ajusta el ancho máximo */
+  object-fit: contain; /* Mantiene proporciones de la imagen */
+  border-radius: 8px;
+}
+
 @media all and (max-width: 767px) {
   .messages-container{
     height: 100% !important;
