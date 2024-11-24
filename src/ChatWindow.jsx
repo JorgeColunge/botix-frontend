@@ -802,78 +802,18 @@ function ChatWindow() {
       };
     }, [popperElement, referenceElement]);
 
-    const handleOpenCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false, // Cambia a true si quieres grabar audio
-        });
+    const handleCameraFile = (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
     
-        mediaStreamRef.current = stream;
-    
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-        }
-    
-        setIsCameraOpen(true);
-      } catch (error) {
-        console.error('Error al abrir la cámara:', error);
+      if (file.type.startsWith("image/")) {
+        setSelectedImage(file); // Procesar como imagen
+      } else if (file.type.startsWith("video/")) {
+        setSelectedVideo(file); // Procesar como video
+      } else {
+        console.warn("Archivo capturado no válido");
       }
-    };
-    
-    const handleCapturePhoto = () => {
-      const canvas = document.createElement('canvas');
-      const video = videoRef.current;
-    
-      if (!video) return;
-    
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-    
-      const context = canvas.getContext('2d');
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-      canvas.toBlob((blob) => {
-        const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
-        setSelectedImage(file); // Establece la imagen capturada para la vista previa
-        stopCamera();
-      }, 'image/jpeg');
-    };
-    
-    const handleCaptureVideo = () => {
-      const stream = mediaStreamRef.current;
-    
-      if (stream) {
-        const recorder = new MediaRecorder(stream);
-        const chunks = [];
-    
-        recorder.ondataavailable = (event) => {
-          if (event.data.size > 0) chunks.push(event.data);
-        };
-    
-        recorder.onstop = () => {
-          const blob = new Blob(chunks, { type: 'video/mp4' });
-          const file = new File([blob], 'video.mp4', { type: 'video/mp4' });
-          setSelectedVideo(file); // Establece el video capturado para la vista previa
-          stopCamera();
-        };
-    
-        recorder.start();
-        setTimeout(() => recorder.stop(), 5000); // Graba por 5 segundos como ejemplo
-      }
-    };
-    
-    const stopCamera = () => {
-      const stream = mediaStreamRef.current;
-    
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-        mediaStreamRef.current = null;
-      }
-    
-      setIsCameraOpen(false);
-    };
+    };    
 
     const handleSendMessage = async () => {
       if (!currentConversation) return;
@@ -1237,23 +1177,6 @@ function ChatWindow() {
           </div>
         )}
 
-        {isCameraOpen && (
-          <div className="camera-container">
-            <video ref={videoRef} autoPlay playsInline className="camera-preview" />
-            <div className="camera-controls">
-              <Button onClick={handleCapturePhoto} variant="primary">
-                Capturar Foto
-              </Button>
-              <Button onClick={handleCaptureVideo} variant="primary">
-                Grabar Video
-              </Button>
-              <Button onClick={stopCamera} variant="danger">
-                Cerrar Cámara
-              </Button>
-            </div>
-          </div>
-        )}
-
         {selectedVideo && !clearView && (
           <div className="selected-video-preview-overlay">
             <video src={URL.createObjectURL(selectedVideo)} controls />
@@ -1285,7 +1208,21 @@ function ChatWindow() {
         {fileMenuVisible && (
           <div ref={setPopperElement} style={styles.popper} {...attributes.popper}>
             <div className='d-flex flex-column'>
-            <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={handleOpenCamera}>Abrir Cámara</Button>
+            <Button
+    variant="light"
+    disabled={integracion?.name == "Interno" ? false : isLastMessageOlderThan24Hours()}
+    onClick={() => fileInputRef.current.click()} // Disparar input de cámara
+  >
+    Abrir Cámara
+  </Button>
+  <input
+    type="file"
+    ref={fileInputRef}
+    style={{ display: "none" }}
+    accept="image/*,video/*"
+    capture="environment" // Usar la cámara trasera
+    onChange={handleCameraFile}
+  />
               <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('image/*')}>Cargar Imagen</Button>
               <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('video/*')}>Cargar Video</Button>
               <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} onClick={() => handleFileMenuClick('.pdf,.doc,.docx,.txt')}>Cargar Documento</Button>
