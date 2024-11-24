@@ -468,12 +468,17 @@ function ChatWindow() {
     );
   };
 
-  const sendWhatsAppMessageImage = async (imageUrl) => {
+  const sendWhatsAppMessageImage = async (imageUrl, caption) => {
     try {
+      console.log("Preparando para enviar imagen con caption:");
+      console.log("URL de la imagen:", imageUrl);
+      console.log("Texto del caption:", caption);
+
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-image`, {
         phone: currentConversation.phone_number,
         imageUrl: imageUrl,
-        conversationId: currentConversation.conversation_id
+        conversationId: currentConversation.conversation_id,
+        messageText: caption
       });
       console.log('Image sent successfully:', response.data);
     } catch (error) {
@@ -784,26 +789,33 @@ function ChatWindow() {
       // Enviar imagen si está seleccionada
       if (selectedImage) {
         const imageToSend = selectedImage; // Copia de la imagen para evitar conflictos
-        const captionToSend = messageText.trim(); // Usa el texto como caption
+        const textToSend = messageText; // Usa el texto como caption
         setSelectedImage(null); // Limpia la imagen seleccionada
         setMessageText(''); // Limpia la barra de texto
+
         try {
+          console.log("Preparando para enviar imagen:");
+          console.log("Imagen seleccionada:", imageToSend);
+          console.log("Texto del caption:", messageText);
+
           const formData = new FormData();
           formData.append('image', imageToSend);
-          if (captionToSend) {
-            formData.append('caption', captionToSend); // Agrega el caption al FormData
+          if (messageText) {
+            formData.append('messageText', messageText); // Agrega el caption al FormData
           }
-    
+
           const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-image`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
             },
           });
-    
+
           const imageUrl = response.data.imageUrl;
-          await sendWhatsAppMessageImage(imageUrl, captionToSend);
-    
-          console.log("Imagen enviada con caption:", captionToSend);
+          console.log("Imagen subida, URL recibida:", imageUrl);
+
+          await sendWhatsAppMessageImage(imageUrl, messageText);
+
+          console.log("Imagen enviada con caption:", messageText);
         } catch (error) {
           console.error('Error enviando la imagen:', error);
           return;
