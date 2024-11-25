@@ -43,7 +43,10 @@ function ChatWindow() {
   const [popperElementReact, setPopperElementReact] = useState(null);
   const [activeMessageId, setActiveMessageId] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null); 
-
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [clearView, setClearView] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [selectedDocument, setSelectedDocument] = useState(null);
   const replyBarRef = useRef(null); // Elemento sobre el cual se posicionará el popover
   const popoverTriggerRef = useRef(null);
   const [timer, setTimer] = useState(null);
@@ -53,6 +56,10 @@ function ChatWindow() {
   const navigate = useNavigate();
   const [currentMessage, setCurrentMessage] = useState(messages);
   const integration = state.integraciones.find(integ => integ?.id == currentConversation?.integration_id) 
+
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const videoRef = useRef(null);
+  const mediaStreamRef = useRef(null);
 
   const handleScroll = useCallback(async (e) => {
     const target = e.target;
@@ -473,12 +480,17 @@ function ChatWindow() {
     );
   };
 
-  const sendWhatsAppMessageImage = async (imageUrl) => {
+  const sendWhatsAppMessageImage = async (imageUrl, caption) => {
     try {
+      console.log("Preparando para enviar imagen con caption:");
+      console.log("URL de la imagen:", imageUrl);
+      console.log("Texto del caption:", caption);
+
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-image`, {
         phone: currentConversation.phone_number,
         imageUrl: imageUrl,
-        conversationId: currentConversation.conversation_id
+        conversationId: currentConversation.conversation_id,
+        messageText: caption
       });
       console.log('Image sent successfully:', response.data);
     } catch (error) {
@@ -486,65 +498,80 @@ function ChatWindow() {
     }
   };
 
-  const handleVideoUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  const handleVideoUpload = async (videoFile, messageText) => {
+    if (!videoFile) return;
+  
     try {
       const formData = new FormData();
-      formData.append('video', file);
+      formData.append('video', videoFile);
+  
+      if (messageText) {
+        formData.append('messageText', messageText); // Agrega el caption al FormData
+      }
+  
+      // Subir el video al backend
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-video`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       });
+  
       const videoUrl = response.data.videoUrl;
       const videoDuration = response.data.videoDuration;
       const videoThumbnail = response.data.videoThumbnail;
-      await sendWhatsAppMessageVideo(videoUrl, videoDuration, videoThumbnail);
+  
+      console.log("Video subido exitosamente, URL:", videoUrl);
+  
+      // Enviar el video a WhatsApp
+      await sendWhatsAppMessageVideo(videoUrl, videoDuration, videoThumbnail, messageText);
     } catch (error) {
-      console.error('Error uploading video:', error);
+      console.error('Error al subir el video:', error);
     }
   };
-
-  const sendWhatsAppMessageVideo = async (videoUrl, videoDuration, videoThumbnail) => {
+  
+  const sendWhatsAppMessageVideo = async (videoUrl, videoDuration, videoThumbnail, messageText) => {
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-video`, {
         phone: currentConversation.phone_number,
         videoUrl: videoUrl,
         videoDuration: videoDuration,
         videoThumbnail: videoThumbnail,
-        conversationId: currentConversation.conversation_id
+        conversationId: currentConversation.conversation_id,
+        messageText: messageText,
       });
-      console.log('Video sent successfully:', response.data);
+  
+      console.log('Video enviado exitosamente:', response.data);
     } catch (error) {
-      console.error('Error sending video:', error);
+      console.error('Error al enviar el video:', error);
     }
-  };
+  };  
 
-  const handleDocumentUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  const handleDocumentUpload = async (documentFile, messageText) => {
+    if (!documentFile) return;
+  
     try {
       const formData = new FormData();
-      formData.append('document', file);
+      formData.append('document', documentFile);
+      if (messageText) formData.append('messageText', messageText);
+  
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-document`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
+  
       const documentUrl = response.data.documentUrl;
-      await sendWhatsAppMessageDocument(documentUrl, file.name);
+      await sendWhatsAppMessageDocument(documentUrl, documentFile.name, messageText);
     } catch (error) {
-      console.error('Error uploading document:', error);
+      console.error('Error al subir el documento:', error);
     }
-  };
+  };  
 
-  const sendWhatsAppMessageDocument = async (documentUrl, documentName) => {
+  const sendWhatsAppMessageDocument = async (documentUrl, documentName, messageText) => {
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/messages/send-document`, {
         phone: currentConversation.phone_number,
         documentUrl: documentUrl,
         documentName: documentName,
+        messageText: messageText,
         conversationId: currentConversation.conversation_id,
         integration_name : state.integraciones?.find(intra => intra.id == currentConversation?.integration_id)?.type,
         integration_id: currentConversation?.integration_id,
@@ -783,9 +810,23 @@ function ChatWindow() {
       };
     }, [popperElement, referenceElement]);
 
+    const handleCameraFile = (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+    
+      if (file.type.startsWith("image/")) {
+        setSelectedImage(file); // Procesar como imagen
+      } else if (file.type.startsWith("video/")) {
+        setSelectedVideo(file); // Procesar como video
+      } else {
+        console.warn("Archivo capturado no válido");
+      }
+    };    
+
     const handleSendMessage = async () => {
-      if (!currentConversation || !textInputRef.current.value) return;
-    const textToSend = textInputRef.current.value; 
+      if (!currentConversation || !messageText.trim()) return;
+    
+      const textToSend = messageText;
       console.log("Texto a enviar:", textToSend);
     
       setMessageText('');
@@ -838,6 +879,7 @@ function ChatWindow() {
       } catch (error) {
         console.error('Error al enviar el mensaje:', error.response ? error.response.data : error.message);
       }
+    }
     };
     
     const handleKeyDown = async(event) => {
@@ -881,16 +923,49 @@ function ChatWindow() {
 
     const handleFileChange = (event) => {
       const file = event.target.files[0];
-      if (file) {
-        console.log("Archivo seleccionado:", file);
-        // Aquí puedes manejar el archivo cargado según el tipo
+      if (!file) return;
+    
+      if (file.type.startsWith('image/')) {
+        setSelectedImage(file); // Imagen seleccionada
+      } else if (file.type.startsWith('video/')) {
+        setSelectedVideo(file); // Video seleccionado
+      } else {
+        setSelectedDocument(file); // Documento seleccionado
       }
     };
+    
+    
 
     const handleTextChange = (e) => {
       setMessageText(e.target.value);
       setCursorPosition(e.target.selectionStart);
     };
+    
+      useEffect(() => {
+        const handleClickOutside = (event) => {
+          if (!replyBarRef.current.contains(event.target)) {
+            setSelectedImage(null); 
+            setSelectedVideo(null); 
+            setSelectedDocument(null); 
+          }
+        };
+      
+        const handleKeyDown = (event) => {
+          if (event.key === 'Escape') {
+            setSelectedImage(null); 
+            setSelectedVideo(null);
+            setSelectedDocument(null);
+          }
+        };
+      
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleKeyDown);
+      
+        return () => {
+          document.removeEventListener('mousedown', handleClickOutside);
+          document.removeEventListener('keydown', handleKeyDown);
+        };
+      }, [replyBarRef]);      
 
     const renderMessageContent = () => {
       switch (messageReply?.msj?.message_type) {
@@ -1006,6 +1081,51 @@ function ChatWindow() {
             <EmojiPicker
               disabled={integracion.name === 'Interno' ? false : isLastMessageOlderThan24Hours()}
               onEmojiClick={onEmojiClick}
+            />
+          </div>
+        )}
+
+        {selectedDocument && !clearView && (
+          <div className="selected-document-preview-overlay">
+            <div className="document-preview">
+              <div className="document-info" onClick={() => window.open(URL.createObjectURL(selectedDocument), '_blank')}>
+                <img src={getFileIcon(selectedDocument.name)} alt="Document icon" className="document-icon" />
+                <p className="document-name text-dark">{selectedDocument.name}</p>
+              </div>
+              <div className="document-actions">
+                <button className="btn btn-light document-button open" onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(URL.createObjectURL(selectedDocument), '_blank');
+                }}>Abrir</button>
+                <button className="btn btn-light document-button save" onClick={(e) => {
+                  e.stopPropagation();
+                  const link = document.createElement('a');
+                  link.href = URL.createObjectURL(selectedDocument);
+                  link.download = selectedDocument.name;
+                  link.target = '_blank';
+                  link.rel = 'noopener noreferrer';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}>Guardar como...</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedVideo && !clearView && (
+          <div className="selected-video-preview-overlay">
+            <video src={URL.createObjectURL(selectedVideo)} controls />
+          </div>
+        )}
+
+        {selectedImage && !clearView && (
+          <div
+            className="selected-image-preview-overlay"
+          >
+            <img
+              src={URL.createObjectURL(selectedImage)}
+              alt="Preview"
             />
           </div>
         )}
