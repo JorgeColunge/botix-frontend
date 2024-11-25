@@ -128,7 +128,7 @@ export const AudioRecorder = ({ onSend, inactivo }) => {
       )}
       {audioUrl && (
         <div className="audio-controls">
-          <audio controls src={audioUrl}></audio>
+          <audio className='' controls src={audioUrl}></audio>
           <Button variant="light" onClick={deleteRecording}>
             <TrashFill />
           </Button>

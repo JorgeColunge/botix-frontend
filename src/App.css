@@ -758,7 +758,18 @@
 .audio-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.5rem; /* Espaciado entre los elementos */
+  flex-wrap: nowrap; /* Evita que los elementos salten de línea */
+  overflow: hidden; /* Oculta cualquier desbordamiento */
+}
+
+.audio-controls audio {
+  flex-shrink: 0; /* No permita que el audio se reduzca demasiado */
+  max-width: calc(100% - 2.5rem); /* Asegura que el audio respete el espacio para botones */
+}
+
+.audio-controls button {
+  flex-shrink: 0; /* Los botones mantienen su tamaño */
 }
 
 .message-input {
