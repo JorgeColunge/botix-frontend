@@ -741,6 +741,7 @@ function ChatWindow() {
 
   const integracion = state?.integraciones?.find(intr => intr?.id == currentConversation?.integration_id) || null;
 
+
   const ReplyBar = () => {
     const [referenceElement, setReferenceElement] = useState(null);
     const [popperElement, setPopperElement] = useState(null);
@@ -880,7 +881,7 @@ function ChatWindow() {
         console.error('Error al enviar el mensaje:', error.response ? error.response.data : error.message);
       }
     }
-    };
+   
     
     const handleKeyDown = async(event) => {
       if (event.key === 'Enter' && event.shiftKey) {
@@ -934,8 +935,6 @@ function ChatWindow() {
       }
     };
     
-    
-
     const handleTextChange = (e) => {
       setMessageText(e.target.value);
       setCursorPosition(e.target.selectionStart);
