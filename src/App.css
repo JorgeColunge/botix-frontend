@@ -435,12 +435,15 @@
 
 .reply-button {
   margin: 0 5px;
+}
+.opacity-react{
   opacity: 0; /* El botón es invisible */
   transition: opacity 0.3s ease; 
 }
-.reply-button:hover {
+.opacity-react:hover {
   opacity: 1;
 }
+
 .message-input {
   width: 100%;
   padding: 10px;

@@ -35,7 +35,6 @@ function ChatWindow() {
   const [updateMoreMsj, setUpdateMoreMsj] = useState(null);
   const [isScrolledToEnd, setIsScrolledToEnd] = useState(true); 
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [messageText, setMessageText] = useState('');
   const [cursorPosition, setCursorPosition] = useState(null);
   const [messageReply, setMessageReply] = useState(null);
 
@@ -43,11 +42,12 @@ function ChatWindow() {
   const [referenceElementReact, setReferenceElementReact] = useState(null);
   const [popperElementReact, setPopperElementReact] = useState(null);
   const [activeMessageId, setActiveMessageId] = useState(null);
+  const [activeDropdown, setActiveDropdown] = useState(null); 
 
   const replyBarRef = useRef(null); // Elemento sobre el cual se posicionará el popover
   const popoverTriggerRef = useRef(null);
-  let timer;
-
+  const [timer, setTimer] = useState(null);
+  const [hoveredId, setHoveredId] = useState(null);
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const isTable = useMediaQuery({ maxWidth: 1240 });
   const navigate = useNavigate();
@@ -255,13 +255,22 @@ function ChatWindow() {
   setCurrentConversation(null)
  }
 
- const startPress = (messageId) => {
-  if (!activeMessageId && !showEmojiResponse) {    
-    timer = setTimeout(() => {
-      handleEmojiReaction(messageId)
-    }, 1000); 
-  }
-};
+  const startPress = (id) => {
+    // Cancela cualquier temporizador previo
+    if (timer) clearTimeout(timer);
+
+    // Configura un nuevo temporizador
+    const newTimer = setTimeout(() => {
+      setActiveDropdown(id); // Activa el menú después de 1 segundo
+    }, 800);
+
+    setTimer(newTimer); // Almacena el temporizador actual
+  };
+
+  const closeDropdown = () => {
+    setActiveDropdown(null); // Cierra el menú activo
+    if (timer) clearTimeout(timer); // Limpia el temporizador
+  };;
 
   const ContactInfoBar = ({usuario, usuarios, conversacion}) => {
 
@@ -705,7 +714,7 @@ function ChatWindow() {
 
   const integracion = state?.integraciones?.find(intr => intr?.id == currentConversation?.integration_id) || null;
 
-  function ReplyBar() {
+  const ReplyBar = () => {
     const [referenceElement, setReferenceElement] = useState(null);
     const [popperElement, setPopperElement] = useState(null);
     const { styles, attributes } = usePopper(referenceElement, popperElement, {
@@ -734,7 +743,7 @@ function ChatWindow() {
       ],
     });
     
-    
+    const [messageText, setMessageText] = useState('');
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const textInputRef = useRef(null);
     const fileInputRef = useRef(null);
@@ -775,9 +784,8 @@ function ChatWindow() {
     }, [popperElement, referenceElement]);
 
     const handleSendMessage = async () => {
-      if (!currentConversation || !messageText.trim()) return;
-    
-      const textToSend = messageText;
+      if (!currentConversation || !textInputRef.current.value) return;
+    const textToSend = textInputRef.current.value; 
       console.log("Texto a enviar:", textToSend);
     
       setMessageText('');
@@ -945,6 +953,7 @@ function ChatWindow() {
       }
     };
 
+  
     return (
       <section className='flex flex-col'>
       {!isScrolledToEnd && messageReply?.msj != null && (
@@ -1004,8 +1013,6 @@ function ChatWindow() {
         <TextareaAutosize
           className="message-input"
           placeholder="Escribe un mensaje aquí..."
-          value={messageText}
-          onChange={handleTextChange}
           onKeyDown={handleKeyDown}
           maxRows={4}
           ref={textInputRef}
@@ -1035,9 +1042,9 @@ function ChatWindow() {
         <input
         type="file"
         ref={fileInputRef}
-        style={{ display: "none" }} // Oculta el input
-        accept={fileInputType} // Aplica el tipo seleccionado
-        onChange={handleFileChange} // Maneja el archivo cargado
+        style={{ display: "none" }}
+        accept={fileInputType} 
+        onChange={handleFileChange} 
       />
       </article>
       </section>
@@ -1318,21 +1325,46 @@ function ChatWindow() {
   
                 return (
                   <section
-                  className={`w-full flex flex-row ${alingMessage}`} 
+                  className={`w-full flex flex-row ${alingMessage}`}
+                  onMouseEnter={() => setHoveredId(message.id)} // Activar el hover para este id
+                  onMouseLeave={() => setHoveredId(null)} // Desactivar el hover
                 >
-                  {
-                    
+               <article
+                      className={`d-flex justify-center items-center transition-opacity duration-300 ease-in-out ${
+                        isMobile ? 'opacity-0' : hoveredId === message.id ? 'opacity-100' : 'opacity-0'
+                      }`}
+                    >
                     <button
-                      variant="light"
                       disabled={(integracion?.name === "Interno" ? false : isLastMessageOlderThan24Hours()) || isMobile}
-                      className="reply-button opacity-10 hover:opacity-100 "
-                      onClick={() => handleEmojiReaction(message.id)} // Pasar el ID del mensaje
+                      className="reply-button"
+                      onClick={() => handleEmojiReaction(message.id)}
                       ref={setReferenceElementReact}
                     >
                       <i className="far fa-smile"></i>
                     </button>
-                    
-                  }
+                
+                    <DropdownMenu open={activeDropdown === message.id} onOpenChange={(isOpen) => !isOpen && closeDropdown()}>
+                      <DropdownMenuTrigger asChild>
+                        <ChevronDown className="hover:text-gray-500 hover:cursor-pointer transition-colors duration-200" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        className="w-56"
+                        side="right"
+                        align="start"
+                        sideOffset={4}
+                      >
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem onClick={() => handleDropdownClick(message)}>
+                            <span>Responder</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEmojiReaction(message.id)}>
+                            <span>Reaccionar</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </article>
+  
                   <article
                    onTouchStart={() =>startPress(message.id)}
                     key={message.id}
@@ -1340,26 +1372,7 @@ function ChatWindow() {
                     className={bubbleClass}
                     style={{ marginBottom: '20px', maxWidth: message.message_type === 'image' || message.message_type === 'video' ? 'none' : 'auto',  position: 'relative', }}
                   >
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <ChevronDown className="hover:text-gray-500 hover:cursor-pointer transition-colors duration-200" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                           className="w-56"
-                           side="right"
-                           align="start"
-                           sideOffset={4}
-                           >
-                            <DropdownMenuGroup>
-                            <DropdownMenuItem onClick={() => handleDropdownClick(message)}>
-                                <span>Responder</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEmojiReaction(message.id)}>
-                                <span>Reaccionar</span>
-                              </DropdownMenuItem>  
-                            </DropdownMenuGroup>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+            
                      
                         {activeMessageId === message.id && showEmojiResponse && ( // Mostrar solo si coincide con el ID activo
                           <div 
