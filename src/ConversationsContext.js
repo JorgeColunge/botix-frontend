@@ -56,7 +56,7 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
   const companyId = localStorage.getItem('company_id');
   const userId = localStorage.getItem('user_id');
  
-  const {notificationCaseAudio, notificationCaseImage, notificationCaseDocument, notificationCaseText, notificationCaseVideo} = useNotificationsSwich();
+  const {notificationCaseAudio, notificationCaseImage, notificationCaseDocument, notificationCaseText, notificationCaseVideo, notificationCaseReaction} = useNotificationsSwich();
   const loadMessages = async (conversationId, offset = 0) => {
     setLoading(true);
     try {
@@ -460,39 +460,20 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
         const msj = { ...newMessage };
         console.log("nuevo msj", msj)
 
-        // document.addEventListener('deviceready', () => {
-        //   console.log('Cordova está listo');
+        document.addEventListener('deviceready', () => {
+          console.log('Cordova está listo');
         
-        //   if (!isCurrentActive) {
+          if (!isCurrentActive) {
         
-        //     // if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
-               
-        //     //     switch (newMessage.message_type) {
-        //     //       case 'text':
-        //     //          notificationCaseText(newMessage);
-        //     //         break;
-        //     //       case 'audio':
-        //     //          notificationCaseAudio(newMessage);
-        //     //       break;
-        //     //       case 'video':
-        //     //          notificationCaseVideo(newMessage);
-        //     //       break;
-        //     //       case 'image':
-        //     //          notificationCaseImage(newMessage);
-        //     //       break;
-        //     //       case 'document':
-        //     //          notificationCaseDocument(newMessage);
-        //     //       break;  
-
-        //     //       default:
-        //     //         break;
-        //     //     }
-        //     // } else {
-        //     //   console.log('El plugin de notificaciones locales no está disponible.');
-        //     // }
+            if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
+              notificationCaseReaction(newMessage)               
+                }
+            } else {
+              console.log('El plugin de notificaciones locales no está disponible.');
+            }
         
-        //   }
-        // }, false);        
+          }
+        , false);        
         
         setMessages(prevMessages => {
           const updatedMessages = { ...prevMessages };
@@ -534,7 +515,21 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
       return;
     }else{
       console.log("nuevo msj de reaccion", newMessage)
-
+      
+      document.addEventListener('deviceready', () => {
+        console.log('Cordova está listo');
+      
+        if (!isCurrentActive) {
+      
+          if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
+            notificationCaseReaction(newMessage)               
+              }
+          } else {
+            console.log('El plugin de notificaciones locales no está disponible.');
+          }
+      
+        }
+      , false);  
       setMessages(prevMessages => {
         const updatedMessages = { ...prevMessages };
         

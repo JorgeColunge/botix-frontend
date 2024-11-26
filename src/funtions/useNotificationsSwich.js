@@ -20,7 +20,7 @@ cordova.plugins.notification.local.schedule({
     title: title || 'Nuevo mensaje',
     text: newMessage.text || 'Tienes un nuevo mensaje',
     smallIcon: `${process.env.REACT_ICON_SMALL}`, // Ícono genérico para el sistema
-    icon: newMessage.destino_foto || '', // URL de la foto de perfil
+    icon: process.env.REACT_APP_API_URL+newMessage.destino_foto || '',
 });
 }, []);
 
@@ -31,7 +31,7 @@ cordova.plugins.notification.local.schedule({
     title: title || 'Nuevo mensaje',
     text: `🎙️ Mensaje de audio: ${formattedDuration || 'Duración desconocida'}`,
     smallIcon: `${process.env.REACT_ICON_SMALL}`,
-    icon: newMessage.destino_foto || '',
+    icon: process.env.REACT_APP_API_URL+newMessage.destino_foto || '',
 });
 }, []);
 
@@ -42,7 +42,7 @@ cordova.plugins.notification.local.schedule({
     title: title || 'Nuevo mensaje',
     text: `🎥 Video: ${formattedDuration || 'Duración desconocida'}`,
     smallIcon: `${process.env.REACT_ICON_SMALL}`,
-    icon: newMessage.destino_foto || '',
+    icon: process.env.REACT_APP_API_URL+newMessage.destino_foto || '',
 });
 }, []);
 
@@ -53,7 +53,7 @@ cordova.plugins.notification.local.schedule({
     title: title || 'Nuevo mensaje',
     text: newMessage.text || '📷 Foto enviada',
     smallIcon: `${process.env.REACT_ICON_SMALL}`,
-    icon: newMessage.destino_foto || '', 
+    icon: process.env.REACT_APP_API_URL+newMessage.destino_foto || '',
     attachments: [image || ''], 
 });
 }, []);
@@ -65,9 +65,39 @@ cordova.plugins.notification.local.schedule({
     title: title || 'Nuevo mensaje',
     text: `📄 Documento: ${document || 'Archivo recibido'}`,
     smallIcon: `${process.env.REACT_ICON_SMALL}`,
-    icon: newMessage.destino_foto || '', // Foto de perfil del remitente
+    icon: process.env.REACT_APP_API_URL+newMessage.destino_foto || '',
 });
-}, []);      
+}, []);
+
+const notificationCaseReaction = useCallback((newMessage) => {
+  const title = `${newMessage.destino_nombre || ''} ${newMessage.destino_apellido || ''}`.trim();
+  var messageContet = null;
+  switch (messageReact.type) {
+    case 'audio':
+      messageContet = 'Reacciono a: 🎙️ Mensaje de audio';
+      break;
+    case 'text':
+      messageContet = `Reacciono a: '${messageReact.text}'`;
+      break;
+    case 'video':
+      messageContet = 'Reacciono a: 🎥 Video';
+      break;
+    case 'image':
+      messageContet = 'Reacciono a: 📷 Foto'
+      break;
+    case 'document':  
+      messageContet = 'Reacciono a : 📄 Documento';
+      break;  
+    default:
+      break;
+  }
+  cordova.plugins.notification.local.schedule({
+      title: title || 'Nuevo mensaje',
+      text: messageContet,
+      smallIcon: `${process.env.REACT_ICON_SMALL}`,
+      icon: process.env.REACT_APP_API_URL+newMessage.destino_foto || '',
+  });
+}, []);  
 
     return {
     notificationCaseDocument,
@@ -75,5 +105,6 @@ cordova.plugins.notification.local.schedule({
     notificationCaseImage,
     notificationCaseVideo,
     notificationCaseText,
+    notificationCaseReaction,
   }
 }
