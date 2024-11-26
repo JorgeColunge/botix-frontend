@@ -463,12 +463,10 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
         document.addEventListener('deviceready', () => {
           console.log('Cordova está listo');
         
-          if (!isCurrentActive) {
-        
             if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
               notificationCaseReaction(newMessage)               
                 }
-            } else {
+             else {
               console.log('El plugin de notificaciones locales no está disponible.');
             }
         
@@ -519,12 +517,9 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
       document.addEventListener('deviceready', () => {
         console.log('Cordova está listo');
       
-        if (!isCurrentActive) {
-      
           if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
             notificationCaseReaction(newMessage)               
-              }
-          } else {
+              }else {
             console.log('El plugin de notificaciones locales no está disponible.');
           }
       
