@@ -72,12 +72,12 @@ cordova.plugins.notification.local.schedule({
 const notificationCaseReaction = useCallback((newMessage) => {
   const title = `${newMessage.destino_nombre || ''} ${newMessage.destino_apellido || ''}`.trim();
   var messageContet = null;
-  switch (messageReact.type) {
+  switch (messageReact.type || messageReact.replly_type) {
     case 'audio':
       messageContet = 'Reacciono a: 🎙️ Mensaje de audio';
       break;
     case 'text':
-      messageContet = `Reacciono a: '${messageReact.text}'`;
+      messageContet = `Reacciono a: '${messageReact.text || messageReact.reply_text}'`;
       break;
     case 'video':
       messageContet = 'Reacciono a: 🎥 Video';

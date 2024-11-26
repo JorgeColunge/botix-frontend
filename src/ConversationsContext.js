@@ -511,11 +511,11 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
     const userCompanyId = localStorage.getItem("company_id");
 
     // Validar si el mensaje pertenece a la empresa del usuario conectado
-    if (String(newMessage.company_id) !== userCompanyId) {
+    if (String(newMessage.companyId) !== userCompanyId) {
       return;
     }else{
       console.log("nuevo msj de reaccion", newMessage)
-      
+
       document.addEventListener('deviceready', () => {
         console.log('Cordova está listo');
       
@@ -530,26 +530,6 @@ export const ConversationsProvider = ({ children, socket, userHasInteracted }) =
       
         }
       , false);  
-      setMessages(prevMessages => {
-        const updatedMessages = { ...prevMessages };
-        
-        // Obtén los mensajes de la conversación actual, o una lista vacía si no existen
-        const messagesForConversation = updatedMessages[newMessage.conversationId] || [];
-        
-        // Busca el mensaje por ID
-        const updatedConversationMessages = messagesForConversation.map(msg => {
-          if (msg.id == newMessage.replies_id) {
-            // Si encuentra el mensaje, agrega el atributo emoji
-            return { ...msg, reaction: newMessage.reaction };
-          }
-          return msg; 
-        });
-      
-        // Actualiza los mensajes para la conversación actual
-        updatedMessages[newMessage.conversationId] = updatedConversationMessages;
-      
-        return updatedMessages;
-      }); 
   }
  };
 
