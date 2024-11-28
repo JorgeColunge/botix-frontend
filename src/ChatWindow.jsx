@@ -846,7 +846,8 @@ function ChatWindow() {
         const documentToSend = selectedDocument;
         const textToSend = textInputRef.current.value; // Usa el texto como caption
         setSelectedDocument(null); // Limpia el documento seleccionado
-        setMessageText(''); // Limpia la barra de texto
+        setMessageText('');
+      
 
         try {
           console.log("Preparando para enviar documento:", documentToSend);
