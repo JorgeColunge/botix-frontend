@@ -844,7 +844,7 @@ function ChatWindow() {
       // Enviar documento
       if (selectedDocument) {
         const documentToSend = selectedDocument;
-        const textToSend = messageText; // Usa el texto como caption
+        const textToSend = textInputRef.current.value; // Usa el texto como caption
         setSelectedDocument(null); // Limpia el documento seleccionado
         setMessageText(''); // Limpia la barra de texto
 
@@ -860,7 +860,7 @@ function ChatWindow() {
 
       if (selectedVideo) {
         const videoToSend = selectedVideo; // Copia del video para evitar conflictos
-        const textToSend = messageText; // Usa el texto como caption
+        const textToSend = textInputRef.current.value; // Usa el texto como caption
         setSelectedVideo(null); // Limpia el video seleccionado
         setMessageText(''); // Limpia la barra de texto
 
@@ -882,7 +882,7 @@ function ChatWindow() {
       // Enviar imagen si está seleccionada
       if (selectedImage) {
         const imageToSend = selectedImage; // Copia de la imagen para evitar conflictos
-        const textToSend = messageText; // Usa el texto como caption
+        const textToSend = textInputRef.current.value; // Usa el texto como caption
         setSelectedImage(null); // Limpia la imagen seleccionada
         setMessageText(''); // Limpia la barra de texto
 
@@ -890,8 +890,8 @@ function ChatWindow() {
 
           const formData = new FormData();
           formData.append('image', imageToSend);
-          if (messageText) {
-            formData.append('messageText', messageText); // Agrega el caption al FormData
+          if (textToSend) {
+            formData.append('messageText',textToSend); // Agrega el caption al FormData
           }
 
           const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-image `, formData, {
