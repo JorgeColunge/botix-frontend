@@ -839,9 +839,82 @@ function ChatWindow() {
     };    
 
     const handleSendMessage = async () => {
-      if (!currentConversation || !messageText.trim()) return;
+      if (!currentConversation) return;
+
+      // Enviar documento
+      if (selectedDocument) {
+        const documentToSend = selectedDocument;
+        const textToSend = messageText; // Usa el texto como caption
+        setSelectedDocument(null); // Limpia el documento seleccionado
+        setMessageText(''); // Limpia la barra de texto
+
+        try {
+          console.log("Preparando para enviar documento:", documentToSend);
+          await handleDocumentUpload(documentToSend, textToSend);
+          console.log("Documento enviado con caption:", textToSend);
+        } catch (error) {
+          console.error('Error enviando el documento:', error);
+          return;
+        }
+      }
+
+      if (selectedVideo) {
+        const videoToSend = selectedVideo; // Copia del video para evitar conflictos
+        const textToSend = messageText; // Usa el texto como caption
+        setSelectedVideo(null); // Limpia el video seleccionado
+        setMessageText(''); // Limpia la barra de texto
+
+        try {
+          console.log("Preparando para enviar video:");
+          console.log("Video seleccionado:", videoToSend);
+          console.log("Texto del caption:", textToSend);
+
+          await handleVideoUpload(videoToSend, textToSend);
+
+          console.log("Video enviado con caption:", textToSend);
+        } catch (error) {
+          console.error('Error enviando el video:', error);
+          return;
+        }
+      }
+
     
-      const textToSend = messageText;
+      // Enviar imagen si está seleccionada
+      if (selectedImage) {
+        const imageToSend = selectedImage; // Copia de la imagen para evitar conflictos
+        const textToSend = messageText; // Usa el texto como caption
+        setSelectedImage(null); // Limpia la imagen seleccionada
+        setMessageText(''); // Limpia la barra de texto
+
+        try {
+
+          const formData = new FormData();
+          formData.append('image', imageToSend);
+          if (messageText) {
+            formData.append('messageText', messageText); // Agrega el caption al FormData
+          }
+
+          const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload-image `, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+
+          const imageUrl = response.data.imageUrl;
+          console.log("Imagen subida, URL recibida:", imageUrl);
+
+          await sendWhatsAppMessageImage(imageUrl, messageText);
+
+          console.log("Imagen enviada con caption:", messageText);
+        } catch (error) {
+          console.error('Error enviando la imagen:', error);
+          return;
+        }
+      }
+
+    // Enviar mensaje de texto si hay contenido
+  if (textInputRef.current.value.trim()) {
+      const textToSend = textInputRef.current.value;
       console.log("Texto a enviar:", textToSend);
     
       setMessageText('');
@@ -895,6 +968,7 @@ function ChatWindow() {
         console.error('Error al enviar el mensaje:', error.response ? error.response.data : error.message);
       }
     }
+    };
     
     const handleKeyDown = async(event) => {
       if (event.key === 'Enter' && event.shiftKey) {
