@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useCallback, useState, useContext } from 'rea
 import { Button, DropdownButton, Dropdown, NavDropdown } from 'react-bootstrap';
 import { PersonCircle, TelephoneFill, EnvelopeFill, Globe, Instagram, Facebook, Linkedin, Twitter, Tiktok, Youtube, Check, CheckAll, Clock } from 'react-bootstrap-icons';
 import './App.css';
-import { CameraIcon, ChevronDown, File, Mic, Video, X } from 'lucide-react';
+import { Camera, CameraIcon, ChevronDown, File, Mic, Video, X } from 'lucide-react';
 import EditContactModal from './EditContactModal';
 import ModalComponent from './modalComponet';
 import AudioPlayer from './audioPlayer';
@@ -44,6 +44,8 @@ function ChatWindow() {
   const [activeMessageId, setActiveMessageId] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null); 
   const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedPic, setSelectedPic] = useState(null);
+  const [selectedPicvideo, setSelectedPicvideo] = useState(null);
   const [clearView, setClearView] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [selectedDocument, setSelectedDocument] = useState(null);
@@ -776,6 +778,7 @@ function ChatWindow() {
     const textInputRef = useRef(null);
     const fileInputRef = useRef(null);
     const [fileMenuVisible, setFileMenuVisible] = useState(false);
+    const [cameraMenuVisible, setFilCameraVisible] = useState(false);
     const [fileInputType, setFileInputType] = useState('');
 
 
@@ -810,6 +813,17 @@ function ChatWindow() {
         document.removeEventListener('mousedown', handleClickOutsideFile);
       };
     }, [popperElement, referenceElement]);
+
+    useEffect(() => {
+      document.addEventListener('deviceready', onDeviceReady, false);
+      return () => {
+        document.removeEventListener('deviceready', onDeviceReady, false);
+      };
+    }, []);
+  
+    const onDeviceReady = () => {
+      console.log("Cordova is ready");
+    };
 
     const handleCameraFile = (event) => {
       const file = event.target.files[0];
@@ -881,7 +895,6 @@ function ChatWindow() {
         console.error('Error al enviar el mensaje:', error.response ? error.response.data : error.message);
       }
     }
-   
     
     const handleKeyDown = async(event) => {
       if (event.key === 'Enter' && event.shiftKey) {
@@ -908,6 +921,11 @@ function ChatWindow() {
       setFileMenuVisible(!fileMenuVisible);
     };
 
+    const handleCameraClick = () => {
+      setFilCameraVisible(!fileMenuVisible);
+    };
+
+
     const resetFileInput = () => {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -933,11 +951,6 @@ function ChatWindow() {
       } else {
         setSelectedDocument(file); // Documento seleccionado
       }
-    };
-    
-    const handleTextChange = (e) => {
-      setMessageText(e.target.value);
-      setCursorPosition(e.target.selectionStart);
     };
     
       useEffect(() => {
@@ -1027,7 +1040,84 @@ function ChatWindow() {
       }
     };
 
-  
+    const handleOpenCamera = (mediaType) => {
+      if (!window.cordova) {
+        alert("El entorno de Cordova no está disponible");
+        return;
+      }
+    
+      if (mediaType === 'photo') {
+        // Capturar imagen
+        navigator.camera.getPicture(
+          onPhotoSuccess,
+          onFail,
+          {
+            quality: 50,
+            destinationType: navigator.camera.DestinationType.FILE_URI,
+            sourceType: navigator.camera.PictureSourceType.CAMERA,
+            encodingType: navigator.camera.EncodingType.JPEG,
+            mediaType: navigator.camera.MediaType.PICTURE,
+            correctOrientation: true,
+          }
+        );
+      } else if (mediaType === 'video') {
+        // Grabar video
+        navigator.device.capture.captureVideo(
+          onVideoSuccess,
+          onFail,
+          {
+            limit: 1, // Limitar a un video
+            duration: 60*5, // Duración máxima en segundos
+            quality: 2 // Calidad del video (0: baja, 1: media, 2: alta)
+          }
+        );
+      }
+    };
+    
+    const onPhotoSuccess = (imageURI) => {
+      // Función de éxito sin async
+      console.log("Imagen //////: ", imageURI);
+      uriToFile(imageURI)
+        .then((file) => {
+          console.log("Archivo creado%%%%%: ", file);
+          setSelectedPic(file);
+        })
+        .catch((error) => {
+          console.error("Error al convertir URI en archivo: ", error);
+        });
+    };
+    
+    const onVideoSuccess = (mediaFiles) => {
+      if (mediaFiles && mediaFiles.length > 0) {
+        const videoFile = mediaFiles[0];
+        console.log("Video capturado: ", videoFile);
+        setSelectedPicvideo(videoFile); // Establecer el video seleccionado
+      }
+    };
+
+    const onFail = (message) => {
+      alert("Error al capturar la imagen: " + message);
+    };
+    
+    const uriToFile = (uri) => {
+      return new Promise((resolve, reject) => {
+        // Usamos el plugin 'cordova-plugin-file' para obtener el archivo
+        window.resolveLocalFileSystemURL(uri, (fileEntry) => {
+          fileEntry.file((file) => {
+            // Ahora tenemos el archivo, lo devolvemos
+            resolve(file);
+          }, (error) => {
+            reject("Error al obtener el archivo: " + error);
+          });
+        }, (error) => {
+          reject("Error al resolver la URI: " + error);
+        });
+      });
+    };
+
+    // console.log("Contenido de selectedPic (JSON):", JSON.stringify(selectedPic, null, 2));
+    console.log("Contenido de selectedPic (JSON):", JSON.stringify(selectedPicvideo, null, 2));
+
     return (
       <section className='flex flex-col'>
       {!isScrolledToEnd && messageReply?.msj != null && (
@@ -1071,6 +1161,11 @@ function ChatWindow() {
           </Button>
         )}
 
+        {
+          <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleEmojiClick} ref={setReferenceElement}>
+          <i className="far fa-smile"></i> {/* Icono de la cara feliz */}
+        </Button>
+        }
         {showEmojiPicker && (
           <div
             ref={setPopperElement}
@@ -1129,6 +1224,18 @@ function ChatWindow() {
           </div>
         )}
 
+        {selectedPic && !clearView && (
+          <div className="selected-image-preview-overlay">
+            <img src={selectedPic.localURL} alt="Preview" />
+          </div>
+        )}
+
+        {selectedPicvideo && !clearView && (
+          <div className="selected-image-preview-overlay">
+            <video src={selectedPicvideo.localURL} alt="Preview" controls/>
+          </div>
+        )}
+
         <TextareaAutosize
           className="message-input"
           placeholder="Escribe un mensaje aquí..."
@@ -1150,11 +1257,41 @@ function ChatWindow() {
             </div>
           </div>
         )}
+
+          {cameraMenuVisible && (
+            <div
+              className="absolute top-0 left-0 mt-2 bg-white shadow-md rounded-md z-50"
+              style={{ transform: "translateY(-7em)" }} // Opcional: ajustar posición con transform
+            >
+              <div className="flex flex-col p-1 space-y-2">
+                <Button
+                 variant='ghost'
+                  disabled={integracion?.name === "Interno" ? false : isLastMessageOlderThan24Hours()}
+                  className="px-4 py-2 bg-blue-500 text-black rounded-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  onClick={() => handleOpenCamera("photo")}
+                >
+                  Capturar Foto
+                </Button>
+                <Button
+                  variant='ghost'
+                  disabled={integracion?.name === "Interno" ? false : isLastMessageOlderThan24Hours()}
+                  className="px-4 py-2 bg-blue-500 text-black rounded-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  onClick={() => handleOpenCamera("video")}
+                >
+                  Grabar Video
+                </Button>
+              </div>
+            </div>
+          )}
+
+     { (isMobile && window.cordova) && (
+          <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleCameraClick}>
+            <Camera className="far fa-smile"/>
+          </Button>
+        )
+      }
         <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : false } className="reply-button" onClick={handleAttachClick}>
           <i className="fas fa-paperclip"></i> {/* Icono del clip */}
-        </Button>
-        <Button variant="light" disabled={ integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours()} className="reply-button" onClick={handleEmojiClick} ref={setReferenceElement}>
-          <i className="far fa-smile"></i> {/* Icono de la cara feliz */}
         </Button>
         
         <AudioRecorder inactivo={integracion?.name == 'Interno' ? false : isLastMessageOlderThan24Hours} onSend={handleSendAudio} />
@@ -1424,11 +1561,14 @@ function ChatWindow() {
                 const isDifferentTypeNext = index < groupedMessages[date].length - 1 && message.type !== groupedMessages[date][index + 1].type;
                 let bubbleClass = typeMessageVerificad(message, integration, state.usuario);
                 var alineacionMesj= null;
+                var MenuopenDirection= null;
                 var alingMessage = null;
                 if (isMobile && bubbleClass == 'message-bubble reply') {
                    alineacionMesj = 'emoji-container'; 
+                   MenuopenDirection = 'left'
                 } else if (isMobile && bubbleClass != 'message-bubble reply') {
                   alineacionMesj = 'emoji-containerLeft'
+                  MenuopenDirection = 'left'
                 }else {
                   alineacionMesj = '';
                 }
@@ -1467,10 +1607,8 @@ function ChatWindow() {
                         <ChevronDown className="hover:text-gray-500 hover:cursor-pointer transition-colors duration-200" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
-                        className="w-56"
-                        side="right"
-                        align="start"
-                        sideOffset={4}
+                      side={MenuopenDirection}
+                      // align={MenuopenDirection == 'rigth' ? ``} // Hace que el menú se despliegue hacia la izquierda
                       >
                         <DropdownMenuGroup>
                           <DropdownMenuItem onClick={() => handleDropdownClick(message)}>

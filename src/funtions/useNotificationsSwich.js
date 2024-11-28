@@ -72,12 +72,12 @@ cordova.plugins.notification.local.schedule({
 const notificationCaseReaction = useCallback((newMessage) => {
   const title = `${newMessage.destino_nombre || ''} ${newMessage.destino_apellido || ''}`.trim();
   var messageContet = null;
-  switch (newMessage.type || newMessage.replly_type) {
+  switch (newMessage.message_type || newMessage.replly_type) {
     case 'audio':
       messageContet = 'Reacciono a: 🎙️ Mensaje de audio';
       break;
     case 'text':
-      messageContet = `Reacciono a: '${newMessage.text || newMessage.reply_text}'`;
+      messageContet = `Reacciono a: '${newMessage.message_text || newMessage.reply_text}'`;
       break;
     case 'video':
       messageContet = 'Reacciono a: 🎥 Video';
@@ -94,7 +94,7 @@ const notificationCaseReaction = useCallback((newMessage) => {
   cordova.plugins.notification.local.schedule({
       title: title || 'Nuevo mensaje',
       text: messageContet,
-      smallIcon: `${process.env.REACT_ICON_SMALL}`,
+      smallIcon: `${process.env.REACT_APP_API_URL+newMessage.destino_foto || process.env.REACT_ICON_SMALL}`,
       icon: process.env.REACT_APP_API_URL+newMessage.destino_foto || '',
   });
 }, []);  
