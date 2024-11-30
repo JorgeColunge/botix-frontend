@@ -207,11 +207,11 @@ const UsersTable = () => {
   
     return (
       (!selectedDepartment || user.department_id === parseInt(selectedDepartment)) &&
-      (user.nombre.toLowerCase().includes(searchTermLower) ||
-      user.apellido.toLowerCase().includes(searchTermLower) ||
-      telefono.toLowerCase().includes(searchTermLower) ||
-      user.email.toLowerCase().includes(searchTermLower) ||
-      user.id_usuario.toString().includes(searchTermLower))
+      (user?.nombre.toLowerCase()?.includes(searchTermLower) ||
+      user?.apellido?.toLowerCase()?.includes(searchTermLower) ||
+      telefono?.toLowerCase()?.includes(searchTermLower) ||
+      user?.email?.toLowerCase()?.includes(searchTermLower) ||
+      user?.id_usuario?.toString()?.includes(searchTermLower))
     );
   });
   

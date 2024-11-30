@@ -17,19 +17,21 @@ const CreateUserModal = ({ show, onHide, companyId, roles, departments, onUserCr
 
   const handleNewUserFormChange = (e) => {
     const { name, value } = e.target;
+    console.log("nombre ", name, "valor", value)
     setNewUserData({
       ...newUserData,
       [name]: value
     });
   };
-
+console.log("departamentos", departments)
   const handleNewUserFormSubmit = async (e) => {
     e.preventDefault();
-
+   console.log("ingresandddd")
     const newUser = {
       ...newUserData,
       company_id: companyId
     };
+    console.log("#ss", newUser)
 
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/register-user`, newUser);
