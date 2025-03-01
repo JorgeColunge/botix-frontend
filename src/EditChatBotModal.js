@@ -3639,15 +3639,6 @@ codeArray.push(`
       }
     }).join('\n') || '';
 
-    const buttonVariableCalculations = selectedTemplate.buttonVariables?.map((variable, index) => {
-      const varName = `button${uniqueId}_${index + 1}`;
-      if (variable.source === 'date') {
-        return `const ${varName} = calculateDateValue('${variable.variable}', clientTimezone, moment);`;
-      } else {
-        return `const ${varName} = await fetchVariableValue('${variable.source}', '${variable.variable}', senderId, ${companyId}, pool);`;
-      }
-    }).join('\n') || '';
-
     const payloadCode = `
       payload = {
         conversation: conversationData,
@@ -3672,15 +3663,11 @@ codeArray.push(`
           ],
           bodyVariables: [
             ${selectedTemplate.bodyVariables?.map((variable, index) => `{ "${variable.name}": body${uniqueId}_${index + 1} }`).join(', ') || ''}
-          ],
-          buttonVariables: [
-            ${selectedTemplate.buttonVariables?.map((variable, index) => `{ "${variable.name}": button${uniqueId}_${index + 1} }`).join(', ') || ''}
           ]
         },
         parameters: [
           ${selectedTemplate.headerVariables?.map((variable, index) => `header${uniqueId}_${index + 1}`).join(', ') || ''},
-          ${selectedTemplate.bodyVariables?.map((variable, index) => `body${uniqueId}_${index + 1}`).join(', ') || ''},
-          ${selectedTemplate.buttonVariables?.map((variable, index) => `button${uniqueId}_${index + 1}`).join(', ') || ''}
+          ${selectedTemplate.bodyVariables?.map((variable, index) => `body${uniqueId}_${index + 1}`).join(', ') || ''}
         ],
         company_id: integrationDetails.company_id
       };
@@ -3691,8 +3678,6 @@ codeArray.push(`
       ${headerVariableCalculations}
 
       ${bodyVariableCalculations}
-
-      ${buttonVariableCalculations}
 
       ${payloadCode}
     `;
@@ -3745,7 +3730,6 @@ codeArray.push(`
     generateCodeFromNodes(updatedNodes, updatedEdges);
     setShowResponseTemplateModal(false);
   };
-
 
   const handleChangeResponsibleModalSave = () => {
     const selectedResponsibleObject = responsibles.find(r => r.id_usuario === parseInt(selectedResponsible));
